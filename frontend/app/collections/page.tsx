@@ -1,60 +1,60 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Collection } from '@/lib/types'
-import { collectionsApi } from '@/lib/api'
-import { CollectionCard } from '@/components/common/collection-card'
-import { Button } from '@/components/ui/button'
-import { Plus, Search } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Collection } from "@/lib/types";
+import { collectionsApi } from "@/lib/api";
+import { CollectionCard } from "@/components/common/collection-card";
+import { Button } from "@/components/ui/button";
+import { Plus, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export default function CollectionsPage() {
-  const [collections, setCollections] = useState<Collection[]>([])
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [filteredCollections, setFilteredCollections] = useState<Collection[]>(
-    []
-  )
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showPublicOnly, setShowPublicOnly] = useState(false)
+    [],
+  );
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showPublicOnly, setShowPublicOnly] = useState(false);
 
   useEffect(() => {
     const loadCollections = async () => {
       try {
-        const data = await collectionsApi.getAll()
-        setCollections(data)
-        setFilteredCollections(data)
+        const data = await collectionsApi.getAll();
+        setCollections(data);
+        setFilteredCollections(data);
       } catch (error) {
-        console.error('Failed to load collections:', error)
+        console.error("Failed to load collections:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadCollections()
-  }, [])
+    loadCollections();
+  }, []);
 
   // Filter collections
   useEffect(() => {
-    let result = [...collections]
+    let result = [...collections];
 
     // Search filter
     if (searchQuery) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.toLowerCase();
       result = result.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
-          c.description?.toLowerCase().includes(q)
-      )
+          c.description?.toLowerCase().includes(q),
+      );
     }
 
     // Visibility filter
     if (showPublicOnly) {
-      result = result.filter((c) => c.visibility === 'public')
+      result = result.filter((c) => c.visibility === "public");
     }
 
-    setFilteredCollections(result)
-  }, [collections, searchQuery, showPublicOnly])
+    setFilteredCollections(result);
+  }, [collections, searchQuery, showPublicOnly]);
 
   if (loading) {
     return (
@@ -71,7 +71,7 @@ export default function CollectionsPage() {
             ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -130,7 +130,7 @@ export default function CollectionsPage() {
 
       {/* Collections Grid */}
       {filteredCollections.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {filteredCollections.map((collection) => (
             <CollectionCard key={collection.id} collection={collection} />
           ))}
@@ -151,5 +151,5 @@ export default function CollectionsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

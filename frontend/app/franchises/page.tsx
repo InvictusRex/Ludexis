@@ -1,73 +1,73 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Franchise, ArchiveEntry } from '@/lib/types'
-import { franchisesApi, archiveApi } from '@/lib/api'
-import { ArchiveEntryCard } from '@/components/common/archive-entry-card'
-import { Input } from '@/components/ui/input'
-import { Search, Film } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Franchise, ArchiveEntry } from "@/lib/types";
+import { franchisesApi, archiveApi } from "@/lib/api";
+import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
+import { Input } from "@/components/ui/input";
+import { Search, Film } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function FranchisesPage() {
-  const [franchises, setFranchises] = useState<Franchise[]>([])
-  const [filteredFranchises, setFilteredFranchises] = useState<Franchise[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [franchises, setFranchises] = useState<Franchise[]>([]);
+  const [filteredFranchises, setFilteredFranchises] = useState<Franchise[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedFranchise, setSelectedFranchise] = useState<Franchise | null>(
-    null
-  )
-  const [franchiseEntries, setFranchiseEntries] = useState<ArchiveEntry[]>([])
+    null,
+  );
+  const [franchiseEntries, setFranchiseEntries] = useState<ArchiveEntry[]>([]);
 
   useEffect(() => {
     const loadFranchises = async () => {
       try {
-        const data = await franchisesApi.getAll()
-        setFranchises(data)
-        setFilteredFranchises(data)
+        const data = await franchisesApi.getAll();
+        setFranchises(data);
+        setFilteredFranchises(data);
         if (data.length > 0) {
-          setSelectedFranchise(data[0])
+          setSelectedFranchise(data[0]);
         }
       } catch (error) {
-        console.error('Failed to load franchises:', error)
+        console.error("Failed to load franchises:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadFranchises()
-  }, [])
+    loadFranchises();
+  }, []);
 
   // Filter franchises
   useEffect(() => {
-    let result = [...franchises]
+    let result = [...franchises];
 
     if (searchQuery) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.toLowerCase();
       result = result.filter(
         (f) =>
           f.name.toLowerCase().includes(q) ||
-          f.description?.toLowerCase().includes(q)
-      )
+          f.description?.toLowerCase().includes(q),
+      );
     }
 
-    setFilteredFranchises(result)
-  }, [franchises, searchQuery])
+    setFilteredFranchises(result);
+  }, [franchises, searchQuery]);
 
   // Load entries for selected franchise
   useEffect(() => {
     const loadEntries = async () => {
-      if (!selectedFranchise) return
+      if (!selectedFranchise) return;
       try {
-        const entries = await franchisesApi.getEntries(selectedFranchise.id)
-        setFranchiseEntries(entries)
+        const entries = await franchisesApi.getEntries(selectedFranchise.id);
+        setFranchiseEntries(entries);
       } catch (error) {
-        console.error('Failed to load franchise entries:', error)
+        console.error("Failed to load franchise entries:", error);
       }
-    }
+    };
 
-    loadEntries()
-  }, [selectedFranchise])
+    loadEntries();
+  }, [selectedFranchise]);
 
   if (loading) {
     return (
@@ -75,7 +75,7 @@ export default function FranchisesPage() {
         <h1 className="text-3xl font-bold text-foreground">Franchises</h1>
         <div className="h-64 bg-card rounded-lg animate-pulse border border-border" />
       </div>
-    )
+    );
   }
 
   return (
@@ -118,8 +118,8 @@ export default function FranchisesPage() {
                 onClick={() => setSelectedFranchise(franchise)}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${
                   selectedFranchise?.id === franchise.id
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-card border-border hover:border-accent'
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border hover:border-accent"
                 }`}
               >
                 <h3 className="font-semibold line-clamp-2">{franchise.name}</h3>
@@ -163,7 +163,7 @@ export default function FranchisesPage() {
                     <h3 className="text-lg font-semibold text-foreground mb-4">
                       Games in this franchise ({franchiseEntries.length})
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
                       {franchiseEntries.map((entry) => (
                         <ArchiveEntryCard key={entry.id} entry={entry} />
                       ))}
@@ -186,5 +186,5 @@ export default function FranchisesPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
