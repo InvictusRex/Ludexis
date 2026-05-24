@@ -1,42 +1,42 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
-import { Tag, ArchiveEntry } from '@/lib/types'
-import { tagsApi, archiveApi } from '@/lib/api'
-import { ArchiveEntryCard } from '@/components/common/archive-entry-card'
-import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { Tag, ArchiveEntry } from "@/lib/types";
+import { tagsApi, archiveApi } from "@/lib/api";
+import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function TagDetailPage() {
-  const params = useParams()
-  const id = params.id as string
-  const [tag, setTag] = useState<Tag | null>(null)
-  const [entries, setEntries] = useState<ArchiveEntry[]>([])
-  const [relatedTags, setRelatedTags] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
+  const params = useParams();
+  const id = params.id as string;
+  const [tag, setTag] = useState<Tag | null>(null);
+  const [entries, setEntries] = useState<ArchiveEntry[]>([]);
+  const [relatedTags, setRelatedTags] = useState<Tag[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const tagData = await tagsApi.getById(id)
-        setTag(tagData)
+        const tagData = await tagsApi.getById(id);
+        setTag(tagData);
 
-        const tagEntries = await tagsApi.getEntries(id)
-        setEntries(tagEntries)
+        const tagEntries = await tagsApi.getEntries(id);
+        setEntries(tagEntries);
 
-        const relatedTagsData = await tagsApi.getRelatedTags(id)
-        setRelatedTags(relatedTagsData)
+        const relatedTagsData = await tagsApi.getRelatedTags(id);
+        setRelatedTags(relatedTagsData);
       } catch (error) {
-        console.error('Failed to load tag:', error)
+        console.error("Failed to load tag:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadData()
-  }, [id])
+    loadData();
+  }, [id]);
 
   if (loading) {
     return (
@@ -48,7 +48,7 @@ export default function TagDetailPage() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   if (!tag) {
@@ -59,13 +59,16 @@ export default function TagDetailPage() {
           <Button variant="outline">Back to Tags</Button>
         </Link>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <Link href="/tags" className="inline-flex items-center gap-2 text-accent hover:underline">
+      <Link
+        href="/tags"
+        className="inline-flex items-center gap-2 text-accent hover:underline"
+      >
         <ArrowLeft className="w-4 h-4" />
         Back to Tags
       </Link>
@@ -99,7 +102,9 @@ export default function TagDetailPage() {
             <div className="flex items-center gap-6 text-sm">
               <div>
                 <p className="text-muted-foreground">Total Entries</p>
-                <p className="text-lg font-semibold text-accent">{entries.length}</p>
+                <p className="text-lg font-semibold text-accent">
+                  {entries.length}
+                </p>
               </div>
               {tag.isFeatured && (
                 <div className="px-3 py-1 rounded-full bg-accent/20 text-accent text-xs font-medium">
@@ -114,7 +119,9 @@ export default function TagDetailPage() {
       {/* Related Tags */}
       {relatedTags.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">Related Tags</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">
+            Related Tags
+          </h2>
           <div className="flex flex-wrap gap-3">
             {relatedTags.map((relatedTag) => (
               <Link
@@ -124,7 +131,9 @@ export default function TagDetailPage() {
               >
                 {relatedTag.name}
                 {relatedTag.entryCount && (
-                  <span className="text-muted-foreground ml-2">({relatedTag.entryCount})</span>
+                  <span className="text-muted-foreground ml-2">
+                    ({relatedTag.entryCount})
+                  </span>
                 )}
               </Link>
             ))}
@@ -134,13 +143,15 @@ export default function TagDetailPage() {
 
       {/* Entries */}
       <div>
-        <h2 className="text-xl font-semibold text-foreground mb-6">Archive Entries</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-6">
+          Archive Entries
+        </h2>
         {entries.length === 0 ? (
           <div className="text-center py-12 bg-card rounded-lg border border-border">
             <p className="text-muted-foreground">No entries with this tag</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {entries.map((entry) => (
               <ArchiveEntryCard key={entry.id} entry={entry} />
             ))}
@@ -148,5 +159,5 @@ export default function TagDetailPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

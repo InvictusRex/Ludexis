@@ -1,55 +1,55 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Developer } from '@/lib/types'
-import { developersApi } from '@/lib/api'
-import { DeveloperCard } from '@/components/common/developer-card'
-import { Input } from '@/components/ui/input'
-import { Search, Users } from 'lucide-react'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Developer } from "@/lib/types";
+import { developersApi } from "@/lib/api";
+import { DeveloperCard } from "@/components/common/developer-card";
+import { Input } from "@/components/ui/input";
+import { Search, Users } from "lucide-react";
 
 export default function DevelopersPage() {
-  const [developers, setDevelopers] = useState<Developer[]>([])
-  const [filteredDevelopers, setFilteredDevelopers] = useState<Developer[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [developers, setDevelopers] = useState<Developer[]>([]);
+  const [filteredDevelopers, setFilteredDevelopers] = useState<Developer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const loadDevelopers = async () => {
       try {
-        const data = await developersApi.getAll()
-        setDevelopers(data)
-        setFilteredDevelopers(data)
+        const data = await developersApi.getAll();
+        setDevelopers(data);
+        setFilteredDevelopers(data);
       } catch (error) {
-        console.error('Failed to load developers:', error)
+        console.error("Failed to load developers:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadDevelopers()
-  }, [])
+    loadDevelopers();
+  }, []);
 
   // Filter developers
   useEffect(() => {
-    let result = [...developers]
+    let result = [...developers];
 
     // Search filter
     if (searchQuery) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.toLowerCase();
       result = result.filter(
         (d) =>
           d.name.toLowerCase().includes(q) ||
           d.description?.toLowerCase().includes(q) ||
-          d.country?.toLowerCase().includes(q)
-      )
+          d.country?.toLowerCase().includes(q),
+      );
     }
 
     // Sort by entry count descending
-    result.sort((a, b) => (b.entryCount || 0) - (a.entryCount || 0))
+    result.sort((a, b) => (b.entryCount || 0) - (a.entryCount || 0));
 
-    setFilteredDevelopers(result)
-  }, [developers, searchQuery])
+    setFilteredDevelopers(result);
+  }, [developers, searchQuery]);
 
   if (loading) {
     return (
@@ -66,7 +66,7 @@ export default function DevelopersPage() {
             ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -101,7 +101,7 @@ export default function DevelopersPage() {
 
       {/* Developers Grid */}
       {filteredDevelopers.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
           {filteredDevelopers.map((developer) => (
             <Link key={developer.id} href={`/developers/${developer.id}`}>
               <DeveloperCard developer={developer} />
@@ -120,5 +120,5 @@ export default function DevelopersPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

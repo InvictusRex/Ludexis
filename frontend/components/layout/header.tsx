@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { Search, LogOut, Menu } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import Link from "next/link";
+import { Search, LogOut, Menu } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (searchQuery.trim()) {
       // Navigate to search page with query
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
+      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
     }
-  }
+  };
 
   return (
     <header className="hidden lg:flex fixed top-0 right-0 left-64 h-20 bg-card border-b border-border items-center justify-between px-8 z-30">
       {/* Search Bar */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-md">
+      <form onSubmit={handleSearch} className="flex-1 min-w-0">
         <div className="relative">
           <Input
             type="search"
@@ -29,7 +29,10 @@ export function Header() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-muted border-border"
           />
-          <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <Search
+            size={18}
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+          />
         </div>
       </form>
 
@@ -47,5 +50,5 @@ export function Header() {
         </Button>
       </div>
     </header>
-  )
+  );
 }

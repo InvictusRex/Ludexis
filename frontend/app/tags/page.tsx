@@ -1,57 +1,57 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Tag } from '@/lib/types'
-import { tagsApi } from '@/lib/api'
-import { TagCard } from '@/components/common/tag-card'
-import { Input } from '@/components/ui/input'
-import { Search, Tag as TagIcon } from 'lucide-react'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Tag } from "@/lib/types";
+import { tagsApi } from "@/lib/api";
+import { TagCard } from "@/components/common/tag-card";
+import { Input } from "@/components/ui/input";
+import { Search, Tag as TagIcon } from "lucide-react";
 
 export default function TagsPage() {
-  const [tags, setTags] = useState<Tag[]>([])
-  const [filteredTags, setFilteredTags] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false)
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [filteredTags, setFilteredTags] = useState<Tag[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
   useEffect(() => {
     const loadTags = async () => {
       try {
-        const data = await tagsApi.getAll()
-        setTags(data)
-        setFilteredTags(data)
+        const data = await tagsApi.getAll();
+        setTags(data);
+        setFilteredTags(data);
       } catch (error) {
-        console.error('Failed to load tags:', error)
+        console.error("Failed to load tags:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadTags()
-  }, [])
+    loadTags();
+  }, []);
 
   // Filter tags
   useEffect(() => {
-    let result = [...tags]
+    let result = [...tags];
 
     // Search filter
     if (searchQuery) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.toLowerCase();
       result = result.filter(
         (t) =>
           t.name.toLowerCase().includes(q) ||
-          t.description?.toLowerCase().includes(q)
-      )
+          t.description?.toLowerCase().includes(q),
+      );
     }
 
     // Featured filter
     if (showFeaturedOnly) {
-      result = result.filter((t) => t.isFeatured)
+      result = result.filter((t) => t.isFeatured);
     }
 
-    setFilteredTags(result)
-  }, [tags, searchQuery, showFeaturedOnly])
+    setFilteredTags(result);
+  }, [tags, searchQuery, showFeaturedOnly]);
 
   if (loading) {
     return (
@@ -68,7 +68,7 @@ export default function TagsPage() {
             ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -119,7 +119,7 @@ export default function TagsPage() {
 
       {/* Tags Grid */}
       {filteredTags.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filteredTags.map((tag) => (
             <Link key={tag.id} href={`/tags/${tag.id}`}>
               <TagCard tag={tag} />
@@ -138,5 +138,5 @@ export default function TagsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

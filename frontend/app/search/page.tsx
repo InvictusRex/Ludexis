@@ -1,51 +1,51 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { SearchResults } from '@/lib/types'
-import { searchApi } from '@/lib/api'
-import { ArchiveEntryCard } from '@/components/common/archive-entry-card'
-import { CollectionCard } from '@/components/common/collection-card'
-import { TagCard } from '@/components/common/tag-card'
-import { DeveloperCard } from '@/components/common/developer-card'
-import { Input } from '@/components/ui/input'
-import { Search, FileText } from 'lucide-react'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { SearchResults } from "@/lib/types";
+import { searchApi } from "@/lib/api";
+import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
+import { CollectionCard } from "@/components/common/collection-card";
+import { TagCard } from "@/components/common/tag-card";
+import { DeveloperCard } from "@/components/common/developer-card";
+import { Input } from "@/components/ui/input";
+import { Search, FileText } from "lucide-react";
 
 export default function SearchPage() {
-  const searchParams = useSearchParams()
-  const initialQuery = searchParams.get('q') || ''
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
 
-  const [query, setQuery] = useState(initialQuery)
-  const [results, setResults] = useState<SearchResults | null>(null)
-  const [loading, setLoading] = useState(!!initialQuery)
+  const [query, setQuery] = useState(initialQuery);
+  const [results, setResults] = useState<SearchResults | null>(null);
+  const [loading, setLoading] = useState(!!initialQuery);
 
   useEffect(() => {
     const performSearch = async () => {
       if (!query.trim()) {
-        setResults(null)
-        return
+        setResults(null);
+        return;
       }
 
-      setLoading(true)
+      setLoading(true);
       try {
-        const data = await searchApi.search(query)
-        setResults(data)
+        const data = await searchApi.search(query);
+        setResults(data);
       } catch (error) {
-        console.error('Search failed:', error)
+        console.error("Search failed:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    const debounceTimer = setTimeout(performSearch, 300)
-    return () => clearTimeout(debounceTimer)
-  }, [query])
+    const debounceTimer = setTimeout(performSearch, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [query]);
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     // Search is already triggered by useEffect
-  }
+  };
 
   return (
     <div className="space-y-8">
@@ -82,7 +82,7 @@ export default function SearchPage() {
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Archive Entries ({results.entries.length})
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
                 {results.entries.map((entry) => (
                   <ArchiveEntryCard key={entry.id} entry={entry} />
                 ))}
@@ -96,7 +96,7 @@ export default function SearchPage() {
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Collections ({results.collections.length})
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {results.collections.map((collection) => (
                   <CollectionCard key={collection.id} collection={collection} />
                 ))}
@@ -110,7 +110,7 @@ export default function SearchPage() {
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Developers ({results.developers.length})
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {results.developers.map((developer) => (
                   <Link key={developer.id} href={`/developers/${developer.id}`}>
                     <DeveloperCard developer={developer} />
@@ -148,7 +148,7 @@ export default function SearchPage() {
               <h2 className="text-2xl font-bold text-foreground mb-4">
                 Tags ({results.tags.length})
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {results.tags.map((tag) => (
                   <Link key={tag.id} href={`/tags/${tag.id}`}>
                     <TagCard tag={tag} />
@@ -199,5 +199,5 @@ export default function SearchPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

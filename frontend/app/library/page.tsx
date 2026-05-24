@@ -1,92 +1,96 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { ArchiveEntry, MetadataStatus, EntryStatus } from '@/lib/types'
-import { archiveApi } from '@/lib/api'
-import { ArchiveEntryCard } from '@/components/common/archive-entry-card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Search, Filter, SortAsc } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { ArchiveEntry, MetadataStatus, EntryStatus } from "@/lib/types";
+import { archiveApi } from "@/lib/api";
+import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Filter, SortAsc } from "lucide-react";
 
-type SortBy = 'title' | 'date' | 'rating' | 'updated'
+type SortBy = "title" | "date" | "rating" | "updated";
 
 export default function LibraryPage() {
-  const [entries, setEntries] = useState<ArchiveEntry[]>([])
-  const [filteredEntries, setFilteredEntries] = useState<ArchiveEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [entries, setEntries] = useState<ArchiveEntry[]>([]);
+  const [filteredEntries, setFilteredEntries] = useState<ArchiveEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState('')
-  const [metadataFilter, setMetadataFilter] = useState<MetadataStatus | 'ALL'>('ALL')
-  const [statusFilter, setStatusFilter] = useState<EntryStatus | 'ALL'>('ALL')
-  const [sortBy, setSortBy] = useState<SortBy>('title')
+  const [searchQuery, setSearchQuery] = useState("");
+  const [metadataFilter, setMetadataFilter] = useState<MetadataStatus | "ALL">(
+    "ALL",
+  );
+  const [statusFilter, setStatusFilter] = useState<EntryStatus | "ALL">("ALL");
+  const [sortBy, setSortBy] = useState<SortBy>("title");
 
   // Load data
   useEffect(() => {
     const loadEntries = async () => {
       try {
-        const data = await archiveApi.getAll()
-        setEntries(data)
-        setFilteredEntries(data)
+        const data = await archiveApi.getAll();
+        setEntries(data);
+        setFilteredEntries(data);
       } catch (error) {
-        console.error('Failed to load entries:', error)
+        console.error("Failed to load entries:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadEntries()
-  }, [])
+    loadEntries();
+  }, []);
 
   // Apply filters and sorting
   useEffect(() => {
-    let result = [...entries]
+    let result = [...entries];
 
     // Search filter
     if (searchQuery) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.toLowerCase();
       result = result.filter(
         (e) =>
           e.title.toLowerCase().includes(q) ||
-          e.description?.toLowerCase().includes(q)
-      )
+          e.description?.toLowerCase().includes(q),
+      );
     }
 
     // Metadata status filter
-    if (metadataFilter !== 'ALL') {
-      result = result.filter((e) => e.metadataStatus === metadataFilter)
+    if (metadataFilter !== "ALL") {
+      result = result.filter((e) => e.metadataStatus === metadataFilter);
     }
 
     // Entry status filter
-    if (statusFilter !== 'ALL') {
-      result = result.filter((e) => e.status === statusFilter)
+    if (statusFilter !== "ALL") {
+      result = result.filter((e) => e.status === statusFilter);
     }
 
     // Sorting
     switch (sortBy) {
-      case 'title':
-        result.sort((a, b) => a.title.localeCompare(b.title))
-        break
-      case 'date':
+      case "title":
+        result.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case "date":
         result.sort(
           (a, b) =>
             new Date(b.releaseDate || 0).getTime() -
-            new Date(a.releaseDate || 0).getTime()
-        )
-        break
-      case 'rating':
-        result.sort((a, b) => (b.personalRating || 0) - (a.personalRating || 0))
-        break
-      case 'updated':
+            new Date(a.releaseDate || 0).getTime(),
+        );
+        break;
+      case "rating":
+        result.sort(
+          (a, b) => (b.personalRating || 0) - (a.personalRating || 0),
+        );
+        break;
+      case "updated":
         result.sort(
           (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        )
-        break
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
+        break;
     }
 
-    setFilteredEntries(result)
-  }, [entries, searchQuery, metadataFilter, statusFilter, sortBy])
+    setFilteredEntries(result);
+  }, [entries, searchQuery, metadataFilter, statusFilter, sortBy]);
 
   if (loading) {
     return (
@@ -103,7 +107,7 @@ export default function LibraryPage() {
             ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -148,7 +152,7 @@ export default function LibraryPage() {
             <select
               value={metadataFilter}
               onChange={(e) =>
-                setMetadataFilter(e.target.value as MetadataStatus | 'ALL')
+                setMetadataFilter(e.target.value as MetadataStatus | "ALL")
               }
               className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-foreground text-sm"
             >
@@ -168,7 +172,7 @@ export default function LibraryPage() {
             <select
               value={statusFilter}
               onChange={(e) =>
-                setStatusFilter(e.target.value as EntryStatus | 'ALL')
+                setStatusFilter(e.target.value as EntryStatus | "ALL")
               }
               className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-foreground text-sm"
             >
@@ -201,7 +205,7 @@ export default function LibraryPage() {
 
       {/* Results Grid */}
       {filteredEntries.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
           {filteredEntries.map((entry) => (
             <ArchiveEntryCard key={entry.id} entry={entry} />
           ))}
@@ -218,5 +222,5 @@ export default function LibraryPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
