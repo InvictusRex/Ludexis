@@ -1,0 +1,6 @@
+- Swagger OAuth2 login mismatch (JSON vs OAuth2 form)
+- Replace hardcoded JWT secret with generated secret
+- Replace development credentials
+- Clean up Alembic migration history
+- Review bcrypt/passlib version pinning
+- Add automated tests for auth flow
