@@ -18,3 +18,4 @@
 ## Archival Testing
 
 - ArchiveEntryRead returns empty tag_ids/developer_ids/publisher_ids/collection_ids despite relationships being correctly populated.
+- Stubs for Steam/GOG/IGDB/Artwork Implementation, currently placeholders
