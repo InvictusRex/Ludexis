@@ -21,9 +21,9 @@
 
 ### High Priority
 
-- Seed default permissions during system initialization.
-- Seed default roles during system initialization.
-- Seed default role-permission mappings during system initialization.
+- ✅Seed default permissions during system initialization.
+- ✅Seed default roles during system initialization.
+- ✅Seed default role-permission mappings during system initialization.
 - Create administrator role automatically during first-time setup.
 - Validate permission enforcement across all protected endpoints.
 
