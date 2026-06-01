@@ -75,7 +75,7 @@
 
 ### High Priority
 
-- Fix `ArchiveEntryRead` serialization inconsistencies.
+- ✅Fix `ArchiveEntryRead` serialization inconsistencies.
   - Relationship data is returned correctly.
   - `tag_ids`
   - `developer_ids`
