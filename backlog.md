@@ -91,7 +91,7 @@
 - ✅Improve filename normalization.
 - ✅Improve version detection from filenames.
 - ✅Improve archive naming heuristics.
-- Duplicate archive detection.
+- ✅Duplicate archive detection.
 - Multi-library support.
 
 ---
