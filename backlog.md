@@ -4,13 +4,16 @@
 
 ### High Priority
 
-- Fix Swagger OAuth2 integration mismatch (Swagger expects OAuth2 Password Flow form data while backend login endpoint currently accepts JSON payloads).
-- Replace development JWT secret with a generated production-grade secret.
+- ✅Fix Swagger OAuth2 integration mismatch (Swagger expects OAuth2 Password Flow form data while backend login endpoint currently accepts JSON payloads).
+- ✅Replace development JWT secret with a generated production-grade secret.
 - Replace all development credentials and example secrets before public releases.
-- Review and stabilize bcrypt/passlib dependency versions to prevent compatibility regressions.
+- ✅Review and stabilize bcrypt/passlib dependency versions to prevent compatibility regressions.
+  - passlib==1.7.4
+  - bcrypt==4.0.1
+  - bcrypt >=5.0.0 is incompatible with passlib 1.7.4 and breaks authentication.
 - Add automated integration tests for authentication, token refresh, logout, and authorization flows.
 
-### Medium Priority
+### Low Priority
 
 - Improve Swagger authorization experience for protected endpoints.
 - Add token expiration and refresh workflow tests.
@@ -85,9 +88,9 @@
 
 ### Medium Priority
 
-- Improve filename normalization.
-- Improve version detection from filenames.
-- Improve archive naming heuristics.
+- ✅Improve filename normalization.
+- ✅Improve version detection from filenames.
+- ✅Improve archive naming heuristics.
 - Duplicate archive detection.
 - Multi-library support.
 
