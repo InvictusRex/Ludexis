@@ -92,7 +92,7 @@
 - ✅Improve version detection from filenames.
 - ✅Improve archive naming heuristics.
 - ✅Duplicate archive detection.
-- Multi-library support.
+- ✅Multi-library support.
 
 ---
 
