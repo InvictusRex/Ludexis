@@ -46,7 +46,7 @@
 - Implement Steam metadata provider.
 - Implement GOG metadata provider.
 - ✅Implement automatic metadata matching workflow.
-- Implement metadata refresh jobs.
+- ✅Implement metadata refresh jobs.
 
 ### Medium Priority
 
