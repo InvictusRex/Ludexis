@@ -42,18 +42,22 @@
 
 ### High Priority
 
-- Implement IGDB provider integration.
+- ✅Implement IGDB provider integration.
 - Implement Steam metadata provider.
 - Implement GOG metadata provider.
-- Implement automatic metadata matching workflow.
+- ✅Implement automatic metadata matching workflow.
 - Implement metadata refresh jobs.
 
 ### Medium Priority
 
-- Metadata confidence scoring.
+- ✅Metadata confidence scoring.
 - Metadata conflict resolution.
 - Multi-provider metadata merging.
 - Manual metadata override workflow.
+
+### Low Priority
+
+- IGDB's involved_companies flags
 
 ---
 
