@@ -100,8 +100,9 @@
 
 ### Planned
 
+- ✅File Metadata Foundation
 - Archive hash generation.
-- Incremental scan optimization.
+- ✅Incremental scan optimization.
 - Parallel scan execution.
 - Archive integrity verification.
 - File move/rename detection.
