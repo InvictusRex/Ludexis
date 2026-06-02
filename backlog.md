@@ -98,15 +98,19 @@
 
 ## Scanner & Ingestion
 
-### Planned
+### ✅Planned
 
 - ✅File Metadata Foundation
 - ✅Archive hash generation.
 - ✅Incremental scan optimization.
-- Parallel scan execution.
-- Archive integrity verification.
-- File move/rename detection.
+- ✅Archive integrity verification.
+- ✅File move/rename detection.
+
+### Low Priority
+
 - Reuse hash instead of recalculating at every scan.
+- `get_all_by_hash()` duplicate detection.
+- Parallel scan execution.
 
 ---
 
