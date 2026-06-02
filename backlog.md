@@ -101,11 +101,12 @@
 ### Planned
 
 - ✅File Metadata Foundation
-- Archive hash generation.
+- ✅Archive hash generation.
 - ✅Incremental scan optimization.
 - Parallel scan execution.
 - Archive integrity verification.
 - File move/rename detection.
+- Reuse hash instead of recalculating at every scan.
 
 ---
 
