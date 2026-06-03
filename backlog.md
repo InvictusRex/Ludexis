@@ -77,7 +77,7 @@
 - ✅Automatic Banner/Logo download.
 - Screenshot importing.
 - ✅Artwork quality scoring.
-- Artwork deduplication.
+- ✅Artwork deduplication.
 - Implement local artwork caching and storage management in dedicated directory.
 
 ---
