@@ -53,12 +53,13 @@
 
 - ✅Metadata confidence scoring.
 - Metadata conflict resolution.
-- Multi-provider metadata merging.
+- ✅Multi-provider metadata merging.
 - ✅Manual metadata override workflow.
 
 ### Low Priority
 
 - IGDB's involved_companies flags mapping involved_companies.company.name into both developers & publishers.
+- Entity normalization, IGDB: The Creative Assembly and Steam: CREATIVE ASSEMBLY.
 
 ---
 
