@@ -75,7 +75,7 @@
 ### Medium Priority
 
 - ✅Automatic Banner/Logo download.
-- Screenshot importing.
+- ✅Screenshot importing.
 - ✅Artwork quality scoring.
 - ✅Artwork deduplication.
 - Implement local artwork caching and storage management in dedicated directory.
