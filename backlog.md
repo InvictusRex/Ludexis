@@ -38,13 +38,13 @@
 
 ---
 
-## Metadata & Enrichment
+## ✅Metadata & Enrichment
 
 ### ✅High Priority
 
 - ✅Implement IGDB provider integration.
 - ✅Implement Steam metadata provider.
-- ❌Implement GOG metadata provider (deferred, not worth it).
+- ❌Implement GOG metadata provider (deferred, not as complete as Steam or IGDB, and changing endpoints).
 - ✅Implement automatic metadata matching workflow.
 - ✅Implement metadata refresh jobs.
 - ✅Implement Genre/Developer/Publisher Synchronization.
@@ -67,8 +67,9 @@
 
 ### High Priority
 
-- Implement artwork download pipeline.
-- Implement artwork validation jobs.
+- ✅Implement artwork download pipeline.
+- ✅Implement artwork validation jobs.
+- ✅Self-healing artwork refresh.
 - Implement local artwork caching and storage management.
 
 ### Medium Priority
