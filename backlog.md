@@ -40,11 +40,11 @@
 
 ## Metadata & Enrichment
 
-### High Priority
+### ✅High Priority
 
 - ✅Implement IGDB provider integration.
-- Implement Steam metadata provider.
-- Implement GOG metadata provider.
+- ✅Implement Steam metadata provider.
+- ❌Implement GOG metadata provider (deferred, not worth it)
 - ✅Implement automatic metadata matching workflow.
 - ✅Implement metadata refresh jobs.
 - ✅Implement Genre/Developer/Publisher Synchronization.
