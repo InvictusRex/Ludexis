@@ -47,6 +47,7 @@
 - Implement GOG metadata provider.
 - ✅Implement automatic metadata matching workflow.
 - ✅Implement metadata refresh jobs.
+- ✅Implement Genre/Developer/Publisher Synchronization.
 
 ### Medium Priority
 
@@ -57,7 +58,7 @@
 
 ### Low Priority
 
-- IGDB's involved_companies flags
+- IGDB's involved_companies flags mapping involved_companies.company.name into both developers & publishers.
 
 ---
 
