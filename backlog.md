@@ -44,22 +44,22 @@
 
 - ✅Implement IGDB provider integration.
 - ✅Implement Steam metadata provider.
-- ❌Implement GOG metadata provider (deferred, not worth it)
+- ❌Implement GOG metadata provider (deferred, not worth it).
 - ✅Implement automatic metadata matching workflow.
 - ✅Implement metadata refresh jobs.
 - ✅Implement Genre/Developer/Publisher Synchronization.
 
-### Medium Priority
+### ✅Medium Priority
 
 - ✅Metadata confidence scoring.
-- Metadata conflict resolution.
+- ✅Metadata conflict resolution.
 - ✅Multi-provider metadata merging.
 - ✅Manual metadata override workflow.
 
-### Low Priority
+### ✅Low Priority
 
-- IGDB's involved_companies flags mapping involved_companies.company.name into both developers & publishers.
-- Entity normalization, IGDB: The Creative Assembly and Steam: CREATIVE ASSEMBLY.
+- ✅IGDB's involved_companies flags mapping involved_companies.company.name into both developers & publishers.
+- ✅Entity normalization, IGDB: The Creative Assembly and Steam: CREATIVE ASSEMBLY.
 
 ---
 
@@ -116,7 +116,7 @@
 
 - Reuse hash instead of recalculating at every scan.
 - `get_all_by_hash()` duplicate detection.
-- Parallel scan execution.
+- ❌Parallel scan execution (deferred, not needed unless library size is extremely large, also hardware might bottleneck).
 
 ---
 
