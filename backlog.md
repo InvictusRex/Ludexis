@@ -65,19 +65,19 @@
 
 ## Artwork System
 
-### High Priority
+### ✅High Priority
 
 - ✅Implement artwork download pipeline.
 - ✅Implement artwork validation jobs.
 - ✅Self-healing artwork refresh.
-- Implement local artwork caching and storage management.
+- ✅Automatic cover selection.
 
 ### Medium Priority
 
-- Automatic cover selection.
 - Screenshot importing.
 - Artwork quality scoring.
 - Artwork deduplication.
+- Implement local artwork caching and storage management in dedicated directory.
 
 ---
 
