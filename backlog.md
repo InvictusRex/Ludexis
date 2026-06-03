@@ -54,7 +54,7 @@
 - ✅Metadata confidence scoring.
 - Metadata conflict resolution.
 - Multi-provider metadata merging.
-- Manual metadata override workflow.
+- ✅Manual metadata override workflow.
 
 ### Low Priority
 
