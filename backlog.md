@@ -63,7 +63,7 @@
 
 ---
 
-## Artwork System
+## ✅Artwork System
 
 ### ✅High Priority
 
@@ -72,13 +72,13 @@
 - ✅Self-healing artwork refresh.
 - ✅Automatic cover selection.
 
-### Medium Priority
+### ✅Medium Priority
 
 - ✅Automatic Banner/Logo download.
 - ✅Screenshot importing.
 - ✅Artwork quality scoring.
 - ✅Artwork deduplication.
-- Implement local artwork caching and storage management in dedicated directory.
+- ✅Implement local artwork caching and storage management in dedicated directory.
 
 ---
 
@@ -127,8 +127,9 @@
 ### Planned
 
 - Job retry policies.
-- Scheduled metadata refreshes.
-- Scheduled artwork validation.
+- ✅Scheduled metadata refreshes.
+- ✅Scheduled artwork validation.
+- ✅Celery Beat for scheduling.
 - Job queue monitoring endpoints.
 - Job cancellation improvements.
 

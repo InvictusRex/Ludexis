@@ -2,64 +2,71 @@ from datetime import datetime
 
 from app.db.session import SessionLocal
 from app.repositories.job_history import JobHistoryRepository
-from app.services.artwork import ArtworkService
+from app.services.metadata import MetadataService
 from app.tasks.celery_app import celery_app
 from app.utils.enums import JobStatus, JobType
 from app.models.job_history import JobHistory
 
-
 @celery_app.task(bind=True)
-def validate_artwork_task(self, job_history_id: str) -> str:
+def refresh_metadata_task(self, job_history_id: str,) -> str:
     db = SessionLocal()
     job_repo = JobHistoryRepository()
-    job = job_repo.get(db, job_history_id)
-    if job is None:
-        db.close()
-        return "job not found"
+
     try:
-        job.status = JobStatus.RUNNING
-        job.details = "Artwork validation started"
+        job = job_repo.get(db, job_history_id,)
+        if job is None:
+            return "job not found"
+
+        job.status = (JobStatus.RUNNING)
+        job.details = ("Metadata refresh started")
+
         db.add(job)
         db.commit()
 
-        artwork_service = ArtworkService()
-        results = artwork_service.validate_all_artwork(db)
-
-        job.status = JobStatus.SUCCESS
+        metadata_service = (MetadataService())
+        stats = (metadata_service.refresh_all(db))
+        job.status = (JobStatus.SUCCESS)
         job.progress = 100
-        job.result = f"Artwork validation completed: {len(results)} entries checked"
-        job.details = job.result
-        job.completed_at = datetime.utcnow()
+        job.result = (f"Metadata refresh completed: {stats}")
+        job.details = (job.result)
+        job.completed_at = (datetime.utcnow())
+
         db.add(job)
         db.commit()
+
         return job.result
+
     except Exception as exc:
         if job is not None:
-            job.status = JobStatus.FAILED
+            job.status = (JobStatus.FAILED)
             job.details = str(exc)
             job.result = str(exc)
-            job.completed_at = datetime.utcnow()
+            job.completed_at = (datetime.utcnow())
+
             db.add(job)
             db.commit()
+
         raise
+
     finally:
         db.close()
 
+
 @celery_app.task
-def scheduled_artwork_validation_task() -> str:
+def scheduled_metadata_refresh_task() -> str:
     db = SessionLocal()
     try:
         job = JobHistory(
-            job_type=(JobType.ARTWORK_REFRESH),
+            job_type=(JobType.METADATA_REFRESH),
             status=(JobStatus.PENDING),
-            details=("Scheduled artwork validation"),
+            details=("Scheduled metadata refresh"),
         )
 
         db.add(job)
         db.commit()
         db.refresh(job)
 
-        task = (validate_artwork_task.delay(job.id))
+        task = (refresh_metadata_task.delay(job.id))
         job.task_id = task.id
 
         db.add(job)
