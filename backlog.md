@@ -122,16 +122,16 @@
 
 ---
 
-## Background Jobs
+## ✅Background Jobs
 
-### Planned
+### ✅Planned
 
 - ✅Job retry policies.
 - ✅Scheduled metadata refreshes.
 - ✅Scheduled artwork validation.
 - ✅Celery Beat for scheduling.
-- Job queue monitoring endpoints.
-- Job cancellation improvements.
+- ✅Job queue monitoring endpoints.
+- ✅Job cancellation improvements.
 
 ---
 
