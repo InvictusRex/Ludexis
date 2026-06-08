@@ -126,7 +126,7 @@
 
 ### Planned
 
-- Job retry policies.
+- ✅Job retry policies.
 - ✅Scheduled metadata refreshes.
 - ✅Scheduled artwork validation.
 - ✅Celery Beat for scheduling.
