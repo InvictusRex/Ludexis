@@ -169,14 +169,14 @@
 
 ## Testing
 
-### High Priority
+### ✅High Priority
 
 - ✅Authentication integration tests.
 - ✅RBAC integration tests.
 - ✅Permission enforcement across all protected endpoints.
 - ✅Scanner integration tests.
-- Metadata provider tests.
-- Background job tests.
+- ✅Metadata provider tests.
+- ✅Background job tests.
 
 ### Medium Priority
 
