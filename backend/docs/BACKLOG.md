@@ -145,7 +145,7 @@
 
 - ✅~~Improve OpenAPI examples.~~
 - ✅~~Expand endpoint documentation.~~
-- Add API usage guides.
+- ✅~~Add API usage guides.~~
 - Add developer integration examples.
 
 ---
