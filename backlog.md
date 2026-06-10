@@ -161,7 +161,7 @@
 
 ### Low Priority
 
-- Health check endpoints.
+- ✅~~Health check endpoints.~~
 - Metrics and monitoring integration.
 - Structured logging improvements.
 
