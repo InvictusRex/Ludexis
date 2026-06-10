@@ -156,7 +156,7 @@
 
 - ✅~~Move all runtime configuration fully into environment variables.~~
 - ✅~~Remove remaining hardcoded development defaults.~~
-- Review Docker production deployment configuration.
+- ✅~~Review Docker production deployment configuration.~~
 - Add CI/CD validation pipeline.
 
 ### Low Priority
