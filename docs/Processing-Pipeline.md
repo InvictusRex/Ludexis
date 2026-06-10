@@ -651,15 +651,14 @@ The refresh workflow allows existing archive entries to be re-enriched.
 ```mermaid
 flowchart TD
 
-    Existing Entry
+    A[Existing Entry]
+    --> B[Refresh Request]
 
-    --> Refresh Request
+    B --> C[Provider Query]
 
-    --> Provider Query
+    C --> D[Updated Metadata]
 
-    --> Updated Metadata
-
-    --> Database Update
+    D --> E[Database Update]
 ```
 
 This capability ensures that catalog information can remain current as external providers evolve.
