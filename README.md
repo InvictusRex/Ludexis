@@ -1,4 +1,4 @@
-# Ludexis - Your Personal Game Archive
+# Ludexis
 
 <p align="center">
 
@@ -7,209 +7,625 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white)
 ![Celery](https://img.shields.io/badge/Celery-5.4+-37814A?logo=celery&logoColor=white)
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-D71F00?logo=sqlalchemy&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-Enabled-F46800?logo=grafana&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-Enabled-E6522C?logo=prometheus&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 </p>
 
-Ludexis is a self-hosted game library and metadata server that transforms folders of installers, archives, and visual novels into a searchable, artwork-rich catalog with collections, tags, notes, and administrative tools.
+<p align="center">
+  <strong>Self-Hosted Game Archive & Metadata Management Platform</strong>
+</p>
+
+<p align="center">
+  Organize, enrich, preserve, and manage large collections of game archives through automated scanning, metadata acquisition, artwork management, and powerful cataloging tools.
+</p>
+
+---
+
+## Why Ludexis?
+
+Ludexis began as a response to a problem that many digital preservation enthusiasts, visual novel collectors, retro gaming archivists, and self-hosting users eventually encounter: there are plenty of game launchers, but very few tools designed specifically for managing large game archives.
+
+Most existing platforms focus on launching installed games. Their catalogs are typically built around executable discovery, launcher integration, storefront synchronization, or installation management. This works well for modern Steam libraries but becomes increasingly limiting when dealing with preservation-oriented collections.
+
+Many archives consist of compressed releases, installer packages, visual novels, portable games, ROM collections, abandonware archives, backup media, and other content that may never be installed or directly executable. In these scenarios, the archive itself is often the asset being managed rather than a runnable game installation.
+
+Ludexis approaches the problem from a different perspective. Instead of asking "How do I launch this game?", it asks "How do I catalog, organize, enrich, preserve, and manage this archive?"
+
+A single Ludexis deployment can catalog content such as:
+
+```mermaid
+flowchart TB
+
+    A[Game Archives]
+
+    A --> B[ZIP Archives]
+    A --> C[RAR Archives]
+    A --> D[7z Archives]
+    A --> E[Installer Packages]
+    A --> F[Portable Games]
+    A --> G[Visual Novels]
+    A --> H[ROM Collections]
+    A --> I[Preservation Projects]
+    A --> J[Backup Libraries]
+```
+
+Rather than depending on launchers, executables, storefront APIs, or installed applications, Ludexis focuses on metadata management, artwork acquisition, catalog organization, archive preservation, and long-term collection maintenance.
+
+The result is a platform designed specifically for users who maintain game archives rather than game installations.
 
 ---
 
 ## Overview
 
-Modern game collections are often scattered across multiple drives, backup disks, NAS systems, cloud archives, and installer repositories. Over time it becomes increasingly difficult to remember what titles are owned, where they are stored, which versions are archived, and how different releases relate to one another. Ludexis provides a centralized platform for cataloging and managing these archives by automatically discovering game files, storing structured metadata, and organizing everything into a searchable database. Rather than acting as a launcher, Ludexis focuses on preservation, organization, and long-term archive management.
+Ludexis is a self-hosted game archive management platform designed for users who maintain collections of installers, archived game releases, visual novels, preservation projects, backups, and multi-drive game libraries.
+
+As collections grow across hard drives, NAS systems, external storage devices, and backup archives, maintaining accurate records becomes increasingly difficult. Information such as release versions, publishers, developers, storage locations, screenshots, artwork, and related titles often becomes fragmented or lost entirely.
+
+Ludexis solves this problem by transforming raw archive files into a searchable and enriched catalog. Through automated scanning, metadata matching, artwork acquisition, collections, tagging, and background processing, Ludexis provides a centralized platform for managing and preserving game archives.
+
+Unlike traditional game launchers, Ludexis focuses on cataloging, organization, metadata enrichment, and long-term archival management rather than game launching.
 
 ---
 
-## Features
+## Key Features
 
-### Archive Discovery
+### Automated Library Discovery & Scanning
 
-Ludexis continuously scans configured library locations and identifies supported archives, installers, and game folders. Newly discovered files are normalized, cataloged, and stored as structured entries inside the database. Duplicate detection and incremental scanning workflows ensure that large archives can be maintained efficiently without repeatedly processing the entire library.
+Ludexis continuously catalogs game archives stored across local drives, external storage devices, NAS systems, and archival repositories. Libraries can be configured as scan targets, allowing the platform to automatically discover supported archives and game folders without requiring manual entry.
 
-### Metadata Management
+Both full and incremental scanning modes are supported. Full scans rebuild catalog information across an entire library, while incremental scans process only newly added or modified content, significantly reducing maintenance overhead for large collections.
 
-Every archive entry maintains structured information including titles, descriptions, release dates, engines, versions, archive formats, storage locations, and verification status. Metadata can be automatically matched through providers, manually curated by administrators, or maintained as local-only records for preservation-focused collections.
+Discovered entries are normalized and stored in a structured catalog, enabling consistent metadata enrichment and organization regardless of the original archive source.
 
-### Artwork & Media
+### Metadata Aggregation & Enrichment
 
-The platform supports cover art, banners, logos, screenshots, and additional artwork assets linked directly to archive entries. Artwork is stored locally, allowing libraries to remain fully self-contained and independent of external services. Future provider integrations can automatically enrich entries with media assets.
+Ludexis automatically enriches archive entries using external metadata providers and is designed around a provider-agnostic architecture that allows additional metadata sources to be integrated over time. The current implementation utilizes IGDB and can be extended to support platforms such as Steam, MobyGames, RAWG, GOG, PCGamingWiki, and other preservation-oriented metadata sources.
 
-### Collections, Tags & Organization
+Metadata enrichment transforms raw archive files into richly cataloged entries by retrieving official game information and associating it with discovered archives.
 
-Games can be grouped using collections, franchises, developers, publishers, and custom tags. This enables flexible organization strategies ranging from simple favorites lists to large preservation archives containing thousands of entries across multiple genres, studios, and release groups.
+```mermaid
+flowchart TB
 
-### Notes, Ratings & Catalog Curation
+    A[Metadata Enrichment]
 
-Ludexis includes support for personal notes, ratings, and manual catalog management. Archivists can record compatibility information, patch requirements, installation instructions, restoration details, or preservation notes directly alongside an archive entry.
+    A --> B[Game Titles]
+    A --> C[Descriptions]
+    A --> D[Release Information]
+    A --> E[Developers]
+    A --> F[Publishers]
+    A --> G[Genres]
+    A --> H[Franchises]
+    A --> I[Platforms]
+    A --> J[Ratings]
+    A --> K[Related Titles]
+```
 
-### Search & Discovery
+This allows raw archive files to be transformed into rich, searchable catalog entries without extensive manual curation.
 
-The search system allows users to quickly locate entries using titles, metadata, developers, publishers, tags, and other catalog attributes. Search results provide direct access to related metadata and organizational structures, making large archives significantly easier to navigate.
+### Artwork Acquisition & Management
 
-### Background Processing
+Ludexis supports comprehensive artwork management for archive entries. Artwork assets are stored locally to ensure long-term availability independent of third-party services.
 
-Long-running operations such as library scans, metadata refreshes, artwork validation, and future enrichment workflows are executed asynchronously through a distributed task queue. This keeps the API responsive even while processing large collections.
+```mermaid
+flowchart TB
+
+    A[Artwork Management]
+
+    A --> B[Covers]
+    A --> C[Banners]
+    A --> D[Logos]
+    A --> E[Screenshots]
+```
+
+Artwork may be uploaded manually or automatically acquired through the metadata enrichment pipeline. Validation and maintenance operations ensure artwork remains synchronized with associated archive entries while avoiding duplicate assets and broken references.
+
+### Advanced Catalog Organization
+
+Beyond simple file storage, Ludexis provides multiple organizational layers for managing large collections.
+
+```mermaid
+flowchart TB
+
+    A[Catalog Organization]
+
+    A --> B[Collections]
+    A --> C[Genres]
+    A --> D[Tags]
+    A --> E[Franchises]
+    A --> F[Developers]
+    A --> G[Publishers]
+    A --> H[Notes]
+    A --> I[Ratings]
+```
+
+These relationships allow users to build curated collections and navigate large archives through meaningful metadata rather than filesystem structure alone.
+
+### Archive Preservation & Verification
+
+Ludexis is designed with preservation-oriented workflows in mind. Archive records maintain filesystem metadata, verification status, storage information, and catalog history to support long-term archival management.
+
+Planned integrity workflows include archive verification, corruption detection, duplicate identification, and preservation auditing to assist users maintaining large game collections over extended periods.
+
+### User Management & Role-Based Access Control
+
+The platform includes a complete authentication and authorization system built around Role-Based Access Control (RBAC).
+
+```mermaid
+flowchart TB
+
+    A[RBAC]
+
+    A --> B[Users]
+    A --> C[Roles]
+    A --> D[Permissions]
+    A --> E[Authentication]
+    A --> F[Authorization]
+    A --> G[Audit Logging]
+```
+
+This enables Ludexis to scale from single-user deployments to shared archival environments.
+
+### Background Processing & Job Management
+
+Long-running operations execute asynchronously through Celery workers, ensuring the API remains responsive regardless of collection size.
+
+```mermaid
+flowchart TB
+
+    A[Background Jobs]
+
+    A --> B[Full Scans]
+    A --> C[Incremental Scans]
+    A --> D[Metadata Refresh]
+    A --> E[Artwork Validation]
+    A --> F[Artwork Acquisition]
+```
+
+A centralized job system provides visibility into task progress, execution history, completion status, and failure reporting.
+
+### Monitoring & Observability
+
+Ludexis includes built-in operational monitoring through Prometheus and Grafana.
+
+```mermaid
+flowchart TB
+
+    A[Monitoring]
+
+    A --> B[Prometheus]
+    A --> C[Grafana]
+    A --> D[Authentication Metrics]
+    A --> E[Scan Metrics]
+    A --> F[Metadata Metrics]
+    A --> G[Artwork Metrics]
+    A --> H[Infrastructure Metrics]
+```
+
+Infrastructure monitoring is provided through Node Exporter by default, with optional Windows Exporter support available for native Windows host telemetry.
+
+These capabilities allow administrators to monitor system health, workload activity, and resource utilization without requiring additional monitoring infrastructure.
 
 ---
 
-## Architecture
+## Architecture Overview
 
-Ludexis follows a service-oriented architecture built around asynchronous processing and persistent metadata storage.
+Ludexis follows a service-oriented architecture designed around clear separation of responsibilities, asynchronous processing, and persistent metadata storage.
 
 ```mermaid
 flowchart LR
 
-    A[Game Archives]
-    B[Scanner Service]
-    C[FastAPI Backend]
-    D[(PostgreSQL)]
-    E[(Redis)]
-    F[Celery Workers]
-    G[Metadata Providers]
-    H[Artwork Storage]
-    I[Frontend]
+    Libraries["Game Libraries"]
 
-    A --> B
-    B --> C
-    C --> D
+    Backend["Ludexis API"]
 
-    C --> E
-    E --> F
+    PostgreSQL["PostgreSQL"]
 
-    F --> G
-    F --> H
+    Redis["Redis"]
 
-    I --> C
+    Workers["Celery Workers"]
+
+    Metadata["Metadata Providers"]
+
+    Artwork["Artwork Storage"]
+
+    UI["Clients / Frontend"]
+
+    Libraries --> Backend
+
+    Backend --> PostgreSQL
+    Backend --> Redis
+
+    Redis --> Workers
+
+    Workers --> Metadata
+    Workers --> Artwork
+    Workers --> PostgreSQL
+
+    UI --> Backend
 ```
 
-The FastAPI backend serves as the central coordination layer, managing authentication, catalog operations, search functionality, and administrative workflows. PostgreSQL stores all persistent metadata while Redis and Celery provide background processing for scans and enrichment jobs. Metadata providers and artwork services are integrated through a modular provider architecture, allowing new sources to be added without affecting the core system.
+The FastAPI backend serves as the central orchestration layer, coordinating authentication, catalog management, metadata operations, search functionality, and administrative workflows. PostgreSQL stores all persistent data, Redis provides task queue infrastructure, and Celery workers execute long-running background operations independently from user-facing requests.
 
 ---
 
-## Scan Pipeline
+## How Ludexis Works
 
-The scanning subsystem converts raw archive files into searchable catalog entries.
+The processing pipeline transforms raw archive files into fully cataloged archive entries.
 
 ```mermaid
 flowchart LR
 
-    A[Archive File]
-    B[Scanner]
-    C[Filename Normalization]
-    D[Archive Entry]
-    E[Metadata Matching]
-    F[Artwork Enrichment]
+    A[Archive Files]
+    --> B[Library Scan]
 
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
+    B --> C[Archive Detection]
+
+    C --> D[Metadata Matching]
+
+    D --> E[Artwork Acquisition]
+
+    E --> F[Searchable Catalog]
 ```
 
-For example, an archive such as:
+When a library scan is initiated, Ludexis discovers archive files and folders, extracts filesystem metadata, creates catalog entries, enriches them using metadata providers, downloads available artwork, and stores the resulting information in a searchable database.
+
+This workflow allows large collections to be cataloged with minimal manual effort while still supporting manual curation when required.
+
+## Screenshots
+
+Frontend development is currently in progress.
+
+Screenshots and usage demonstrations will be added as the user interface matures.
+
+<!-- > Screenshots will be added as the frontend matures.
+
+### Dashboard
+
+![Dashboard Placeholder](docs/assets/dashboard-placeholder.png)
+
+### Archive Entry
+
+![Archive Entry Placeholder](docs/assets/archive-placeholder.png)
+
+### Metadata Search
+
+![Metadata Search Placeholder](docs/assets/metadata-placeholder.png)
+-->
+
+---
+
+## Quick Start
+
+Ludexis is designed as a self-hosted service and can be deployed using Docker Compose. A standard deployment includes the FastAPI backend, Celery workers, PostgreSQL, Redis, Prometheus, Grafana, and system monitoring exporters.
+
+### Requirements
+
+Before deployment, ensure the host system has:
+
+- Docker
+- Docker Engine 24+ (Windows)
+- Docker Compose
+- 4 GB RAM recommended
+
+### Obtain the Source
+
+```bash
+git clone https://github.com/InvictusRex/Ludexis.git
+
+cd Ludexis/backend
+```
+
+### Configure the Environment
+
+Create a deployment configuration using `.env.docker` as a template and review all environment variables before starting the platform.
+
+At minimum, the following values should be configured:
+
+```env
+JWT_SECRET_KEY=<your-secret-key>
+
+TWITCH_CLIENT_ID=<your-client-id>
+TWITCH_CLIENT_SECRET=<your-client-secret>
+```
+
+The Twitch credentials are used for metadata retrieval through IGDB. Without valid credentials, metadata enrichment capabilities will be unavailable.
+
+### Start the Platform
+
+```bash
+docker compose up -d
+```
+
+The deployment automatically provisions and configures all required services, including the application backend, background workers, database services, monitoring stack, and observability tooling.
+
+### Verify Deployment
+
+Once all containers have started successfully, the following services should be available:
+
+| Service    | URL                        |
+| ---------- | -------------------------- |
+| API        | http://localhost:8000      |
+| Swagger UI | http://localhost:8000/docs |
+| Prometheus | http://localhost:9090      |
+| Grafana    | http://localhost:3000      |
+
+Grafana ships with the default credentials:
 
 ```text
-Total_War_Rome_2-v1.0.2.3-Emperor-Edition.rar
+Username: admin
+Password: admin
 ```
 
-is discovered, normalized, classified as a RAR archive, and automatically added to the catalog as:
+These credentials should be changed before exposing the deployment outside a trusted environment.
 
-```text
-Total War: Rome 2
-```
+### Initial Configuration
 
-where it becomes immediately searchable through the API and user interface.
+After deployment, create the initial administrator account and configure the archive libraries that Ludexis should manage.
 
----
-
-## Metadata Providers
-
-Metadata enrichment is implemented through a provider-based architecture that allows multiple sources to contribute information to archive entries. Providers can supply descriptions, release information, genres, developers, publishers, artwork, and other metadata. The current architecture includes support for manual metadata and placeholder integrations for IGDB, Steam, and GOG, with additional providers planned for future releases.
+A typical setup workflow consists of:
 
 ```mermaid
 flowchart LR
 
-    A[Archive Entry]
-    B[Metadata Manager]
+    A[Deploy Platform]
+    --> B[Create Administrator]
 
-    C[IGDB]
-    D[Steam]
-    E[GOG]
-    F[Manual Metadata]
+    B --> C[Configure Libraries]
 
-    A --> B
+    C --> D[Run Initial Scan]
 
-    B --> C
-    B --> D
-    B --> E
-    B --> F
+    D --> E[Metadata Enrichment]
+
+    E --> F[Artwork Acquisition]
+
+    F --> G[Searchable Archive]
 ```
+
+Once the first scan completes, archive entries become available for metadata enrichment, artwork acquisition, search, categorization, and collection management.
 
 ---
 
-## API Documentation
+## Monitoring & Observability
 
-Ludexis exposes a fully documented REST API powered by OpenAPI.
+Ludexis includes a built-in observability stack for monitoring application health, infrastructure performance, and background processing activity.
 
-Interactive API documentation:
+### Prometheus Metrics
+
+The backend exposes Prometheus-compatible metrics through:
+
+```text
+/api/metrics
+```
+
+Metrics currently include:
+
+- Authentication activity
+- Library scans
+- Incremental scans
+- Metadata searches
+- Artwork operations
+- Background job execution
+
+### Grafana Dashboards
+
+Grafana dashboards can be used to visualize:
+
+- User activity
+- Scan throughput
+- Metadata operations
+- Artwork processing
+- API metrics
+- Infrastructure performance
+
+### Infrastructure Monitoring
+
+By default, Ludexis deploys Node Exporter to provide host-level metrics including:
+
+- CPU utilization
+- Memory usage
+- Disk consumption
+- Network statistics
+
+---
+
+## Optional Windows Exporter
+
+Node Exporter provides cross-platform metrics and is enabled by default.
+
+Users requiring native Windows performance counters may additionally enable Windows Exporter:
+
+```bash
+docker compose --profile windows_exporter up -d
+```
+
+This exposes Windows-specific metrics while preserving the default monitoring stack.
+
+---
+
+## First-Time Setup
+
+After deployment:
+
+1. Open Swagger UI.
 
 ```text
 http://localhost:8000/docs
 ```
 
-OpenAPI schema:
+2. Run the initial setup endpoint.
 
-```text
-http://localhost:8000/openapi.json
+3. Create the administrator account.
+
+4. Login and obtain an access token.
+
+5. Configure one or more game libraries.
+
+6. Start the first library scan.
+
+7. Begin metadata enrichment and artwork acquisition.
+
+---
+
+## Developer Setup
+
+Ludexis supports a contributor-focused development workflow that separates application execution from infrastructure services. During development, PostgreSQL, Redis, Prometheus, Grafana, and exporter services run through Docker while the FastAPI backend and Celery workers execute directly on the host machine for improved debugging, hot reload support, and IDE integration.
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/InvictusRex/Ludexis.git
+
+cd Ludexis/backend
 ```
 
-The API provides endpoints for authentication, archive management, search, collections, tags, metadata operations, administrative workflows, and background job management.
+### Create a Virtual Environment
+
+```bash
+python -m venv .venv
+```
+
+### Activate the Environment
+
+Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+Linux/macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Configure Environment Variables
+
+Linux: Create a local environment file and configure the required values.
+
+```bash
+cp .env.docker .env
+```
+
+Windows: Create a local `.env` file using `.env.docker` as a template and update any required credentials before starting development.
+
+At minimum, the following values should be reviewed before development:
+
+```env
+DATABASE_URL=
+REDIS_URL=
+CELERY_BROKER_URL=
+CELERY_RESULT_BACKEND=
+
+JWT_SECRET_KEY=
+
+TWITCH_CLIENT_ID=
+TWITCH_CLIENT_SECRET=
+```
+
+### Start Development Infrastructure
+
+```bash
+docker compose -f dev/docker-compose.infra.yml up -d
+```
+
+Optional Windows host metrics can be enabled using:
+
+```bash
+docker compose -f dev/docker-compose.infra.yml --profile windows_exporter up -d
+```
+
+This command launches PostgreSQL, Redis, Prometheus, Grafana, and Node Exporter, providing all supporting infrastructure required for local development.
+
+### Start the Backend
+
+```bash
+uvicorn main:app --reload
+```
+
+The API will be available at:
+
+```text
+http://localhost:8000
+```
+
+Swagger documentation:
+
+```text
+http://localhost:8000/docs
+```
+
+### Start Celery Worker
+
+Open a second terminal and run:
+
+```bash
+celery -A app.tasks.celery_app worker --loglevel=info
+```
+
+### Run Tests
+
+```bash
+pytest
+```
+
+### Development Monitoring
+
+The observability stack remains available during development.
+
+| Service    | URL                   |
+| ---------- | --------------------- |
+| Prometheus | http://localhost:9090 |
+| Grafana    | http://localhost:3000 |
+
+This setup mirrors the workflow used during active Ludexis development and provides full access to monitoring, debugging, and testing capabilities while maintaining a lightweight local development environment.
 
 ---
 
-## Self Hosting
+## Documentation
 
-Ludexis is designed to run entirely within a self-hosted environment and can be deployed on personal servers, homelabs, NAS systems, virtual machines, or containerized infrastructure. The platform has been designed around common open-source technologies and keeps all metadata, artwork, and archival information under the owner's control.
+Comprehensive documentation is available in the `docs/` directory.
 
-Recommended deployment targets include:
+| Document              | Description                       |
+| --------------------- | --------------------------------- |
+| Architecture Overview | High-level system architecture    |
+| Backend Architecture  | Internal backend design           |
+| Data Model            | Database schema and relationships |
+| Processing Pipeline   | Scanning and enrichment workflow  |
+| API Guide             | REST API reference                |
+| Deployment Guide      | Production deployment guidance    |
+| Backlog               | Planned features and milestones   |
 
-- Home Lab Servers
-- Docker Hosts
-- NAS Appliances
-- Dedicated Archive Servers
-- Virtual Private Servers
-- Self-Hosted Infrastructure Clusters
-
----
-
-## Project Status
-
-| Component                      | Status            |
-| ------------------------------ | ----------------- |
-| Authentication & Authorization | ✅ Implemented    |
-| Archive Catalog Management     | ✅ Implemented    |
-| Library Scanning               | ✅ Implemented    |
-| Search System                  | ✅ Implemented    |
-| Collections & Tags             | ✅ Implemented    |
-| Developers & Publishers        | ✅ Implemented    |
-| Background Job Processing      | ✅ Implemented    |
-| Redis & Celery Integration     | ✅ Implemented    |
-| Artwork Framework              | ✅ Implemented    |
-| Metadata Provider Framework    | ✅ Implemented    |
-| IGDB Integration               | 🚧 In Progress    |
-| Steam Integration              | 📋 Planned        |
-| GOG Integration                | 📋 Planned        |
-| Automatic Artwork Downloads    | 📋 Planned        |
-| Frontend Interface             | 🚧 In Development |
+The README intentionally focuses on installation and usage. Detailed implementation information is maintained within the project documentation.
 
 ---
 
-## Philosophy
+## Future Development
 
-> Your archive should outlive launchers, storefronts, operating systems, and online services.
+Ludexis is under active development.
+Detailed feature planning, development milestones, architectural improvements, and long-term objectives are maintained in:
 
-Ludexis is built around the idea that a digital collection should remain accessible and understandable regardless of where individual games originate. Storefronts may disappear, launchers may change, and platforms may become obsolete, but a well-maintained archive should remain searchable, documented, and preserved for years to come. Ludexis focuses on providing the tools necessary to catalog, organize, and preserve those collections while remaining fully self-hosted and under the user's control.
+```text
+docs/Backlog.md
+```
+
+## License
+
+This project is licensed under the MIT License.
+
+See the LICENSE file for additional details.
+
+---
+
+## Acknowledgements
+
+Ludexis relies on several open-source technologies and metadata ecosystems, including FastAPI, PostgreSQL, Redis, Celery, Prometheus, Grafana, IGDB, Docker.
+Their contributions make modern self-hosted software ecosystems possible.
