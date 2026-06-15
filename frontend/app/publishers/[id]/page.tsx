@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Publisher, ArchiveEntry } from "@/lib/types";
 import { publishersApi, archiveApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { ArrowLeft, Globe, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -16,13 +18,28 @@ export default function PublisherDetailPage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadData = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const publisherData = await publishersApi.getById(id);
+        const publisherData = await publishersApi.getById(id, accessToken);
         setPublisher(publisherData);
 
-        const publisherEntries = await publishersApi.getEntries(id);
+        const publisherEntries = await publishersApi.getEntries(
+          id,
+          accessToken,
+        );
         setEntries(publisherEntries);
       } catch (error) {
         console.error("Failed to load publisher:", error);
@@ -71,17 +88,9 @@ export default function PublisherDetailPage() {
 
       {/* Publisher Banner */}
       <div className="relative h-80 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
-        {publisher.artwork?.bannerArt ? (
-          <img
-            src={publisher.artwork.bannerArt}
-            alt={publisher.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-muted-foreground text-lg">No Banner Art</span>
-          </div>
-        )}
+        <div className="w-full h-full flex items-center justify-center">
+          <span className="text-muted-foreground text-lg">No Banner Art</span>
+        </div>
 
         {/* Publisher Info Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent flex items-end">
@@ -104,17 +113,7 @@ export default function PublisherDetailPage() {
           <p className="text-sm text-muted-foreground mb-2">Published Titles</p>
           <p className="text-2xl font-bold text-accent">{entries.length}</p>
         </div>
-        {publisher.country && (
-          <div className="bg-card p-4 rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground flex items-center gap-2 mb-2">
-              <MapPin className="w-4 h-4" />
-              Country
-            </p>
-            <p className="text-lg font-medium text-foreground">
-              {publisher.country}
-            </p>
-          </div>
-        )}
+        {/* country not provided by backend */}
         {publisher.website && (
           <div className="bg-card p-4 rounded-lg border border-border">
             <p className="text-sm text-muted-foreground flex items-center gap-2 mb-2">

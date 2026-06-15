@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Franchise, ArchiveEntry } from "@/lib/types";
 import { franchisesApi, archiveApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { Input } from "@/components/ui/input";
 import { Search, Film } from "lucide-react";
@@ -19,10 +21,22 @@ export default function FranchisesPage() {
   );
   const [franchiseEntries, setFranchiseEntries] = useState<ArchiveEntry[]>([]);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadFranchises = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const data = await franchisesApi.getAll();
+        const data = await franchisesApi.getAll(accessToken);
         setFranchises(data);
         setFilteredFranchises(data);
         if (data.length > 0) {
@@ -56,10 +70,17 @@ export default function FranchisesPage() {
 
   // Load entries for selected franchise
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadEntries = async () => {
-      if (!selectedFranchise) return;
+      if (!selectedFranchise || !accessToken) return;
       try {
-        const entries = await franchisesApi.getEntries(selectedFranchise.id);
+        const entries = await franchisesApi.getEntries(
+          selectedFranchise.id,
+          accessToken,
+        );
         setFranchiseEntries(entries);
       } catch (error) {
         console.error("Failed to load franchise entries:", error);
@@ -69,7 +90,7 @@ export default function FranchisesPage() {
     loadEntries();
   }, [selectedFranchise]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="space-y-8">
         <h1 className="text-3xl font-bold text-foreground">Franchises</h1>
@@ -124,7 +145,7 @@ export default function FranchisesPage() {
               >
                 <h3 className="font-semibold line-clamp-2">{franchise.name}</h3>
                 <Badge variant="secondary" className="mt-1 text-xs">
-                  {franchise.entries.length} entries
+                  {franchise.child_ids ? franchise.child_ids.length : 0} entries
                 </Badge>
               </button>
             ))}
@@ -135,10 +156,10 @@ export default function FranchisesPage() {
             {selectedFranchise && (
               <>
                 {/* Banner */}
-                {selectedFranchise.artwork?.bannerArt && (
+                {selectedFranchise.banner_path && (
                   <div className="w-full h-48 rounded-lg overflow-hidden border border-border">
                     <img
-                      src={selectedFranchise.artwork.bannerArt}
+                      src={selectedFranchise.banner_path}
                       alt={selectedFranchise.name}
                       className="w-full h-full object-cover"
                     />

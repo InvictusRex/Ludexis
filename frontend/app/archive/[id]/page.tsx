@@ -1,12 +1,14 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useParams } from 'next/navigation'
-import { ArchiveEntry, Developer, Publisher } from '@/lib/types'
-import { archiveApi, developersApi, publishersApi } from '@/lib/api'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { ArchiveEntry, Developer, Publisher } from "@/lib/types";
+import { archiveApi, developersApi, publishersApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Edit,
   Share2,
@@ -15,51 +17,67 @@ import {
   FolderOpen,
   Calendar,
   Zap,
-} from 'lucide-react'
+} from "lucide-react";
 
 export default function ArchiveDetailsPage() {
-  const params = useParams()
-  const entryId = params.id as string
+  const params = useParams();
+  const entryId = params.id as string;
 
-  const [entry, setEntry] = useState<ArchiveEntry | null>(null)
-  const [developers, setDevelopers] = useState<Developer[]>([])
-  const [publishers, setPublishers] = useState<Publisher[]>([])
-  const [loading, setLoading] = useState(true)
-  const [isFavorited, setIsFavorited] = useState(false)
+  const [entry, setEntry] = useState<ArchiveEntry | null>(null);
+  const [developers, setDevelopers] = useState<Developer[]>([]);
+  const [publishers, setPublishers] = useState<Publisher[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isFavorited, setIsFavorited] = useState(false);
+
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadDetails = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const data = await archiveApi.getById(entryId)
+        const data = await archiveApi.getById(entryId, accessToken);
         if (!data) {
-          setEntry(null)
-          return
+          setEntry(null);
+          return;
         }
 
-        setEntry(data)
+        setEntry(data);
 
         // Load related developers and publishers
         const devs = await Promise.all(
-          data.developerId.map((id) => developersApi.getById(id))
-        )
+          data.developer_ids.map((id) =>
+            developersApi.getById(id, accessToken),
+          ),
+        );
         const pubs = await Promise.all(
-          data.publisherId.map((id) => publishersApi.getById(id))
-        )
+          data.publisher_ids.map((id) =>
+            publishersApi.getById(id, accessToken),
+          ),
+        );
 
-        setDevelopers(devs.filter(Boolean) as Developer[])
-        setPublishers(pubs.filter(Boolean) as Publisher[])
+        setDevelopers(devs.filter(Boolean) as Developer[]);
+        setPublishers(pubs.filter(Boolean) as Publisher[]);
       } catch (error) {
-        console.error('Failed to load archive details:', error)
+        console.error("Failed to load archive details:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadDetails()
-  }, [entryId])
+    loadDetails();
+  }, [entryId]);
 
-  if (loading) {
-    return <div className="h-96 bg-card rounded-lg animate-pulse" />
+  if (authLoading || loading) {
+    return <div className="h-96 bg-card rounded-lg animate-pulse" />;
   }
 
   if (!entry) {
@@ -72,23 +90,23 @@ export default function ArchiveDetailsPage() {
           <Button>Back to Library</Button>
         </Link>
       </div>
-    )
+    );
   }
 
   const getMetadataStatusColor = (status: string) => {
     switch (status) {
-      case 'MATCHED':
-        return 'bg-green-900 text-green-200 border-green-700'
-      case 'PARTIAL':
-        return 'bg-yellow-900 text-yellow-200 border-yellow-700'
-      case 'UNMATCHED':
-        return 'bg-red-900 text-red-200 border-red-700'
-      case 'MANUAL':
-        return 'bg-blue-900 text-blue-200 border-blue-700'
+      case "MATCHED":
+        return "bg-green-900 text-green-200 border-green-700";
+      case "PARTIAL":
+        return "bg-yellow-900 text-yellow-200 border-yellow-700";
+      case "UNMATCHED":
+        return "bg-red-900 text-red-200 border-red-700";
+      case "MANUAL":
+        return "bg-blue-900 text-blue-200 border-blue-700";
       default:
-        return 'bg-gray-900 text-gray-200 border-gray-700'
+        return "bg-gray-900 text-gray-200 border-gray-700";
     }
-  }
+  };
 
   return (
     <div className="space-y-8">
@@ -102,10 +120,10 @@ export default function ArchiveDetailsPage() {
       </div>
 
       {/* Header with Banner */}
-      {entry.artwork?.bannerArt && (
+      {entry.banner_path && (
         <div className="w-full h-64 rounded-lg overflow-hidden border border-border">
           <img
-            src={entry.artwork.bannerArt}
+            src={entry.banner_path}
             alt={entry.title}
             className="w-full h-full object-cover"
           />
@@ -117,10 +135,10 @@ export default function ArchiveDetailsPage() {
         {/* Left Column - Cover & Info */}
         <div className="space-y-6">
           {/* Cover Art */}
-          {entry.artwork?.coverArt && (
+          {entry.cover_path && (
             <div className="rounded-lg overflow-hidden border border-border">
               <img
-                src={entry.artwork.coverArt}
+                src={entry.cover_path}
                 alt={entry.title}
                 className="w-full h-auto"
               />
@@ -134,11 +152,8 @@ export default function ArchiveDetailsPage() {
               variant="default"
               onClick={() => setIsFavorited(!isFavorited)}
             >
-              <Heart
-                size={18}
-                className={isFavorited ? 'fill-current' : ''}
-              />
-              {isFavorited ? 'Favorited' : 'Add to Favorites'}
+              <Heart size={18} className={isFavorited ? "fill-current" : ""} />
+              {isFavorited ? "Favorited" : "Add to Favorites"}
             </Button>
             <Button className="w-full" variant="outline">
               <Edit size={18} />
@@ -156,18 +171,18 @@ export default function ArchiveDetailsPage() {
               Metadata Status
             </h3>
             <div className="space-y-2">
-              <Badge className={getMetadataStatusColor(entry.metadataStatus)}>
-                {entry.metadataStatus}
+              <Badge className={getMetadataStatusColor(entry.metadata_status)}>
+                {entry.metadata_status}
               </Badge>
-              {entry.metadataSource && (
+              {entry.metadata_source && (
                 <p className="text-xs text-muted-foreground">
-                  Source: {entry.metadataSource}
+                  Source: {entry.metadata_source}
                 </p>
               )}
-              {entry.lastMetadataRefresh && (
+              {entry.last_metadata_refresh && (
                 <p className="text-xs text-muted-foreground">
-                  Last refreshed:{' '}
-                  {new Date(entry.lastMetadataRefresh).toLocaleDateString()}
+                  Last refreshed:{" "}
+                  {new Date(entry.last_metadata_refresh).toLocaleDateString()}
                 </p>
               )}
             </div>
@@ -181,11 +196,7 @@ export default function ArchiveDetailsPage() {
             <h1 className="text-4xl font-bold text-foreground mb-2">
               {entry.title}
             </h1>
-            {entry.personalRating && (
-              <div className="text-2xl text-accent mb-4">
-                ★ {entry.personalRating}/5
-              </div>
-            )}
+            {/* personalRating not provided by backend; omitted */}
             {entry.description && (
               <p className="text-muted-foreground leading-relaxed">
                 {entry.description}
@@ -195,14 +206,14 @@ export default function ArchiveDetailsPage() {
 
           {/* Key Information */}
           <div className="grid grid-cols-2 gap-4">
-            {entry.releaseDate && (
+            {entry.release_date && (
               <div className="bg-card rounded-lg border border-border p-4">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Calendar size={16} />
                   <span className="text-xs">Release Date</span>
                 </div>
                 <p className="font-semibold text-foreground">
-                  {new Date(entry.releaseDate).toLocaleDateString()}
+                  {new Date(entry.release_date).toLocaleDateString()}
                 </p>
               </div>
             )}
@@ -221,14 +232,14 @@ export default function ArchiveDetailsPage() {
                 <p className="font-semibold text-foreground">{entry.version}</p>
               </div>
             )}
-            {entry.storageDevice && (
+            {entry.storage_device && (
               <div className="bg-card rounded-lg border border-border p-4">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <FolderOpen size={16} />
                   <span className="text-xs">Storage</span>
                 </div>
                 <p className="font-semibold text-accent">
-                  {entry.storageDevice}
+                  {entry.storage_device}
                 </p>
               </div>
             )}
@@ -236,33 +247,7 @@ export default function ArchiveDetailsPage() {
 
           {/* Genres & Platforms */}
           <div className="space-y-4">
-            {entry.genres.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Genres</h3>
-                <div className="flex flex-wrap gap-2">
-                  {entry.genres.map((genre) => (
-                    <Badge key={genre} variant="secondary">
-                      {genre}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {entry.platforms.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">
-                  Platforms
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {entry.platforms.map((platform) => (
-                    <Badge key={platform} variant="outline">
-                      {platform}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* genres and platforms are frontend-only; omitted to match backend schema */}
           </div>
 
           {/* Developers & Publishers */}
@@ -280,12 +265,10 @@ export default function ArchiveDetailsPage() {
                         href={`/developers/${dev.id}`}
                         className="block p-3 bg-card rounded-lg border border-border hover:border-accent transition-colors"
                       >
-                        <p className="font-medium text-foreground">{dev.name}</p>
-                        {dev.country && (
-                          <p className="text-xs text-muted-foreground">
-                            {dev.country}
-                          </p>
-                        )}
+                        <p className="font-medium text-foreground">
+                          {dev.name}
+                        </p>
+                        {/* country not provided by backend */}
                       </Link>
                     ))}
                   </div>
@@ -304,12 +287,10 @@ export default function ArchiveDetailsPage() {
                         href={`/publishers/${pub.id}`}
                         className="block p-3 bg-card rounded-lg border border-border hover:border-accent transition-colors"
                       >
-                        <p className="font-medium text-foreground">{pub.name}</p>
-                        {pub.country && (
-                          <p className="text-xs text-muted-foreground">
-                            {pub.country}
-                          </p>
-                        )}
+                        <p className="font-medium text-foreground">
+                          {pub.name}
+                        </p>
+                        {/* country not provided by backend */}
                       </Link>
                     ))}
                   </div>
@@ -327,19 +308,21 @@ export default function ArchiveDetailsPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">File Path:</span>
                 <code className="text-accent font-mono text-xs">
-                  {entry.filePath}
+                  {entry.file_path}
                 </code>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Archive Type:</span>
                 <span className="font-medium text-foreground">
-                  {entry.archiveType}
+                  {entry.archive_type}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Last Verified:</span>
                 <span className="font-medium text-foreground">
-                  {new Date(entry.lastVerified).toLocaleDateString()}
+                  {entry.last_verified
+                    ? new Date(entry.last_verified).toLocaleDateString()
+                    : "—"}
                 </span>
               </div>
             </div>
@@ -348,27 +331,7 @@ export default function ArchiveDetailsPage() {
       </div>
 
       {/* Screenshots */}
-      {entry.artwork?.screenshots && entry.artwork.screenshots.length > 0 && (
-        <div>
-          <h2 className="text-2xl font-bold text-foreground mb-4">
-            Screenshots
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {entry.artwork.screenshots.map((screenshot, index) => (
-              <div
-                key={index}
-                className="rounded-lg overflow-hidden border border-border"
-              >
-                <img
-                  src={screenshot}
-                  alt={`Screenshot ${index + 1}`}
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* screenshots not provided by backend */}
     </div>
-  )
+  );
 }

@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SearchResults } from "@/lib/types";
 import { searchApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { CollectionCard } from "@/components/common/collection-card";
 import { TagCard } from "@/components/common/tag-card";
@@ -12,7 +14,7 @@ import { DeveloperCard } from "@/components/common/developer-card";
 import { Input } from "@/components/ui/input";
 import { Search, FileText } from "lucide-react";
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
 
@@ -20,16 +22,28 @@ export default function SearchPage() {
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(!!initialQuery);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const performSearch = async () => {
       if (!query.trim()) {
         setResults(null);
         return;
       }
 
+      if (!accessToken) {
+        return;
+      }
+
       setLoading(true);
       try {
-        const data = await searchApi.search(query);
+        const data = await searchApi.search(query, accessToken);
         setResults(data);
       } catch (error) {
         console.error("Search failed:", error);
@@ -40,7 +54,7 @@ export default function SearchPage() {
 
     const debounceTimer = setTimeout(performSearch, 300);
     return () => clearTimeout(debounceTimer);
-  }, [query]);
+  }, [query, accessToken, authLoading]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,7 +189,8 @@ export default function SearchPage() {
                       {franchise.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {franchise.entries.length} entries
+                      {franchise.child_ids ? franchise.child_ids.length : 0}{" "}
+                      entries
                     </p>
                   </Link>
                 ))}
@@ -199,5 +214,15 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={<div className="text-center py-12">Loading search...</div>}
+    >
+      <SearchPageContent />
+    </Suspense>
   );
 }

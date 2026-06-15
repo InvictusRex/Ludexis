@@ -1,57 +1,70 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Publisher } from '@/lib/types'
-import { publishersApi } from '@/lib/api'
-import { Input } from '@/components/ui/input'
-import { Search, Building2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Publisher } from "@/lib/types";
+import { publishersApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
+import { Input } from "@/components/ui/input";
+import { Search, Building2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function PublishersPage() {
-  const [publishers, setPublishers] = useState<Publisher[]>([])
-  const [filteredPublishers, setFilteredPublishers] = useState<Publisher[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [publishers, setPublishers] = useState<Publisher[]>([]);
+  const [filteredPublishers, setFilteredPublishers] = useState<Publisher[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
 
   useEffect(() => {
-    const loadPublishers = async () => {
-      try {
-        const data = await publishersApi.getAll()
-        setPublishers(data)
-        setFilteredPublishers(data)
-      } catch (error) {
-        console.error('Failed to load publishers:', error)
-      } finally {
-        setLoading(false)
-      }
+    if (authLoading) {
+      return;
     }
 
-    loadPublishers()
-  }, [])
+    const loadPublishers = async () => {
+      if (!accessToken) {
+        return;
+      }
+
+      try {
+        const data = await publishersApi.getAll(accessToken);
+        setPublishers(data);
+        setFilteredPublishers(data);
+      } catch (error) {
+        console.error("Failed to load publishers:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPublishers();
+  }, []);
 
   // Filter publishers
   useEffect(() => {
-    let result = [...publishers]
+    let result = [...publishers];
 
     // Search filter
     if (searchQuery) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          p.description?.toLowerCase().includes(q) ||
-          p.country?.toLowerCase().includes(q)
-      )
+          p.description?.toLowerCase().includes(q),
+      );
     }
 
-    // Sort by entry count descending
-    result.sort((a, b) => (b.entryCount || 0) - (a.entryCount || 0))
+    // Sort by name
+    result.sort((a, b) => a.name.localeCompare(b.name));
 
-    setFilteredPublishers(result)
-  }, [publishers, searchQuery])
+    setFilteredPublishers(result);
+  }, [publishers, searchQuery]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="space-y-8">
         <h1 className="text-3xl font-bold text-foreground">Publishers</h1>
@@ -66,7 +79,7 @@ export default function PublishersPage() {
             ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -115,15 +128,10 @@ export default function PublishersPage() {
                         {publisher.description}
                       </p>
                     )}
-                    {publisher.country && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {publisher.country}
-                      </p>
-                    )}
                   </div>
                   <div className="text-right">
                     <Badge variant="outline" className="ml-2">
-                      {publisher.entryCount || 0}
+                      0
                     </Badge>
                   </div>
                 </div>
@@ -143,5 +151,5 @@ export default function PublishersPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

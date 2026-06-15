@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Collection } from "@/lib/types";
 import { collectionsApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { CollectionCard } from "@/components/common/collection-card";
 import { Button } from "@/components/ui/button";
 import { Plus, Search } from "lucide-react";
@@ -18,10 +20,22 @@ export default function CollectionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPublicOnly, setShowPublicOnly] = useState(false);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadCollections = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const data = await collectionsApi.getAll();
+        const data = await collectionsApi.getAll(accessToken);
         setCollections(data);
         setFilteredCollections(data);
       } catch (error) {
@@ -56,7 +70,7 @@ export default function CollectionsPage() {
     setFilteredCollections(result);
   }, [collections, searchQuery, showPublicOnly]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="space-y-8">
         <h1 className="text-3xl font-bold text-foreground">Collections</h1>

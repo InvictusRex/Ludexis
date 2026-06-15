@@ -16,6 +16,8 @@ import {
   developersApi,
   franchisesApi,
 } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { CollectionCard } from "@/components/common/collection-card";
 import { TagCard } from "@/components/common/tag-card";
@@ -36,8 +38,20 @@ export default function Home() {
   });
   const [loading, setLoading] = useState(true);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadData = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
         const [
           allCollections,
@@ -46,18 +60,16 @@ export default function Home() {
           allDevelopers,
           allFranchises,
         ] = await Promise.all([
-          collectionsApi.getAll(),
-          archiveApi.getAll(),
-          tagsApi.getAll(),
-          developersApi.getAll(),
-          franchisesApi.getAll(),
+          collectionsApi.getAll(accessToken),
+          archiveApi.getAll(0, 100, accessToken),
+          tagsApi.getAll(accessToken),
+          developersApi.getAll(accessToken),
+          franchisesApi.getAll(accessToken),
         ]);
 
-        // Filter for featured items
-        const featuredCollections = allCollections
-          .filter((c) => c.isFeatured)
-          .slice(0, 6);
-        const featuredTags = allTags.filter((t) => t.isFeatured).slice(0, 8);
+        // Use a simple preview slice (backend does not expose featured flags)
+        const featuredCollections = allCollections.slice(0, 6);
+        const featuredTags = allTags.slice(0, 8);
 
         setCollections(featuredCollections);
         setEntries(allEntries.slice(0, 8));
@@ -67,7 +79,7 @@ export default function Home() {
 
         // Calculate stats
         const matchedCount = allEntries.filter(
-          (e) => e.metadataStatus === "MATCHED",
+          (e) => e.metadata_status === "MATCHED",
         ).length;
         const coverage =
           allEntries.length > 0
@@ -91,7 +103,7 @@ export default function Home() {
     loadData();
   }, []);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="space-y-12">
         {/* Skeleton loading */}

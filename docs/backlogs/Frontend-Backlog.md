@@ -1,85 +1,81 @@
 # Frontend Backlog
 
-The frontend currently exists as a largely functional prototype built around mock services and mock datasets. The primary objective of the next development phase is to replace all simulated functionality with direct backend integration while maintaining the existing user experience and design language.
+## Frontend Architecture Refactor
 
----
+### ✅~~High Priority~~
 
-# Phase 1 — Frontend Architecture Refactor
+- ✅~~Split `lib/types.ts` into domain-specific type modules.~~
+- ✅~~Align frontend types with backend schemas.~~
+- ✅~~Remove outdated frontend-only models.~~
+- ✅~~Replace mock authentication models with backend token models.~~
+- ✅~~Create centralized API module structure.~~
+- ✅~~Move mock data into a dedicated `mock/` directory.~~
+- ✅~~Remove generated comment banners and unnecessary boilerplate.~~
+- ✅~~Remove remaining v0-generated metadata and placeholders.~~
+- ✅~~Establish frontend folder structure and coding conventions.~~
 
-## High Priority
-
-- Split `lib/types.ts` into domain-specific type modules.
-- Align frontend types with backend schemas.
-- Remove outdated frontend-only models.
-- Replace mock authentication models with backend token models.
-- Create centralized API module structure.
-- Move mock data into a dedicated `mock/` directory.
-- Remove generated comment banners and unnecessary boilerplate.
-- Remove remaining v0-generated metadata and placeholders.
-- Establish frontend folder structure and coding conventions.
-
-## Medium Priority
+### Medium Priority
 
 - Create shared API error types.
 - Create shared loading state types.
 - Create shared pagination utilities.
 - Introduce common frontend constants and configuration modules.
 
-## Low Priority
+### Low Priority
 
 - Introduce barrel exports for types and API modules.
 - Create reusable frontend utility helpers.
 
 ---
 
-# Phase 2 — API Integration Foundation
+## API Integration Foundation
 
-## High Priority
+### High Priority
 
-- Replace mock API layer with a real FastAPI client.
-- Create centralized API client configuration.
-- Add environment-based backend URL configuration.
-- Add authenticated request helpers.
+- ✅~~Replace mock API layer with a real FastAPI client.~~
+- ✅~~Create centralized API client configuration.~~
+- ✅~~Add environment-based backend URL configuration.~~
+- ✅~~Add authenticated request helpers.~~
 - Add global API error handling.
-- Add loading and error state handling for API requests.
-- Remove simulated API delays.
+- ✅~~Add loading and error state handling for API requests.~~
+- ✅~~Remove simulated API delays.~~
 
-## Medium Priority
+### Medium Priority
 
 - Add request retry handling for transient failures.
 - Add toast notifications for API success and error events.
 - Add standardized API response handling utilities.
 
-## Low Priority
+### Low Priority
 
 - Add API request logging for development environments.
 
 ---
 
-# Phase 3 — Authentication & Authorization
+## Authentication & Authorization
 
-## High Priority
+### High Priority
 
-- Create AuthProvider.
-- Integrate `/api/auth/login`.
-- Integrate `/api/auth/refresh`.
-- Integrate `/api/auth/me`.
-- Implement access token persistence.
-- Implement refresh token persistence.
+- ✅~~Create AuthProvider.~~
+- ✅~~Integrate `/api/auth/login`.~~
+- ✅~~Integrate `/api/auth/refresh`.~~
+- ✅~~Integrate `/api/auth/me`.~~
+- ✅~~Implement access token persistence.~~
+- ✅~~Implement refresh token persistence.~~
 - Implement automatic token refresh workflow.
 - Implement logout token revocation.
-- Replace mock login page.
+- ✅~~Replace mock login page.~~
 - Implement protected route middleware.
-- Implement session persistence across refreshes.
+- ✅~~Implement session persistence across refreshes.~~
 
-## Medium Priority
+### Medium Priority
 
 - Display current user information.
 - Display effective permissions.
 - Add user profile dropdown.
 - Add authentication status indicators.
 
-## Low Priority
+### Low Priority
 
 - Session expiration warning.
 - Automatic logout on refresh token expiration.
@@ -87,37 +83,37 @@ The frontend currently exists as a largely functional prototype built around moc
 
 ---
 
-# Phase 4 — Archive Library Integration
+## Archive Library Integration
 
-## High Priority
+### High Priority
 
-- Replace mock archive services.
-- Align archive models with backend `ArchiveEntryRead` schema.
-- Connect archive listing page to backend.
-- Connect archive detail page to backend.
+- ✅~~Replace mock archive services.~~
+- ✅~~Align archive models with backend `ArchiveEntryRead` schema.~~
+- ✅~~Connect archive listing page to backend.~~
+- ✅~~Connect archive detail page to backend.~~
 - Implement pagination support.
 - Implement archive search integration.
 - Implement metadata status filtering.
 - Implement archive update workflows.
-- Implement archive detail retrieval.
+- ✅~~Implement archive detail retrieval.~~
 
-## Medium Priority
+### Medium Priority
 
 - Bulk archive actions.
 - Archive deletion confirmation flows.
 - Archive duplicate visualization.
 - Archive verification status indicators.
 
-## Low Priority
+### Low Priority
 
 - Advanced search builder.
 - Saved search presets.
 
 ---
 
-# Phase 5 — Metadata Management
+## Metadata Management
 
-## High Priority
+### High Priority
 
 - Integrate metadata search endpoints.
 - Integrate metadata details endpoints.
@@ -126,23 +122,23 @@ The frontend currently exists as a largely functional prototype built around moc
 - Display metadata provider information.
 - Display metadata status information.
 
-## Medium Priority
+### Medium Priority
 
 - Metadata conflict review interface.
 - Metadata confidence visualization.
 - Provider source badges.
 - Metadata history display.
 
-## Low Priority
+### Low Priority
 
 - Side-by-side metadata comparison view.
 - Metadata audit trail visualization.
 
 ---
 
-# Phase 6 — Artwork Management
+## Artwork Management
 
-## High Priority
+### High Priority
 
 - Integrate artwork upload endpoints.
 - Integrate artwork replacement endpoints.
@@ -151,14 +147,14 @@ The frontend currently exists as a largely functional prototype built around moc
 - Integrate missing artwork page.
 - Display artwork availability status.
 
-## Medium Priority
+### Medium Priority
 
 - Screenshot gallery viewer.
 - Drag-and-drop artwork uploads.
 - Artwork preview dialogs.
 - Artwork management modal.
 
-## Low Priority
+### Low Priority
 
 - Artwork quality indicators.
 - Artwork comparison tools.
@@ -166,57 +162,57 @@ The frontend currently exists as a largely functional prototype built around moc
 
 ---
 
-# Phase 7 — Collections & Taxonomy
+## Collections & Taxonomy
 
-## High Priority
+### High Priority
 
-- Integrate collections pages.
-- Integrate developers pages.
-- Integrate publishers pages.
-- Integrate tags pages.
-- Integrate franchises pages.
-- Replace mock taxonomy services.
+- ✅~~Integrate collections pages.~~
+- ✅~~Integrate developers pages.~~
+- ✅~~Integrate publishers pages.~~
+- ✅~~Integrate tags pages.~~
+- ✅~~Integrate franchises pages.~~
+- ✅~~Replace mock taxonomy services.~~
 
-## Medium Priority
+### Medium Priority
 
 - Collection creation workflows.
 - Collection editing workflows.
 - Collection membership management.
 - Taxonomy relationship visualization.
 
-## Low Priority
+### Low Priority
 
 - Collection statistics dashboard.
 - Collection recommendation workflows.
 
 ---
 
-# Phase 8 — Administration
+## Administration
 
-## High Priority
+### High Priority
 
 - Users management integration.
 - Audit log integration.
 - Library management integration.
 - System configuration integration.
 
-## Medium Priority
+### Medium Priority
 
 - Roles management integration.
 - Permissions management integration.
 - Administrative dashboards.
 - User activity summaries.
 
-## Low Priority
+### Low Priority
 
 - Administrative reporting tools.
 - User analytics dashboards.
 
 ---
 
-# Phase 9 — Jobs & Background Processing
+## Jobs & Background Processing
 
-## High Priority
+### High Priority
 
 - Integrate job creation.
 - Integrate job status monitoring.
@@ -224,23 +220,23 @@ The frontend currently exists as a largely functional prototype built around moc
 - Real-time job progress visualization.
 - Job status notifications.
 
-## Medium Priority
+### Medium Priority
 
 - Job history filtering.
 - Job analytics dashboard.
 - Scan progress dashboard.
 - Job activity dashboard.
 
-## Low Priority
+### Low Priority
 
 - Historical job reporting.
 - Background task analytics.
 
 ---
 
-# Phase 10 — Monitoring & Observability
+## Monitoring & Observability
 
-## High Priority
+### High Priority
 
 - Health endpoint dashboard.
 - Backend status visualization.
@@ -248,42 +244,42 @@ The frontend currently exists as a largely functional prototype built around moc
 - Redis health visualization.
 - Service availability indicators.
 
-## Medium Priority
+### Medium Priority
 
 - Prometheus metrics dashboard.
 - Grafana integration links.
 - Scan statistics widgets.
 - Infrastructure overview page.
 
-## Low Priority
+### Low Priority
 
 - Live operational dashboard.
 - Long-term trend visualization.
 
 ---
 
-# Phase 11 — UX & Production Readiness
+## UX & Production Readiness
 
-## High Priority
+### High Priority
 
 - Replace all remaining mock data.
 - Remove development placeholders.
-- Remove mock authentication flows.
-- Remove simulated API delays.
+- ✅~~Remove mock authentication flows.~~
+- ✅~~Remove simulated API delays.~~
 - Add comprehensive loading skeletons.
 - Add empty states.
 - Add error boundaries.
 - Responsive layout validation.
 - Accessibility validation.
 
-## Medium Priority
+### Medium Priority
 
 - Keyboard navigation review.
 - Theme polish.
 - Mobile usability review.
 - Visual consistency review.
 
-## Low Priority
+### Low Priority
 
 - Micro-interactions.
 - Animation polish.
@@ -291,9 +287,9 @@ The frontend currently exists as a largely functional prototype built around moc
 
 ---
 
-# Phase 12 — Testing & Quality Assurance
+## Testing & Quality Assurance
 
-## High Priority
+### High Priority
 
 - Authentication integration tests.
 - API integration tests.
@@ -301,22 +297,22 @@ The frontend currently exists as a largely functional prototype built around moc
 - Error handling tests.
 - Frontend-backend integration validation.
 
-## Medium Priority
+### Medium Priority
 
 - Component tests.
 - Page-level tests.
 - API mocking infrastructure for tests.
 
-## Low Priority
+### Low Priority
 
 - End-to-end Playwright suite.
 - Visual regression testing.
 
 ---
 
-# Phase 13 — Release Preparation
+## Release Preparation
 
-## High Priority
+### High Priority
 
 - Remove all remaining mock infrastructure.
 - Production build validation.
@@ -326,13 +322,13 @@ The frontend currently exists as a largely functional prototype built around moc
 - Screenshot generation for README.
 - Release candidate testing.
 
-## Medium Priority
+### Medium Priority
 
 - Demo dataset creation.
 - Demo environment configuration.
 - Release notes preparation.
 
-## Low Priority
+### Low Priority
 
 - Public demo deployment.
 - Hosted showcase environment.
