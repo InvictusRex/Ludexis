@@ -58,6 +58,7 @@ games/
 node_modules/
 .next/
 out/
+*.tsbuildinfo
 
 # Build Artifacts
 dist/

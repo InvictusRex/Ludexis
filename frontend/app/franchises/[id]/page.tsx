@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Franchise, ArchiveEntry } from "@/lib/types";
 import { franchisesApi, archiveApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -16,13 +18,28 @@ export default function FranchiseDetailPage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadData = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const franchiseData = await franchisesApi.getById(id);
+        const franchiseData = await franchisesApi.getById(id, accessToken);
         setFranchise(franchiseData);
 
-        const franchiseEntries = await franchisesApi.getEntries(id);
+        const franchiseEntries = await franchisesApi.getEntries(
+          id,
+          accessToken,
+        );
         setEntries(franchiseEntries);
       } catch (error) {
         console.error("Failed to load franchise:", error);
@@ -32,7 +49,7 @@ export default function FranchiseDetailPage() {
     };
 
     loadData();
-  }, [id]);
+  }, [id, accessToken, authLoading]);
 
   if (loading) {
     return (
@@ -71,9 +88,9 @@ export default function FranchiseDetailPage() {
 
       {/* Franchise Banner */}
       <div className="relative h-80 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
-        {franchise.artwork?.bannerArt ? (
+        {franchise.banner_path ? (
           <img
-            src={franchise.artwork.bannerArt}
+            src={franchise.banner_path}
             alt={franchise.name}
             className="w-full h-full object-cover"
           />
@@ -105,16 +122,7 @@ export default function FranchiseDetailPage() {
             <p className="text-sm text-muted-foreground mb-2">Total Entries</p>
             <p className="text-3xl font-bold text-accent">{entries.length}</p>
           </div>
-          {franchise.chronologyInfo && franchise.chronologyInfo.length > 0 && (
-            <div>
-              <p className="text-sm text-muted-foreground mb-2">
-                Timeline Structure
-              </p>
-              <p className="text-foreground">
-                {franchise.chronologyInfo.length} episodes/seasons organized
-              </p>
-            </div>
-          )}
+          {/* chronologyInfo not provided by backend; omitted */}
         </div>
       </div>
 
@@ -138,16 +146,12 @@ export default function FranchiseDetailPage() {
                       {entry.title}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {entry.releaseDate
-                        ? new Date(entry.releaseDate).getFullYear()
+                      {entry.release_date
+                        ? new Date(entry.release_date).getFullYear()
                         : "Date Unknown"}
                     </p>
                   </div>
-                  {entry.status && (
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                      {entry.status}
-                    </span>
-                  )}
+                  {/* status not provided by backend */}
                 </div>
               </Link>
             ))}

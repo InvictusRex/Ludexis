@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Tag } from "@/lib/types";
 import { tagsApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { TagCard } from "@/components/common/tag-card";
 import { Input } from "@/components/ui/input";
 import { Search, Tag as TagIcon } from "lucide-react";
@@ -15,10 +17,22 @@ export default function TagsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadTags = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const data = await tagsApi.getAll();
+        const data = await tagsApi.getAll(accessToken);
         setTags(data);
         setFilteredTags(data);
       } catch (error) {
@@ -45,15 +59,15 @@ export default function TagsPage() {
       );
     }
 
-    // Featured filter
+    // Backend does not expose `isFeatured`; if requested, just show first N
     if (showFeaturedOnly) {
-      result = result.filter((t) => t.isFeatured);
+      result = result.slice(0, 8);
     }
 
     setFilteredTags(result);
   }, [tags, searchQuery, showFeaturedOnly]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="space-y-8">
         <h1 className="text-3xl font-bold text-foreground">Tags</h1>

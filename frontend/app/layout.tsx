@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { AppWrapper } from "@/components/layout/app-wrapper";
 import "./globals.css";
+import { AuthProvider } from "@/contexts/auth-context";
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -11,7 +12,6 @@ export const metadata: Metadata = {
   title: "Ludexis - Game Archive Platform",
   description:
     "A self-hosted game metadata archive and catalog platform. Organize, discover, and manage your game collection with intelligent tagging and metadata management.",
-  generator: "v0.app",
   icons: {
     icon: [
       {
@@ -42,7 +42,10 @@ export default function RootLayout({
         suppressHydrationWarning
         className="font-sans antialiased bg-background text-foreground"
       >
-        <AppWrapper>{children}</AppWrapper>
+        <AuthProvider>
+          <AppWrapper>{children}</AppWrapper>
+        </AuthProvider>
+
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Developer } from "@/lib/types";
 import { developersApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { DeveloperCard } from "@/components/common/developer-card";
 import { Input } from "@/components/ui/input";
 import { Search, Users } from "lucide-react";
@@ -14,10 +16,22 @@ export default function DevelopersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadDevelopers = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const data = await developersApi.getAll();
+        const data = await developersApi.getAll(accessToken);
         setDevelopers(data);
         setFilteredDevelopers(data);
       } catch (error) {
@@ -40,18 +54,17 @@ export default function DevelopersPage() {
       result = result.filter(
         (d) =>
           d.name.toLowerCase().includes(q) ||
-          d.description?.toLowerCase().includes(q) ||
-          d.country?.toLowerCase().includes(q),
+          d.description?.toLowerCase().includes(q),
       );
     }
 
-    // Sort by entry count descending
-    result.sort((a, b) => (b.entryCount || 0) - (a.entryCount || 0));
+    // Sort by name
+    result.sort((a, b) => a.name.localeCompare(b.name));
 
     setFilteredDevelopers(result);
   }, [developers, searchQuery]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="space-y-8">
         <h1 className="text-3xl font-bold text-foreground">Developers</h1>

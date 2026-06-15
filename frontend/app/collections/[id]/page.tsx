@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Collection, ArchiveEntry } from "@/lib/types";
 import { collectionsApi, archiveApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { ArrowLeft, Edit2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
@@ -16,15 +18,27 @@ export default function CollectionDetailPage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadData = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const collectionData = await collectionsApi.getById(id);
+        const collectionData = await collectionsApi.getById(id, accessToken);
         setCollection(collectionData);
 
-        const allEntries = await archiveApi.getAll();
+        const allEntries = await archiveApi.getAll(0, 100, accessToken);
         const collectionEntries = allEntries.filter((e) =>
-          collectionData.entries?.includes(e.id),
+          collectionData.entry_ids?.includes(e.id),
         );
         setEntries(collectionEntries);
       } catch (error) {
@@ -74,9 +88,9 @@ export default function CollectionDetailPage() {
 
       {/* Collection Banner */}
       <div className="relative h-96 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
-        {collection.artwork?.bannerArt ? (
+        {collection.banner_path ? (
           <img
-            src={collection.artwork.bannerArt}
+            src={collection.banner_path}
             alt={collection.name}
             className="w-full h-full object-cover"
           />
@@ -147,24 +161,7 @@ export default function CollectionDetailPage() {
         )}
       </div>
 
-      {/* Tags */}
-      {collection.tags && collection.tags.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-foreground mb-3">
-            Collection Tags
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {collection.tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 rounded-full bg-accent/20 text-accent text-sm"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Tags not provided on backend CollectionRead; omitted */}
     </div>
   );
 }

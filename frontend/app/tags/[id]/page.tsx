@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Tag, ArchiveEntry } from "@/lib/types";
 import { tagsApi, archiveApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -17,16 +19,28 @@ export default function TagDetailPage() {
   const [relatedTags, setRelatedTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadData = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const tagData = await tagsApi.getById(id);
+        const tagData = await tagsApi.getById(id, accessToken);
         setTag(tagData);
 
-        const tagEntries = await tagsApi.getEntries(id);
+        const tagEntries = await tagsApi.getEntries(id, accessToken);
         setEntries(tagEntries);
 
-        const relatedTagsData = await tagsApi.getRelatedTags(id);
+        const relatedTagsData = await tagsApi.getRelatedTags(id, accessToken);
         setRelatedTags(relatedTagsData);
       } catch (error) {
         console.error("Failed to load tag:", error);
@@ -76,15 +90,7 @@ export default function TagDetailPage() {
       {/* Tag Header */}
       <div className="bg-card border border-border rounded-lg p-8">
         <div className="flex items-start gap-6">
-          {tag.artwork?.coverArt && (
-            <div className="w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
-              <img
-                src={tag.artwork.coverArt}
-                alt={tag.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
+          {/* cover art not provided by backend */}
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold text-foreground">{tag.name}</h1>
@@ -106,11 +112,7 @@ export default function TagDetailPage() {
                   {entries.length}
                 </p>
               </div>
-              {tag.isFeatured && (
-                <div className="px-3 py-1 rounded-full bg-accent/20 text-accent text-xs font-medium">
-                  Featured Tag
-                </div>
-              )}
+              {/* isFeatured not provided by backend */}
             </div>
           </div>
         </div>
@@ -130,11 +132,7 @@ export default function TagDetailPage() {
                 className="px-4 py-2 rounded-lg bg-card border border-border text-foreground hover:border-accent transition-colors"
               >
                 {relatedTag.name}
-                {relatedTag.entryCount && (
-                  <span className="text-muted-foreground ml-2">
-                    ({relatedTag.entryCount})
-                  </span>
-                )}
+                {/* entryCount not provided by backend */}
               </Link>
             ))}
           </div>

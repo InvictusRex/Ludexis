@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Developer, ArchiveEntry } from "@/lib/types";
 import { developersApi, archiveApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { ArrowLeft, Globe, MapPin, Calendar } from "lucide-react";
 import Link from "next/link";
@@ -16,13 +18,28 @@ export default function DeveloperDetailPage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { accessToken, loading: authLoading } = useAuth();
+
+  useRequireAuth(accessToken, authLoading);
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const loadData = async () => {
+      if (!accessToken) {
+        return;
+      }
+
       try {
-        const developerData = await developersApi.getById(id);
+        const developerData = await developersApi.getById(id, accessToken);
         setDeveloper(developerData);
 
-        const developerEntries = await developersApi.getEntries(id);
+        const developerEntries = await developersApi.getEntries(
+          id,
+          accessToken,
+        );
         setEntries(developerEntries);
       } catch (error) {
         console.error("Failed to load developer:", error);
@@ -69,33 +86,16 @@ export default function DeveloperDetailPage() {
         Back to Developers
       </Link>
 
-      {/* Developer Banner */}
-      <div className="relative h-80 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
-        {developer.artwork?.bannerArt ? (
-          <img
-            src={developer.artwork.bannerArt}
-            alt={developer.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-muted-foreground text-lg">No Banner Art</span>
-          </div>
+      {/* Developer Header */}
+      <div className="p-2">
+        <h1 className="text-4xl font-bold text-foreground mb-2">
+          {developer.name}
+        </h1>
+        {developer.description && (
+          <p className="text-muted-foreground max-w-2xl mb-4">
+            {developer.description}
+          </p>
         )}
-
-        {/* Developer Info Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent flex items-end">
-          <div className="p-8 w-full">
-            <h1 className="text-4xl font-bold text-foreground mb-2">
-              {developer.name}
-            </h1>
-            {developer.description && (
-              <p className="text-muted-foreground max-w-2xl mb-4">
-                {developer.description}
-              </p>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Developer Info Cards */}
@@ -104,28 +104,7 @@ export default function DeveloperDetailPage() {
           <p className="text-sm text-muted-foreground mb-2">Archive Entries</p>
           <p className="text-2xl font-bold text-accent">{entries.length}</p>
         </div>
-        {developer.country && (
-          <div className="bg-card p-4 rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground flex items-center gap-2 mb-2">
-              <MapPin className="w-4 h-4" />
-              Country
-            </p>
-            <p className="text-lg font-medium text-foreground">
-              {developer.country}
-            </p>
-          </div>
-        )}
-        {developer.foundedDate && (
-          <div className="bg-card p-4 rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4" />
-              Founded
-            </p>
-            <p className="text-lg font-medium text-foreground">
-              {new Date(developer.foundedDate).getFullYear()}
-            </p>
-          </div>
-        )}
+        {/* country and foundedDate not provided by backend; omitted */}
         {developer.website && (
           <div className="bg-card p-4 rounded-lg border border-border">
             <p className="text-sm text-muted-foreground flex items-center gap-2 mb-2">
