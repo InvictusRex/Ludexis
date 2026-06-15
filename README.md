@@ -601,30 +601,30 @@ This setup mirrors the workflow used during active Ludexis development and provi
 
 ## Documentation
 
-Comprehensive documentation is available in the `docs/` directory.
+Detailed documentation is organized within the `docs/` directory.
 
-| Document              | Description                       |
-| --------------------- | --------------------------------- |
-| Architecture Overview | High-level system architecture    |
-| Backend Architecture  | Internal backend design           |
-| Data Model            | Database schema and relationships |
-| Processing Pipeline   | Scanning and enrichment workflow  |
-| API Guide             | REST API reference                |
-| Deployment Guide      | Production deployment guidance    |
-| Backlog               | Planned features and milestones   |
+| Directory            | Description                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| `docs/architecture/` | System architecture, backend architecture, data model, ERD, and processing pipeline documentation |
+| `docs/api/`          | REST API reference and integration guidance                                                       |
+| `docs/deployment/`   | Deployment, infrastructure, and operational documentation                                         |
+| `docs/integrations/` | cURL, Python, and JavaScript integration examples                                                 |
+| `docs/backlog/`      | Project backlogs, development milestones, and future planning                                     |
 
-The README intentionally focuses on installation and usage. Detailed implementation information is maintained within the project documentation.
+The README focuses on installation, configuration, and day-to-day usage. Detailed technical documentation, architectural decisions, deployment guidance, and implementation references are maintained separately within the documentation directory.
 
 ---
 
-## Future Development
+## Development Roadmap
 
-Ludexis is under active development.
-Detailed feature planning, development milestones, architectural improvements, and long-term objectives are maintained in:
+Ludexis is under active development. Current development status, completed milestones, planned features, and future objectives are maintained in:
 
 ```text
-docs/Backlog.md
+docs/backlog/Frontend_Backlog.md
+docs/backlog/Backend_Backlog.md
 ```
+
+For architectural and implementation details, refer to the documentation contained within the `docs/architecture/`, `docs/api/`, and `docs/deployment/` directories.
 
 ## License
 
