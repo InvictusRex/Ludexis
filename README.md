@@ -1,25 +1,34 @@
-# Ludexis
-
 <p align="center">
-
-![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white)
-![Celery](https://img.shields.io/badge/Celery-5.4+-37814A?logo=celery&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
-![Grafana](https://img.shields.io/badge/Grafana-Enabled-F46800?logo=grafana&logoColor=white)
-![Prometheus](https://img.shields.io/badge/Prometheus-Enabled-E6522C?logo=prometheus&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
-
+  <img src="docs/Ludexis.png" width="450">
 </p>
+
+<!--
+<p align="center" style="font-size: 40px;""><strong>Ludexis</strong></p>
+-->
 
 <p align="center">
   <strong>Self-Hosted Game Archive & Metadata Management Platform</strong>
 </p>
 
 <p align="center">
-  Organize, enrich, preserve, and manage large collections of game archives through automated scanning, metadata acquisition, artwork management, and powerful cataloging tools.
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="#developer-setup">Developer Setup</a> •
+  <a href="#documentation">Documentation</a>
+</p>
+
+<p align="center">
+  Ludexis is a self-hosted platform for cataloging and preserving game archives. Unlike traditional game launchers, Ludexis focuses on metadata management, artwork acquisition, organization, and long-term archival workflows for collections consisting of ZIP archives, installer packages, visual novels, ROM collections, and preservation projects.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.12+-6D3DF5?logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115+-6D3DF5?logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/PostgreSQL-16+-6D3DF5?logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Redis-7+-6D3DF5?logo=redis&logoColor=white" />
+  <img src="https://img.shields.io/badge/Celery-5.4+-6D3DF5?logo=celery&logoColor=white" />
+  <img src="https://img.shields.io/badge/Grafana-Enabled-6D3DF5?logo=grafana&logoColor=white" />
+  <img src="https://img.shields.io/badge/Prometheus-Enabled-6D3DF5?logo=prometheus&logoColor=white" />
 </p>
 
 ---
