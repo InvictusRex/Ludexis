@@ -1,0 +1,9 @@
+.git
+frontend
+docs
+session-ses_036b.md
+**/__pycache__
+**/*.pyc
+backend/.venv
+backend/artwork
+backend/.pytest_cache
