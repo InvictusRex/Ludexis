@@ -25,9 +25,10 @@ export function DeveloperCard({ developer }: DeveloperCardProps) {
             {developer.description || "No description"}
           </p>
 
-          {/* Stats (entry count not provided by backend) */}
           <div className="flex items-center justify-between text-xs text-foreground">
-            <span className="font-semibold text-accent">0</span>
+            <span className="font-semibold text-accent">
+              {developer.entry_count}
+            </span>
             <span className="text-muted-foreground">archive entries</span>
           </div>
         </div>

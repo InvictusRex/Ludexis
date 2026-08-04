@@ -504,9 +504,7 @@ function SearchPageContent() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {results.developers.map((developer) => (
-                  <Link key={developer.id} href={`/developers/${developer.id}`}>
-                    <DeveloperCard developer={developer} />
-                  </Link>
+                  <DeveloperCard key={developer.id} developer={developer} />
                 ))}
               </div>
             </section>
@@ -528,6 +526,9 @@ function SearchPageContent() {
                     <p className="font-semibold text-foreground">
                       {publisher.name}
                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      {publisher.entry_count} entries
+                    </p>
                   </Link>
                 ))}
               </div>
@@ -542,9 +543,7 @@ function SearchPageContent() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {results.tags.map((tag) => (
-                  <Link key={tag.id} href={`/tags/${tag.id}`}>
-                    <TagCard tag={tag} />
-                  </Link>
+                  <TagCard key={tag.id} tag={tag} />
                 ))}
               </div>
             </section>

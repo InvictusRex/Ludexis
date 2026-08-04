@@ -11,42 +11,32 @@ export const searchApi = {
     query: string,
     filters?: SearchFilters,
   ): Promise<SearchResults> {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
 
-    const entries = await archiveApi.search(query, filters);
-
-    const [collections, developers, publishers, tags, franchises] =
+    const [entries, collections, developers, publishers, tags, franchises] =
       await Promise.all([
-        collectionsApi.getAll(),
-        developersApi.getAll(),
-        publishersApi.getAll(),
-        tagsApi.getAll(),
-        franchisesApi.getAll(),
+        archiveApi.search(query, filters),
+        collectionsApi.getAll(0, 100, q),
+        developersApi.getAll(0, 100, q),
+        publishersApi.getAll(0, 100, q),
+        tagsApi.getAll(0, 100, q),
+        franchisesApi.getAll(0, 100, q),
       ]);
-
-    const filterByName = (arr: any[]) =>
-      arr.filter((a) => (a.name || "").toLowerCase().includes(q));
-
-    const filteredCollections = filterByName(collections);
-    const filteredDevelopers = filterByName(developers);
-    const filteredPublishers = filterByName(publishers);
-    const filteredTags = filterByName(tags);
-    const filteredFranchises = filterByName(franchises);
 
     const results: SearchResults = {
       total:
         entries.length +
-        filteredCollections.length +
-        filteredDevelopers.length +
-        filteredPublishers.length +
-        filteredTags.length +
-        filteredFranchises.length,
+        collections.length +
+        developers.items.length +
+        publishers.items.length +
+        tags.items.length +
+        franchises.items.length,
       entries,
-      collections: filteredCollections,
-      developers: filteredDevelopers,
-      publishers: filteredPublishers,
-      tags: filteredTags,
-      franchises: filteredFranchises,
+      collections,
+      developers: developers.items,
+      publishers: publishers.items,
+      tags: tags.items,
+      franchises: franchises.items,
     };
 
     return results;

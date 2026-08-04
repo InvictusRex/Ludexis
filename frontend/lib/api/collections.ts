@@ -7,9 +7,15 @@ import type {
 } from "@/lib/types";
 
 export const collectionsApi = {
-  async getAll(offset = 0, limit = 100): Promise<Collection[]> {
-    const qs = `?offset=${offset}&limit=${limit}`;
-    return apiClient.get<Collection[]>(`/collections/${qs}`);
+  async getAll(offset = 0, limit = 100, q?: string): Promise<Collection[]> {
+    const params = new URLSearchParams({
+      offset: String(offset),
+      limit: String(limit),
+    });
+    if (q?.trim()) {
+      params.set("q", q.trim());
+    }
+    return apiClient.get<Collection[]>(`/collections/?${params.toString()}`);
   },
 
   async getById(id: string): Promise<Collection> {

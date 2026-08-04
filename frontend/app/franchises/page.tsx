@@ -37,11 +37,11 @@ export default function FranchisesPage() {
       }
 
       try {
-        const data = await franchisesApi.getAll();
-        setFranchises(data);
-        setFilteredFranchises(data);
-        if (data.length > 0) {
-          setSelectedFranchise(data[0]);
+        const { items } = await franchisesApi.getAll();
+        setFranchises(items);
+        setFilteredFranchises(items);
+        if (items.length > 0) {
+          setSelectedFranchise(items[0]);
         }
       } catch (error) {
         console.error("Failed to load franchises:", error);
@@ -143,7 +143,7 @@ export default function FranchisesPage() {
               >
                 <h3 className="font-semibold line-clamp-2">{franchise.name}</h3>
                 <Badge variant="secondary" className="mt-1 text-xs">
-                  {franchise.child_ids ? franchise.child_ids.length : 0} entries
+                  {franchise.entry_count} entries
                 </Badge>
               </button>
             ))}

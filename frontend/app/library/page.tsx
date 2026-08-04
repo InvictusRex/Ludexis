@@ -5,6 +5,7 @@ import {
   ArchiveEntry,
   Collection,
   MetadataStatus,
+  SearchFilters,
   VerificationStatus,
 } from "@/lib/types";
 import { adminApi, archiveApi, collectionsApi } from "@/lib/api";
@@ -72,23 +73,30 @@ export default function LibraryPage() {
   >("ALL");
   const [sortBy, setSortBy] = useState<SortBy>("title");
 
-  // Load first page. Resets to offset 0 and clears appended pages whenever
-  // the query/filters change.
+  const filters: SearchFilters = useMemo(
+    () => ({
+      metadataStatus: metadataFilter !== "ALL" ? [metadataFilter] : undefined,
+      verificationStatus:
+        verificationFilter !== "ALL" ? [verificationFilter] : undefined,
+    }),
+    [metadataFilter, verificationFilter],
+  );
+
   useEffect(() => {
     if (authLoading || !user) {
       return;
     }
 
     const reqId = ++requestRef.current;
-    setEntries([]);
-    setPage(0);
-    setMaxLoadedPage(0);
-    setHasMore(true);
     setPaginationLoading(true);
 
     const loadPage = async () => {
+      setEntries([]);
+      setPage(0);
+      setMaxLoadedPage(0);
+      setHasMore(true);
       try {
-        const data = await archiveApi.getAll(0, PAGE_SIZE);
+        const data = await archiveApi.search(searchQuery, filters, 0, PAGE_SIZE);
         if (reqId !== requestRef.current) {
           return;
         }
@@ -108,15 +116,9 @@ export default function LibraryPage() {
       }
     };
 
-    loadPage();
-  }, [
-    authLoading,
-    user,
-    searchQuery,
-    metadataFilter,
-    verificationFilter,
-    refreshKey,
-  ]);
+    const debounceTimer = setTimeout(loadPage, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [authLoading, user, searchQuery, filters, refreshKey]);
 
   // Best-effort total count. /admin/stats may require admin access, so fall
   // back to relying on "Load more" if it fails.
@@ -265,7 +267,7 @@ export default function LibraryPage() {
     setPaginationLoading(true);
 
     try {
-      const data = await archiveApi.getAll(offset, PAGE_SIZE);
+      const data = await archiveApi.search(searchQuery, filters, offset, PAGE_SIZE);
       if (reqId !== requestRef.current) {
         return;
       }
@@ -309,33 +311,9 @@ export default function LibraryPage() {
     [entries, page],
   );
 
-  // Apply filters and sorting over the loaded entries
   useEffect(() => {
-    let result = [...visibleEntries];
+    const result = [...visibleEntries];
 
-    // Search filter
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (e) =>
-          e.title.toLowerCase().includes(q) ||
-          (e.description ?? "").toLowerCase().includes(q),
-      );
-    }
-
-    // Metadata status filter
-    if (metadataFilter !== "ALL") {
-      result = result.filter((e) => e.metadata_status === metadataFilter);
-    }
-
-    // Verification status filter
-    if (verificationFilter !== "ALL") {
-      result = result.filter(
-        (e) => e.verification_status === verificationFilter,
-      );
-    }
-
-    // Sorting
     switch (sortBy) {
       case "title":
         result.sort((a, b) => a.title.localeCompare(b.title));
@@ -356,7 +334,7 @@ export default function LibraryPage() {
     }
 
     setFilteredEntries(result);
-  }, [visibleEntries, searchQuery, metadataFilter, verificationFilter, sortBy]);
+  }, [visibleEntries, sortBy]);
 
   const rangeStart = visibleEntries.length === 0 ? 0 : page * PAGE_SIZE + 1;
   const rangeEnd =

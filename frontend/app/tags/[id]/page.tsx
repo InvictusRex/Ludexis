@@ -132,7 +132,9 @@ export default function TagDetailPage() {
                 className="px-4 py-2 rounded-lg bg-card border border-border text-foreground hover:border-accent transition-colors"
               >
                 {relatedTag.name}
-                {/* entryCount not provided by backend */}
+                <span className="text-muted-foreground ml-2 text-xs">
+                  {relatedTag.entry_count}
+                </span>
               </Link>
             ))}
           </div>
