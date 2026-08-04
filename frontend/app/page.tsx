@@ -69,13 +69,13 @@ export default function Home() {
 
         // Use a simple preview slice (backend does not expose featured flags)
         const featuredCollections = allCollections.slice(0, 6);
-        const featuredTags = allTags.slice(0, 8);
+        const featuredTags = allTags.items.slice(0, 8);
 
         setCollections(featuredCollections);
         setEntries(allEntries.slice(0, 8));
         setTags(featuredTags);
-        setDevelopers(allDevelopers.slice(0, 6));
-        setFranchises(allFranchises);
+        setDevelopers(allDevelopers.items.slice(0, 6));
+        setFranchises(allFranchises.items);
 
         // Calculate stats
         const matchedCount = allEntries.filter(
@@ -89,8 +89,8 @@ export default function Home() {
         setStats({
           totalEntries: allEntries.length,
           totalCollections: allCollections.length,
-          totalTags: allTags.length,
-          totalDevelopers: allDevelopers.length,
+          totalTags: allTags.total,
+          totalDevelopers: allDevelopers.total,
           metadataCoverage: coverage,
         });
       } catch (error) {

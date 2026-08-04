@@ -8,7 +8,8 @@ import {
   adminApi,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
-import { useRequireAuth } from "@/hooks/use-protected-route";
+import { useRequireAdmin } from "@/hooks/use-protected-route";
+import { config } from "@/lib/config";
 import type {
   HealthStatus,
   JobMonitorStats,
@@ -23,7 +24,6 @@ import {
   ExternalLink,
   LineChart,
   Loader2,
-  Monitor,
   RefreshCw,
   Server,
   Users,
@@ -87,7 +87,7 @@ export default function AdminMonitoring() {
 
   const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(user, authLoading);
+  useRequireAdmin(user, authLoading);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -186,7 +186,7 @@ export default function AdminMonitoring() {
             <h2 className="text-2xl font-bold text-foreground mb-4">
               Infrastructure
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-border">
                 <CardContent className="pt-6 flex items-center justify-between">
                   <div>
@@ -233,22 +233,6 @@ export default function AdminMonitoring() {
                 <CardContent className="pt-6 flex items-center justify-between">
                   <div>
                     <p className="text-muted-foreground text-sm mb-2 flex items-center gap-2">
-                      <Monitor className="w-4 h-4" />
-                      Frontend
-                    </p>
-                    <p className="text-lg font-semibold text-foreground">
-                      running
-                    </p>
-                  </div>
-                  <Badge className="bg-green-500/15 text-green-600 border-green-500/30">
-                    healthy
-                  </Badge>
-                </CardContent>
-              </Card>
-              <Card className="border-border">
-                <CardContent className="pt-6 flex items-center justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm mb-2 flex items-center gap-2">
                       <LineChart className="w-4 h-4" />
                       Grafana
                     </p>
@@ -263,7 +247,7 @@ export default function AdminMonitoring() {
                     className="border-border"
                   >
                     <a
-                      href="http://localhost:3000"
+                      href={config.grafanaUrl}
                       target="_blank"
                       rel="noopener"
                     >

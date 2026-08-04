@@ -31,9 +31,9 @@ export default function PublishersPage() {
       }
 
       try {
-        const data = await publishersApi.getAll();
-        setPublishers(data);
-        setFilteredPublishers(data);
+        const { items } = await publishersApi.getAll();
+        setPublishers(items);
+        setFilteredPublishers(items);
       } catch (error) {
         console.error("Failed to load publishers:", error);
       } finally {
@@ -131,7 +131,7 @@ export default function PublishersPage() {
                   </div>
                   <div className="text-right">
                     <Badge variant="outline" className="ml-2">
-                      0
+                      {publisher.entry_count}
                     </Badge>
                   </div>
                 </div>

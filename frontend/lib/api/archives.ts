@@ -14,6 +14,8 @@ export const archiveApi = {
   async search(
     query: string,
     filters?: SearchFilters,
+    offset = 0,
+    limit = 200,
   ): Promise<ArchiveEntry[]> {
     const params = new URLSearchParams();
 
@@ -37,8 +39,8 @@ export const archiveApi = {
     setFilter("verification_status", filters?.verificationStatus);
     setFilter("storage_device", filters?.storageDevices);
 
-    params.set("offset", "0");
-    params.set("limit", "200");
+    params.set("offset", String(offset));
+    params.set("limit", String(limit));
 
     return apiClient.get<ArchiveEntry[]>(`/search/?${params.toString()}`);
   },
