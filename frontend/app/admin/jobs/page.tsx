@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { jobsApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
-import { useRequireAuth } from "@/hooks/use-protected-route";
+import { useRequireAdmin } from "@/hooks/use-protected-route";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { buildPageQuery, DEFAULT_PAGE_SIZE, pageToOffset } from "@/lib/pagination";
 import { PaginationControls } from "@/components/common/pagination-controls";
@@ -123,7 +123,7 @@ export default function AdminJobs() {
 
   const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(user, authLoading);
+  useRequireAdmin(user, authLoading);
 
   const loadJobs = useCallback(
     async (showSpinner: boolean) => {

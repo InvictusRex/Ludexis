@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usersApi } from '@/lib/api'
-import type { User } from '@/lib/types'
+import { usersApi, rolesApi } from '@/lib/api'
+import type { RoleRead, User } from '@/lib/types'
 import { useAuth } from '@/contexts/auth-context'
-import { useRequireAuth } from '@/hooks/use-protected-route'
+import { useRequireAdmin } from '@/hooks/use-protected-route'
 import { PaginationControls } from '@/components/common/pagination-controls'
 import { buildPageQuery, DEFAULT_PAGE_SIZE, pageToOffset } from '@/lib/pagination'
+import { toastError, toastSuccess } from '@/lib/toast'
 import {
   ArrowLeft,
   Plus,
@@ -18,6 +19,7 @@ import {
   Loader2,
   Users,
   Shield,
+  ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,6 +29,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -42,21 +52,28 @@ import {
 
 export default function AdminUsers() {
   const { user, loading: authLoading } = useAuth()
-  useRequireAuth(user, authLoading)
+  useRequireAdmin(user, authLoading)
 
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [roles, setRoles] = useState<RoleRead[]>([])
+
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSuperuser, setIsSuperuser] = useState(false)
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([])
   const [creating, setCreating] = useState(false)
 
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [resettingId, setResettingId] = useState<string | null>(null)
+
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editingRoleIds, setEditingRoleIds] = useState<string[]>([])
+  const [savingRoles, setSavingRoles] = useState(false)
 
   const [page, setPage] = useState(1)
   const PAGE_SIZE = DEFAULT_PAGE_SIZE
@@ -75,11 +92,56 @@ export default function AdminUsers() {
     }
   }, [])
 
+  const loadRoles = useCallback(async () => {
+    try {
+      setRoles(await rolesApi.getAll())
+    } catch (err) {
+      console.error('Failed to load roles:', err)
+    }
+  }, [])
+
   useEffect(() => {
     if (authLoading) return
     if (!user) return
     loadUsers()
-  }, [authLoading, user, loadUsers])
+    loadRoles()
+  }, [authLoading, user, loadUsers, loadRoles])
+
+  const toggleCreateRole = (roleId: string) => {
+    setSelectedRoleIds((prev) =>
+      prev.includes(roleId)
+        ? prev.filter((id) => id !== roleId)
+        : [...prev, roleId],
+    )
+  }
+
+  const toggleEditingRole = (roleId: string) => {
+    setEditingRoleIds((prev) =>
+      prev.includes(roleId)
+        ? prev.filter((id) => id !== roleId)
+        : [...prev, roleId],
+    )
+  }
+
+  const openManageRoles = (u: User) => {
+    setEditingUser(u)
+    setEditingRoleIds((u.roles ?? []).map((r) => r.id))
+  }
+
+  const handleSaveRoles = async () => {
+    if (!editingUser) return
+    setSavingRoles(true)
+    try {
+      await usersApi.update(editingUser.id, { role_ids: editingRoleIds })
+      toastSuccess('Roles updated')
+      setEditingUser(null)
+      await loadUsers()
+    } catch (err) {
+      toastError(err, 'Failed to update roles')
+    } finally {
+      setSavingRoles(false)
+    }
+  }
 
   const handleCreate = async () => {
     if (!username.trim() || !email.trim() || !password) return
@@ -90,11 +152,13 @@ export default function AdminUsers() {
         email: email.trim(),
         password,
         is_superuser: isSuperuser,
+        role_ids: selectedRoleIds,
       })
       setUsername('')
       setEmail('')
       setPassword('')
       setIsSuperuser(false)
+      setSelectedRoleIds([])
       await loadUsers()
     } catch (err) {
       console.error('Failed to create user:', err)
@@ -195,6 +259,7 @@ export default function AdminUsers() {
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Roles</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -223,8 +288,31 @@ export default function AdminUsers() {
                         <Badge variant="secondary">User</Badge>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {u.roles && u.roles.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {u.roles.map((role) => (
+                            <Badge key={role.id} variant="outline">
+                              {role.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={rowBusy(u.id)}
+                          onClick={() => openManageRoles(u)}
+                          title="Manage roles"
+                          className="border-border"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -328,6 +416,23 @@ export default function AdminUsers() {
                 </div>
               </div>
             </div>
+            {roles.length > 0 && (
+              <div className="space-y-2 mt-4">
+                <Label>Roles</Label>
+                <div className="flex flex-wrap gap-4">
+                  {roles.map((role) => (
+                    <div key={role.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`create-role-${role.id}`}
+                        checked={selectedRoleIds.includes(role.id)}
+                        onCheckedChange={() => toggleCreateRole(role.id)}
+                      />
+                      <Label htmlFor={`create-role-${role.id}`}>{role.name}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <Button
               onClick={handleCreate}
               disabled={creating || !username.trim() || !email.trim() || !password}
@@ -343,6 +448,43 @@ export default function AdminUsers() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={editingUser !== null} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage roles</DialogTitle>
+            <DialogDescription>
+              {editingUser ? `Roles for ${editingUser.username}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {roles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No roles available.</p>
+            ) : (
+              roles.map((role) => (
+                <div key={role.id} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`edit-role-${role.id}`}
+                    checked={editingRoleIds.includes(role.id)}
+                    onCheckedChange={() => toggleEditingRole(role.id)}
+                  />
+                  <Label htmlFor={`edit-role-${role.id}`}>{role.name}</Label>
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleSaveRoles}
+              disabled={savingRoles}
+              className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
+            >
+              {savingRoles && <Loader2 className="w-4 h-4 animate-spin" />}
+              Save roles
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

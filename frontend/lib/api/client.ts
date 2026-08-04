@@ -5,6 +5,7 @@ import {
   clearTokens,
 } from "@/lib/auth/token-store";
 import { config } from "@/lib/config";
+import { ApiError } from "@/lib/errors";
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
@@ -65,11 +66,11 @@ function refreshAccessToken(): Promise<boolean> {
   return refreshPromise;
 }
 
-async function request<T>(
+async function fetchWithAuth(
   endpoint: string,
   options: RequestOptions = {},
   retried = false,
-): Promise<T> {
+): Promise<Response> {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
@@ -107,7 +108,7 @@ async function request<T>(
     const refreshed = await refreshAccessToken();
 
     if (refreshed) {
-      return request<T>(endpoint, options, true);
+      return fetchWithAuth(endpoint, options, true);
     }
   }
 
@@ -131,8 +132,17 @@ async function request<T>(
       // Ignore JSON parsing errors
     }
 
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, response.status);
   }
+
+  return response;
+}
+
+async function request<T>(
+  endpoint: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const response = await fetchWithAuth(endpoint, options);
 
   if (response.status === 204) {
     return undefined as T;
@@ -141,9 +151,27 @@ async function request<T>(
   return response.json() as Promise<T>;
 }
 
+async function requestList<T>(
+  endpoint: string,
+  options: RequestOptions = {},
+): Promise<{ items: T[]; total: number }> {
+  const response = await fetchWithAuth(endpoint, options);
+  const items = (await response.json()) as T[];
+  const totalHeader = response.headers.get("X-Total-Count");
+  const total = totalHeader !== null ? Number(totalHeader) : items.length;
+
+  return { items, total };
+}
+
 export const apiClient = {
   get: <T>(endpoint: string, auth?: boolean) =>
     request<T>(endpoint, {
+      method: "GET",
+      auth,
+    }),
+
+  getList: <T>(endpoint: string, auth?: boolean) =>
+    requestList<T>(endpoint, {
       method: "GET",
       auth,
     }),

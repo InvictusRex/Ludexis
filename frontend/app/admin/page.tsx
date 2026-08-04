@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { adminApi, jobsApi, scansApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
-import { useRequireAuth } from "@/hooks/use-protected-route";
+import { useRequireAdmin } from "@/hooks/use-protected-route";
 import { AdminStats, JobHistory, JobStatus } from "@/lib/types";
 import {
   BarChart3,
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
 
   const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(user, authLoading);
+  useRequireAdmin(user, authLoading);
 
   const loadJobs = useCallback(async () => {
     const recentJobs = await adminApi.getRecentJobs();

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { adminApi } from '@/lib/api'
 import type { AuditLogRead } from '@/lib/types'
 import { useAuth } from '@/contexts/auth-context'
-import { useRequireAuth } from '@/hooks/use-protected-route'
+import { useRequireAdmin } from '@/hooks/use-protected-route'
 import {
   ArrowLeft,
   Loader2,
@@ -57,7 +57,7 @@ function truncateDetails(details: string): string {
 
 export default function AdminAuditLogs() {
   const { user, loading: authLoading } = useAuth()
-  useRequireAuth(user, authLoading)
+  useRequireAdmin(user, authLoading)
 
   const [logs, setLogs] = useState<AuditLogRead[]>([])
   const [loading, setLoading] = useState(true)

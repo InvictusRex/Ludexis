@@ -5,7 +5,7 @@ import { RefreshCw, ShieldCheck } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { toastError } from "@/lib/toast";
-import type { PermissionReport, User } from "@/lib/types";
+import type { PermissionReport } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,10 +18,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface AuthedUser extends User {
-  roles?: Array<{ name: string }>;
-}
 
 export function EffectivePermissionsPanel() {
   const { user, loading } = useAuth();
@@ -55,7 +51,7 @@ export function EffectivePermissionsPanel() {
     return null;
   }
 
-  const roleNames = (user as AuthedUser).roles?.map((role) => role.name) ?? [];
+  const roleNames = user.roles?.map((role) => role.name) ?? [];
   const effectiveCodes = user.is_superuser
     ? []
     : Array.from(

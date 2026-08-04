@@ -4,6 +4,7 @@ export interface User {
   email: string;
   is_active: boolean;
   is_superuser: boolean;
+  roles?: Array<{ id: string; name: string }>;
 }
 
 export interface UserCreate {

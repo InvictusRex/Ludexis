@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render } from "@testing-library/react";
 import { createElement } from "react";
-import { useRequireAuth } from "./use-protected-route";
+import { useRequireAdmin, useRequireAuth } from "./use-protected-route";
 
 const mockRouter = { push: vi.fn() };
 
@@ -44,5 +44,52 @@ describe("useRequireAuth", () => {
       rerender(createElement(Harness, { user: null, loading: false }));
     });
     expect(mockRouter.push).toHaveBeenCalledTimes(1);
+  });
+});
+
+function AdminHarness({ user, loading }: { user: unknown; loading: boolean }) {
+  useRequireAdmin(user as never, loading);
+  return null;
+}
+
+describe("useRequireAdmin", () => {
+  afterEach(() => {
+    cleanup();
+    mockRouter.push.mockClear();
+  });
+
+  it("pushes to /auth/login when loading is false and user is null", () => {
+    render(createElement(AdminHarness, { user: null, loading: false }));
+    expect(mockRouter.push).toHaveBeenCalledWith("/auth/login");
+  });
+
+  it("pushes to / when the user is logged in but not a superuser", () => {
+    render(
+      createElement(AdminHarness, {
+        user: { id: "u1", is_superuser: false },
+        loading: false,
+      }),
+    );
+    expect(mockRouter.push).toHaveBeenCalledWith("/");
+  });
+
+  it("does not push when the user is a superuser", () => {
+    render(
+      createElement(AdminHarness, {
+        user: { id: "u1", is_superuser: true },
+        loading: false,
+      }),
+    );
+    expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
+  it("does not push while loading", () => {
+    render(
+      createElement(AdminHarness, {
+        user: { id: "u1", is_superuser: false },
+        loading: true,
+      }),
+    );
+    expect(mockRouter.push).not.toHaveBeenCalled();
   });
 });

@@ -16,7 +16,7 @@ import type {
   ScanStatus,
 } from '@/lib/types'
 import { useAuth } from '@/contexts/auth-context'
-import { useRequireAuth } from '@/hooks/use-protected-route'
+import { useRequireAdmin } from '@/hooks/use-protected-route'
 import {
   ArrowLeft,
   Loader2,
@@ -67,7 +67,7 @@ function HealthBadge({ value }: { value: string | undefined }) {
 
 export default function AdminSettings() {
   const { user, loading: authLoading } = useAuth()
-  useRequireAuth(user, authLoading)
+  useRequireAdmin(user, authLoading)
 
   const [loading, setLoading] = useState(true)
 

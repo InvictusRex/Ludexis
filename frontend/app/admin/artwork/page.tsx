@@ -5,7 +5,7 @@ import type { DragEvent } from "react";
 import Link from "next/link";
 import { archiveApi, artworkApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
-import { useRequireAuth } from "@/hooks/use-protected-route";
+import { useRequireAdmin } from "@/hooks/use-protected-route";
 import type {
   ArchiveEntry,
   ArtworkMissingItem,
@@ -118,7 +118,7 @@ export default function AdminArtwork() {
 
   const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(user, authLoading);
+  useRequireAdmin(user, authLoading);
 
   const fetchMissing = useCallback(async () => {
     setLoading(true);
