@@ -2,13 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArchiveEntry, Developer, Publisher } from "@/lib/types";
+import { useParams, useRouter } from "next/navigation";
+import { ArchiveEntry, Developer, Publisher, Screenshot } from "@/lib/types";
 import { archiveApi, developersApi, publishersApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ScreenshotGallery } from "@/components/common/screenshot-gallery";
+import { ProviderSourceBadge } from "@/components/common/provider-source-badge";
+import { MetadataHistoryCard } from "@/components/common/metadata-history-card";
+import { MetadataComparison } from "@/components/common/metadata-comparison";
+import { MetadataAuditTrail } from "@/components/common/metadata-audit-trail";
+import { ArtworkQualityIndicators } from "@/components/common/artwork-quality-indicators";
+import { ArtworkComparisonDialog } from "@/components/common/artwork-comparison-dialog";
+import { ArtworkVersionHistory } from "@/components/common/artwork-version-history";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { mediaUrl } from "@/lib/media";
+import { toastError, toastSuccess } from "@/lib/toast";
 import {
   Edit,
   Share2,
@@ -17,21 +28,37 @@ import {
   FolderOpen,
   Calendar,
   Zap,
+  Trash2,
 } from "lucide-react";
 
 export default function ArchiveDetailsPage() {
   const params = useParams();
   const entryId = params.id as string;
+  const router = useRouter();
 
   const [entry, setEntry] = useState<ArchiveEntry | null>(null);
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [publishers, setPublishers] = useState<Publisher[]>([]);
+  const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this archive entry?")) {
+      return;
+    }
+    try {
+      await archiveApi.delete(entryId);
+      toastSuccess("Archive entry deleted");
+      router.push("/library");
+    } catch (error) {
+      toastError(error, "Failed to delete entry");
+    }
+  };
 
   useEffect(() => {
     if (authLoading) {
@@ -39,12 +66,12 @@ export default function ArchiveDetailsPage() {
     }
 
     const loadDetails = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await archiveApi.getById(entryId, accessToken);
+        const data = await archiveApi.getById(entryId);
         if (!data) {
           setEntry(null);
           return;
@@ -54,18 +81,20 @@ export default function ArchiveDetailsPage() {
 
         // Load related developers and publishers
         const devs = await Promise.all(
-          data.developer_ids.map((id) =>
-            developersApi.getById(id, accessToken),
-          ),
+          data.developer_ids.map((id) => developersApi.getById(id)),
         );
         const pubs = await Promise.all(
-          data.publisher_ids.map((id) =>
-            publishersApi.getById(id, accessToken),
-          ),
+          data.publisher_ids.map((id) => publishersApi.getById(id)),
         );
 
         setDevelopers(devs.filter(Boolean) as Developer[]);
         setPublishers(pubs.filter(Boolean) as Publisher[]);
+
+        try {
+          setScreenshots(await archiveApi.getScreenshots(entryId));
+        } catch {
+          setScreenshots([]);
+        }
       } catch (error) {
         console.error("Failed to load archive details:", error);
       } finally {
@@ -74,7 +103,7 @@ export default function ArchiveDetailsPage() {
     };
 
     loadDetails();
-  }, [entryId]);
+  }, [entryId, authLoading, user]);
 
   if (authLoading || loading) {
     return <div className="h-96 bg-card rounded-lg animate-pulse" />;
@@ -92,6 +121,11 @@ export default function ArchiveDetailsPage() {
       </div>
     );
   }
+
+  const confidencePct =
+    entry.metadata_confidence != null
+      ? Math.round(entry.metadata_confidence * 100)
+      : null;
 
   const getMetadataStatusColor = (status: string) => {
     switch (status) {
@@ -123,7 +157,7 @@ export default function ArchiveDetailsPage() {
       {entry.banner_path && (
         <div className="w-full h-64 rounded-lg overflow-hidden border border-border">
           <img
-            src={entry.banner_path}
+            src={mediaUrl(entry.banner_path)}
             alt={entry.title}
             className="w-full h-full object-cover"
           />
@@ -138,7 +172,7 @@ export default function ArchiveDetailsPage() {
           {entry.cover_path && (
             <div className="rounded-lg overflow-hidden border border-border">
               <img
-                src={entry.cover_path}
+                src={mediaUrl(entry.cover_path)}
                 alt={entry.title}
                 className="w-full h-auto"
               />
@@ -163,6 +197,14 @@ export default function ArchiveDetailsPage() {
               <Share2 size={18} />
               Share
             </Button>
+            <Button
+              className="w-full"
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 size={18} />
+              Delete Entry
+            </Button>
           </div>
 
           {/* Metadata Status */}
@@ -171,9 +213,28 @@ export default function ArchiveDetailsPage() {
               Metadata Status
             </h3>
             <div className="space-y-2">
-              <Badge className={getMetadataStatusColor(entry.metadata_status)}>
-                {entry.metadata_status}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge className={getMetadataStatusColor(entry.metadata_status)}>
+                  {entry.metadata_status}
+                </Badge>
+                <ProviderSourceBadge
+                  source={entry.metadata_source}
+                  sourceCode={entry.metadata_source_code}
+                />
+              </div>
+              {confidencePct != null && (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    Match confidence: {confidencePct}%
+                  </p>
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-accent"
+                      style={{ width: `${confidencePct}%` }}
+                    />
+                  </div>
+                </div>
+              )}
               {entry.metadata_source && (
                 <p className="text-xs text-muted-foreground">
                   Source: {entry.metadata_source}
@@ -331,7 +392,40 @@ export default function ArchiveDetailsPage() {
       </div>
 
       {/* Screenshots */}
-      {/* screenshots not provided by backend */}
+      <ScreenshotGallery entryId={entry.id} />
+
+      {/* Metadata & Artwork Tools */}
+      <Tabs defaultValue="metadata">
+        <TabsList>
+          <TabsTrigger value="metadata">Metadata</TabsTrigger>
+          <TabsTrigger value="artwork">Artwork</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="metadata" className="space-y-8">
+          <MetadataComparison
+            entry={entry}
+            storedDevelopers={developers.map((dev) => dev.name)}
+            storedPublishers={publishers.map((pub) => pub.name)}
+          />
+        </TabsContent>
+        <TabsContent value="artwork" className="space-y-8">
+          <ArtworkQualityIndicators
+            entry={entry}
+            screenshotCount={screenshots.length}
+          />
+          <div>
+            <ArtworkComparisonDialog
+              entry={entry}
+              screenshots={screenshots}
+            />
+          </div>
+          <ArtworkVersionHistory entry={entry} screenshots={screenshots} />
+        </TabsContent>
+        <TabsContent value="history" className="space-y-8">
+          <MetadataAuditTrail entryId={entry.id} />
+          <MetadataHistoryCard entryId={entry.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

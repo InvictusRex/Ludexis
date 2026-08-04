@@ -3,15 +3,15 @@ import { archiveApi } from "./archives";
 import type { Developer } from "@/lib/types";
 
 export const developersApi = {
-  async getAll(token?: string): Promise<Developer[]> {
-    return apiClient.get<Developer[]>("/developers", token);
+  async getAll(): Promise<Developer[]> {
+    return apiClient.get<Developer[]>("/developers");
   },
 
-  async getById(id: string, token?: string): Promise<Developer> {
-    return apiClient.get<Developer>(`/developers/${id}`, token);
+  async getById(id: string): Promise<Developer> {
+    return apiClient.get<Developer>(`/developers/${id}`);
   },
 
-  async getEntries(id: string, token?: string) {
-    return archiveApi.getByDeveloper(id, token);
+  async getEntries(id: string) {
+    return archiveApi.getByDeveloper(id);
   },
 };

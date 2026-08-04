@@ -1,23 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { adminApi, archiveApi } from "@/lib/api";
+import { adminApi, jobsApi, scansApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
-import { LibraryJob, ArchiveEntry } from "@/lib/types";
+import { AdminStats, JobHistory, JobStatus } from "@/lib/types";
 import {
   BarChart3,
   Database,
   Zap,
   AlertCircle,
-  HardDrive,
   RotateCw,
   CheckCircle2,
   Clock,
   AlertTriangle,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -26,79 +28,82 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+const JOB_TYPE_LABELS: Record<JobHistory["job_type"], string> = {
+  LIBRARY_SCAN: "Full Scan",
+  INCREMENTAL_SCAN: "Incremental Scan",
+  METADATA_REFRESH: "Metadata Refresh",
+  ARTWORK_REFRESH: "Artwork Refresh",
+  DUPLICATE_DETECTION: "Duplicate Detection",
+  INTEGRITY_VERIFICATION: "Integrity Verification",
+};
+
+const STATUS_STYLES: Record<JobStatus, string> = {
+  PENDING: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  RUNNING: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+  SUCCESS: "bg-green-500/15 text-green-600 border-green-500/30",
+  FAILED: "bg-red-500/15 text-red-600 border-red-500/30",
+  CANCELED: "bg-gray-500/15 text-gray-600 border-gray-500/30",
+};
+
+function humanizeJobType(jobType: JobHistory["job_type"]): string {
+  return JOB_TYPE_LABELS[jobType] ?? jobType.replace(/_/g, " ").toLowerCase();
+}
+
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    totalEntries: 0,
-    unmatchedEntries: 0,
-    totalStorage: "1.2 TB",
-    metadataCoverage: 0,
-  });
-  const [jobs, setJobs] = useState<LibraryJob[]>([]);
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [jobs, setJobs] = useState<JobHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
+
+  const loadJobs = useCallback(async () => {
+    const recentJobs = await adminApi.getRecentJobs();
+    setJobs(recentJobs);
+  }, []);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [statsData, jobsData] = await Promise.all([
+        adminApi.getStats(),
+        adminApi.getRecentJobs(),
+      ]);
+      setStats(statsData);
+      setJobs(jobsData);
+    } catch (error) {
+      console.error("Failed to load admin data:", error);
+      setError("Failed to load admin dashboard data.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (authLoading) {
       return;
     }
-
-    const loadData = async () => {
-      if (!accessToken) {
-        return;
-      }
-
-      try {
-        const entries = await archiveApi.getAll(0, 100, accessToken);
-        const unmatchedCount = entries.filter(
-          (e) => e.metadata_status === "UNMATCHED",
-        ).length;
-        const matchedCount = entries.filter(
-          (e) => e.metadata_status === "MATCHED",
-        ).length;
-        const coverage =
-          entries.length > 0
-            ? Math.round((matchedCount / entries.length) * 100)
-            : 0;
-
-        setStats({
-          totalEntries: entries.length,
-          unmatchedEntries: unmatchedCount,
-          totalStorage: "1.2 TB",
-          metadataCoverage: coverage,
-        });
-
-        // Simulate recent jobs
-        const recentJobs: LibraryJob[] = [
-          {
-            id: "1",
-            type: "FullScan",
-            status: "completed",
-            progress: 100,
-            startTime: new Date(Date.now() - 3600000),
-            endTime: new Date(Date.now() - 1800000),
-          },
-          {
-            id: "2",
-            type: "MetadataRefresh",
-            status: "running",
-            progress: 45,
-            startTime: new Date(Date.now() - 600000),
-            endTime: null,
-          },
-        ];
-        setJobs(recentJobs);
-      } catch (error) {
-        console.error("Failed to load admin data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
-  }, []);
+  }, [authLoading, loadData]);
+
+  const runAction = useCallback(
+    async (action: string, fn: () => Promise<unknown>) => {
+      setBusyAction(action);
+      setError(null);
+      try {
+        await fn();
+        await loadJobs();
+      } catch (error) {
+        console.error(`Failed to run ${action}:`, error);
+        setError(`Failed to run ${action}.`);
+      } finally {
+        setBusyAction(null);
+      }
+    },
+    [loadJobs],
+  );
 
   const adminSections = [
     {
@@ -179,23 +184,43 @@ export default function AdminDashboard() {
         </p>
       </div>
 
+      {loading && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading dashboard...
+        </div>
+      )}
+
+      {error && (
+        <div className="flex items-center gap-2 text-red-500 bg-red-500/10 border border-red-500/30 rounded-md p-3 text-sm">
+          <AlertTriangle className="w-4 h-4" />
+          {error}
+        </div>
+      )}
+
       {/* Key Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-border">
           <CardContent className="pt-6">
             <p className="text-muted-foreground text-sm mb-2">Total Entries</p>
             <p className="text-3xl font-bold text-accent">
-              {stats.totalEntries}
+              {stats?.archive_entries ?? "—"}
             </p>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="pt-6">
-            <p className="text-muted-foreground text-sm mb-2">
-              Unmatched Entries
+            <p className="text-muted-foreground text-sm mb-2">Collections</p>
+            <p className="text-3xl font-bold text-accent">
+              {stats?.collections ?? "—"}
             </p>
-            <p className="text-3xl font-bold text-orange-500">
-              {stats.unmatchedEntries}
+          </CardContent>
+        </Card>
+        <Card className="border-border">
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground text-sm mb-2">Users</p>
+            <p className="text-3xl font-bold text-accent">
+              {stats?.users ?? "—"}
             </p>
           </CardContent>
         </Card>
@@ -205,15 +230,17 @@ export default function AdminDashboard() {
               Metadata Coverage
             </p>
             <p className="text-3xl font-bold text-green-500">
-              {stats.metadataCoverage}%
+              {stats ? `${Math.round(stats.metadata_coverage)}%` : "—"}
             </p>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="pt-6">
-            <p className="text-muted-foreground text-sm mb-2">Total Storage</p>
+            <p className="text-muted-foreground text-sm mb-2">
+              Verification Coverage
+            </p>
             <p className="text-3xl font-bold text-blue-500">
-              {stats.totalStorage}
+              {stats ? `${Math.round(stats.verification_coverage)}%` : "—"}
             </p>
           </CardContent>
         </Card>
@@ -227,17 +254,55 @@ export default function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+              disabled={loading || busyAction !== null}
+              onClick={() =>
+                runAction("fullScan", () => scansApi.runFull())
+              }
+            >
+              {busyAction === "fullScan" && (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              )}
               Run Full Scan
             </Button>
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+              disabled={loading || busyAction !== null}
+              onClick={() =>
+                runAction("metadataRefresh", () =>
+                  jobsApi.start("METADATA_REFRESH"),
+                )
+              }
+            >
+              {busyAction === "metadataRefresh" ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
               Refresh Metadata
             </Button>
-            <Button variant="outline" className="border-border">
+            <Button
+              variant="outline"
+              className="border-border"
+              disabled={loading || busyAction !== null}
+              onClick={() =>
+                runAction("verifyArchives", () =>
+                  jobsApi.start("INTEGRITY_VERIFICATION"),
+                )
+              }
+            >
+              {busyAction === "verifyArchives" && (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              )}
               Verify Archives
             </Button>
             <Link href="/admin/metadata">
-              <Button variant="outline" className="border-border w-full">
+              <Button
+                variant="outline"
+                className="border-border w-full"
+                disabled={busyAction !== null}
+              >
                 Review Unmatched
               </Button>
             </Link>
@@ -246,57 +311,64 @@ export default function AdminDashboard() {
       </Card>
 
       {/* Recent Jobs */}
-      {jobs.length > 0 && (
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle>Recent Jobs</CardTitle>
-            <CardDescription>
-              Latest background tasks and operations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle>Recent Jobs</CardTitle>
+          <CardDescription>
+            Latest background tasks and operations
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {jobs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No recent jobs found.</p>
+          ) : (
             <div className="space-y-4">
               {jobs.map((job) => {
-                const startMs = job.startTime
-                  ? typeof job.startTime === "string"
-                    ? new Date(job.startTime).getTime()
-                    : job.startTime.getTime()
-                  : Date.now();
+                const status: JobStatus = job.status ?? "PENDING";
                 return (
                   <div
                     key={job.id}
                     className="flex items-center justify-between p-4 bg-card rounded-lg border border-border"
                   >
                     <div className="flex-1">
-                      <p className="font-medium text-foreground">{job.type}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-foreground">
+                          {humanizeJobType(job.job_type)}
+                        </p>
+                        <Badge className={STATUS_STYLES[status]}>
+                          {status}
+                        </Badge>
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        {job.status === "completed"
-                          ? `Completed ${Math.round((Date.now() - startMs) / 60000)} minutes ago`
-                          : `Running for ${Math.round((Date.now() - startMs) / 60000)} minutes`}
+                        {job.started_at
+                          ? `Started ${new Date(job.started_at).toLocaleString()}`
+                          : "Not started"}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-32">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-xs text-muted-foreground">
-                            {job.progress}%
+                            {job.progress ?? 0}%
                           </span>
                           <span
                             className={`text-xs font-medium ${
-                              job.status === "completed"
+                              status === "SUCCESS"
                                 ? "text-green-500"
-                                : "text-accent"
+                                : status === "FAILED"
+                                  ? "text-red-500"
+                                  : status === "RUNNING"
+                                    ? "text-blue-500"
+                                    : "text-accent"
                             }`}
                           >
-                            {job.status === "completed"
-                              ? "Completed"
-                              : "Running"}
+                            {status}
                           </span>
                         </div>
                         <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full bg-accent transition-all"
-                            style={{ width: `${job.progress}%` }}
+                            style={{ width: `${job.progress ?? 0}%` }}
                           />
                         </div>
                       </div>
@@ -305,14 +377,14 @@ export default function AdminDashboard() {
                 );
               })}
             </div>
-            <Link href="/admin/jobs" className="inline-block mt-4">
-              <Button variant="outline" size="sm" className="border-border">
-                View All Jobs →
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
+          )}
+          <Link href="/admin/jobs" className="inline-block mt-4">
+            <Button variant="outline" size="sm" className="border-border">
+              View All Jobs →
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Admin Sections Grid */}
       <div>

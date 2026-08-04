@@ -17,9 +17,9 @@ export default function TagsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -27,12 +27,12 @@ export default function TagsPage() {
     }
 
     const loadTags = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await tagsApi.getAll(accessToken);
+        const data = await tagsApi.getAll();
         setTags(data);
         setFilteredTags(data);
       } catch (error) {
@@ -43,7 +43,7 @@ export default function TagsPage() {
     };
 
     loadTags();
-  }, []);
+  }, [authLoading, user]);
 
   // Filter tags
   useEffect(() => {

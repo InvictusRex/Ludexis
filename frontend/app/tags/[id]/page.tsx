@@ -19,9 +19,9 @@ export default function TagDetailPage() {
   const [relatedTags, setRelatedTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -29,18 +29,18 @@ export default function TagDetailPage() {
     }
 
     const loadData = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const tagData = await tagsApi.getById(id, accessToken);
+        const tagData = await tagsApi.getById(id);
         setTag(tagData);
 
-        const tagEntries = await tagsApi.getEntries(id, accessToken);
+        const tagEntries = await tagsApi.getEntries(id);
         setEntries(tagEntries);
 
-        const relatedTagsData = await tagsApi.getRelatedTags(id, accessToken);
+        const relatedTagsData = await tagsApi.getRelatedTags(id);
         setRelatedTags(relatedTagsData);
       } catch (error) {
         console.error("Failed to load tag:", error);
@@ -50,7 +50,7 @@ export default function TagDetailPage() {
     };
 
     loadData();
-  }, [id]);
+  }, [id, authLoading, user]);
 
   if (loading) {
     return (

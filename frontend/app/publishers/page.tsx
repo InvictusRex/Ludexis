@@ -16,9 +16,9 @@ export default function PublishersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -26,12 +26,12 @@ export default function PublishersPage() {
     }
 
     const loadPublishers = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await publishersApi.getAll(accessToken);
+        const data = await publishersApi.getAll();
         setPublishers(data);
         setFilteredPublishers(data);
       } catch (error) {
@@ -42,7 +42,7 @@ export default function PublishersPage() {
     };
 
     loadPublishers();
-  }, []);
+  }, [authLoading, user]);
 
   // Filter publishers
   useEffect(() => {

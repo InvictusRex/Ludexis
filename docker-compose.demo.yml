@@ -1,0 +1,91 @@
+# Ludexis demo stack
+#
+# One-command evaluation environment: PostgreSQL, Redis, backend API,
+# Celery worker, and the Next.js frontend, pre-seeded with a demo dataset.
+#
+#   docker compose -f docker-compose.demo.yml up -d --build
+#
+# Then open http://localhost:3000 and log in with admin / admin.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ludexis
+      POSTGRES_PASSWORD: ludexis
+      POSTGRES_DB: ludexis
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ludexis"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    command: sh -c "alembic upgrade head && python -m scripts.seed_demo && uvicorn main:app --host 0.0.0.0 --port 8000"
+    env_file: ./backend/.env.docker
+    environment:
+      ARTWORK_STORAGE_PATH: /artwork
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    volumes:
+      - artwork_data:/artwork
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+    env_file: ./backend/.env.docker
+    environment:
+      ARTWORK_STORAGE_PATH: /artwork
+    volumes:
+      - artwork_data:/artwork
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api
+        NEXT_PUBLIC_MEDIA_URL: http://localhost:8000/media
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db_data:
+  redis_data:
+  artwork_data:

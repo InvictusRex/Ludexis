@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Collection } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { mediaUrl } from "@/lib/media";
 
 interface CollectionCardProps {
   collection: Collection;
@@ -9,18 +10,18 @@ interface CollectionCardProps {
 export function CollectionCard({ collection }: CollectionCardProps) {
   return (
     <Link href={`/collections/${collection.id}`}>
-      <div className="group bg-card rounded-lg overflow-hidden border border-border hover:border-accent transition-colors cursor-pointer h-full flex flex-col">
+      <div className="group bg-card rounded-lg overflow-hidden border border-border hover:border-accent transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer h-full flex flex-col">
         {/* Banner/Cover Art */}
         <div className="relative w-full aspect-video bg-muted overflow-hidden">
           {collection.banner_path ? (
             <img
-              src={collection.banner_path}
+              src={mediaUrl(collection.banner_path)}
               alt={collection.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
             />
           ) : collection.cover_path ? (
             <img
-              src={collection.cover_path}
+              src={mediaUrl(collection.cover_path)}
               alt={collection.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
             />

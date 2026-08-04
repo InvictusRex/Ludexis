@@ -38,21 +38,21 @@ celerybeat-schedule
 # Redis Dumps
 dump.rdb
 
-# Uploads / Media
-uploads/
-artwork/
-covers/
-banners/
-screenshots/
-thumbnails/
+# Uploads / Media (root-level storage only)
+/uploads/
+/artwork/
+/covers/
+/banners/
+/screenshots/
+/thumbnails/
 
-# Metadata Cache
-cache/
-metadata_cache/
+# Metadata Cache (root-level only)
+/cache/
+/metadata_cache/
 
-# Scan Libraries
-library/
-games/
+# Scan Libraries (root-level only)
+/library/
+/games/
 
 # Node / Next.js
 node_modules/
@@ -76,6 +76,8 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+playwright-report/
+test-results/
 
 # Docker
 docker-data/
