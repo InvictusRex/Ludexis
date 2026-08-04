@@ -5,7 +5,7 @@ import Link from "next/link";
 import { archiveApi, metadataApi } from "@/lib/api";
 import type { ArchiveEntry, MetadataSearchResult } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
-import { useRequireAuth } from "@/hooks/use-protected-route";
+import { useRequireAdmin } from "@/hooks/use-protected-route";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -73,7 +73,7 @@ export default function AdminMetadata() {
 
   const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(user, authLoading);
+  useRequireAdmin(user, authLoading);
 
   const loadEntries = useCallback(async () => {
     setLoading(true);

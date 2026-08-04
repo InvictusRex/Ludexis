@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { librariesApi, scansApi } from '@/lib/api'
 import type { LibraryRead, ScanStatus } from '@/lib/types'
 import { useAuth } from '@/contexts/auth-context'
-import { useRequireAuth } from '@/hooks/use-protected-route'
+import { useRequireAdmin } from '@/hooks/use-protected-route'
 import {
   ArrowLeft,
   Plus,
@@ -38,7 +38,7 @@ import {
 
 export default function AdminLibrary() {
   const { user, loading: authLoading } = useAuth()
-  useRequireAuth(user, authLoading)
+  useRequireAdmin(user, authLoading)
 
   const [libraries, setLibraries] = useState<LibraryRead[]>([])
   const [loading, setLoading] = useState(true)

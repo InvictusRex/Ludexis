@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { collectionsApi } from '@/lib/api'
 import type { ArchiveEntry, Collection } from '@/lib/types'
 import { useAuth } from '@/contexts/auth-context'
-import { useRequireAuth } from '@/hooks/use-protected-route'
+import { useRequireAdmin } from '@/hooks/use-protected-route'
 import {
   ArrowLeft,
   ChevronDown,
@@ -46,7 +46,7 @@ import {
 
 export default function AdminCollections() {
   const { user, loading: authLoading } = useAuth()
-  useRequireAuth(user, authLoading)
+  useRequireAdmin(user, authLoading)
 
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)

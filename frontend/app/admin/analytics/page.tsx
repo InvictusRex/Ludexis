@@ -15,7 +15,7 @@ import type {
   ScanStatus,
 } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
-import { useRequireAuth } from "@/hooks/use-protected-route";
+import { useRequireAdmin } from "@/hooks/use-protected-route";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { UserAnalyticsDashboard } from "@/components/common/user-analytics-dashboard";
 import { buildPageQuery, DEFAULT_PAGE_SIZE, pageToOffset } from "@/lib/pagination";
@@ -157,7 +157,7 @@ export default function AdminAnalytics() {
 
   const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(user, authLoading);
+  useRequireAdmin(user, authLoading);
 
   const loadData = useCallback(async () => {
     setLoading(true);

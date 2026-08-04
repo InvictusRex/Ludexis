@@ -11,7 +11,14 @@ import {
 
 import { toast } from "sonner";
 
-import { onTokensCleared, setAccessToken } from "@/lib/auth/token-store";
+import {
+  getAccessToken,
+  getRefreshToken,
+  onTokensCleared,
+  setAccessToken,
+  setTokens,
+  clearTokens,
+} from "@/lib/auth/token-store";
 import {
   getTokenExpiry,
   isExpired,
@@ -30,9 +37,6 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-const ACCESS_TOKEN_KEY = "ludexis_access_token";
-const REFRESH_TOKEN_KEY = "ludexis_refresh_token";
 
 const SESSION_CHECK_INTERVAL_MS = 30_000;
 
@@ -115,9 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function initializeAuth() {
     try {
-      const storedAccessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+      const storedAccessToken = getAccessToken();
 
-      const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+      const storedRefreshToken = getRefreshToken();
 
       if (!storedAccessToken || !storedRefreshToken) {
         setAccessToken(null);
@@ -135,11 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(currentUser);
     } catch {
-      setAccessToken(null);
-
-      localStorage.removeItem(ACCESS_TOKEN_KEY);
-
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      clearTokens();
 
       accessExpiryRef.current = null;
       refreshExpiryRef.current = null;
@@ -155,11 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
 
-    localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
+    setTokens(tokens.access_token, tokens.refresh_token);
 
-    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
-
-    setAccessToken(tokens.access_token);
     setRefreshToken(tokens.refresh_token);
     accessExpiryRef.current = getTokenExpiry(tokens.access_token);
     refreshExpiryRef.current = getTokenExpiry(tokens.refresh_token);
@@ -181,11 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-
-    setAccessToken(null);
+    clearTokens();
 
     setUser(null);
     setRefreshToken(null);

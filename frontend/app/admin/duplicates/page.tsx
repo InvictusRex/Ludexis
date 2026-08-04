@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { archiveApi } from '@/lib/api'
 import type { DuplicateGroup } from '@/lib/types'
 import { useAuth } from '@/contexts/auth-context'
-import { useRequireAuth } from '@/hooks/use-protected-route'
+import { useRequireAdmin } from '@/hooks/use-protected-route'
 import { toastError, toastSuccess } from '@/lib/toast'
 import { ArrowLeft, Copy, FileSearch, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import { DuplicateGroupCard } from '@/components/common/duplicate-group-card'
 
 export default function AdminDuplicates() {
   const { user, loading: authLoading } = useAuth()
-  useRequireAuth(user, authLoading)
+  useRequireAdmin(user, authLoading)
 
   const [groups, setGroups] = useState<DuplicateGroup[]>([])
   const [loading, setLoading] = useState(true)

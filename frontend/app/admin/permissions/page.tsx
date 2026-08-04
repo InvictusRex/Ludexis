@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { rolesApi, permissionsApi, adminApi } from '@/lib/api'
 import { useAuth } from '@/contexts/auth-context'
-import { useRequireAuth } from '@/hooks/use-protected-route'
+import { useRequireAdmin } from '@/hooks/use-protected-route'
 import { EffectivePermissionsPanel } from '@/components/common/effective-permissions-panel'
 import type { RoleRead, PermissionRead, PermissionReport } from '@/lib/types'
 import {
@@ -44,7 +44,7 @@ export default function AdminPermissions() {
 
   const { user, loading: authLoading } = useAuth()
 
-  useRequireAuth(user, authLoading)
+  useRequireAdmin(user, authLoading)
 
   useEffect(() => {
     if (authLoading) {

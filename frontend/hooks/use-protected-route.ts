@@ -13,3 +13,15 @@ export function useRequireAuth(user: User | null, loading: boolean) {
     }
   }, [loading, router, user]);
 }
+
+export function useRequireAdmin(user: User | null, loading: boolean) {
+  useRequireAuth(user, loading);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user !== null && !user.is_superuser) {
+      router.push("/");
+    }
+  }, [loading, router, user]);
+}
