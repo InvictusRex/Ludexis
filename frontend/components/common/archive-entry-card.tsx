@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArchiveEntry, VerificationStatus } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { mediaUrl } from "@/lib/media";
 
 interface ArchiveEntryCardProps {
   entry: ArchiveEntry;
@@ -11,9 +12,9 @@ const getStatusColor = (status: VerificationStatus) => {
     case "VERIFIED":
       return "bg-green-900 text-green-200";
     case "MISSING":
-      return "bg-yellow-900 text-yellow-200";
+      return "bg-red-900 text-red-200";
     case "MOVED":
-      return "bg-blue-900 text-blue-200";
+      return "bg-amber-900 text-amber-200";
     case "CORRUPTED":
       return "bg-red-900 text-red-200";
     case "UNKNOWN":
@@ -25,12 +26,12 @@ const getStatusColor = (status: VerificationStatus) => {
 export function ArchiveEntryCard({ entry }: ArchiveEntryCardProps) {
   return (
     <Link href={`/archive/${entry.id}`}>
-      <div className="group bg-card rounded-lg overflow-hidden border border-border hover:border-accent transition-colors cursor-pointer h-full flex flex-col">
+      <div className="group bg-card rounded-lg overflow-hidden border border-border hover:border-accent transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer h-full flex flex-col">
         {/* Cover Art */}
         <div className="relative w-full aspect-[2/3] bg-muted overflow-hidden">
           {entry.cover_path ? (
             <img
-              src={entry.cover_path}
+              src={mediaUrl(entry.cover_path)}
               alt={entry.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
             />

@@ -1,4 +1,4 @@
-import type { SearchResults } from "@/lib/types";
+import type { SearchFilters, SearchResults } from "@/lib/types";
 import { archiveApi } from "./archives";
 import { collectionsApi } from "./collections";
 import { developersApi } from "./developers";
@@ -7,37 +7,46 @@ import { tagsApi } from "./tags";
 import { franchisesApi } from "./franchises";
 
 export const searchApi = {
-  async search(query: string, token?: string): Promise<SearchResults> {
+  async search(
+    query: string,
+    filters?: SearchFilters,
+  ): Promise<SearchResults> {
     const q = query.trim().toLowerCase();
 
-    const entries = await archiveApi.search(query, undefined, token);
+    const entries = await archiveApi.search(query, filters);
 
     const [collections, developers, publishers, tags, franchises] =
       await Promise.all([
-        collectionsApi.getAll(token),
-        developersApi.getAll(token),
-        publishersApi.getAll(token),
-        tagsApi.getAll(token),
-        franchisesApi.getAll(token),
+        collectionsApi.getAll(),
+        developersApi.getAll(),
+        publishersApi.getAll(),
+        tagsApi.getAll(),
+        franchisesApi.getAll(),
       ]);
 
     const filterByName = (arr: any[]) =>
       arr.filter((a) => (a.name || "").toLowerCase().includes(q));
 
+    const filteredCollections = filterByName(collections);
+    const filteredDevelopers = filterByName(developers);
+    const filteredPublishers = filterByName(publishers);
+    const filteredTags = filterByName(tags);
+    const filteredFranchises = filterByName(franchises);
+
     const results: SearchResults = {
       total:
         entries.length +
-        collections.length +
-        developers.length +
-        publishers.length +
-        tags.length +
-        franchises.length,
+        filteredCollections.length +
+        filteredDevelopers.length +
+        filteredPublishers.length +
+        filteredTags.length +
+        filteredFranchises.length,
       entries,
-      collections: filterByName(collections),
-      developers: filterByName(developers),
-      publishers: filterByName(publishers),
-      tags: filterByName(tags),
-      franchises: filterByName(franchises),
+      collections: filteredCollections,
+      developers: filteredDevelopers,
+      publishers: filteredPublishers,
+      tags: filteredTags,
+      franchises: filteredFranchises,
     };
 
     return results;

@@ -1,0 +1,1857 @@
+╭─── Claude Code v2.1.220 ─────────────────────────────────────────────────────╮
+│                                                 │ Tips for getting started   │
+│                  Welcome back!                  │ Run /init to create a CLA… │
+│                                                 │ ────────────────────────── │
+│                     ▐▛███▜▌                     │ What's new                 │
+│                    ▝▜█████▛▘                    │ [VSCode] Added Focus view… │
+│                      ▘▘ ▝▝                      │ Added `mode: "mask"` for … │
+│                                                 │ Added warnings to `claude… │
+│           stealth · API Usage Billing           │ /release-notes for more    │
+│   E:\OPERA\Opus_10 - Ludexis\Ludexis\frontend   │                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+❯ @session-ses_036b.md continue from this                                       
+
+  Thought for 18s, searched for 1 pattern, read 1 file, listed 1 directory (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis" && ls docs/backlogs/ && ls
+      frontend/components/common/ && ls frontend/app)
+  ⎿  Backend-Backlog.md
+     Frontend-Backlog.md
+     archive-entry-card.test.tsx
+     … +38 lines (ctrl+o to expand)
+
+  Thought for 11s, read 1 file (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis" && git status --porcelain | grep
+      "^??")
+  ⎿  ?? backend/alembic/versions/4c81f2a9b6d7_add_metadata_confidence.py
+     ?? backend/app/schemas/screenshot.py
+     ?? backend/tests/test_admin_api.py
+     … +75 lines (ctrl+o to expand)
+
+  Thought for 8s, read 1 file (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat package.json &&
+      ls components/ui/)
+  ⎿  {
+       "name": "ludexis-frontend",
+       "version": "0.1.0",
+     … +137 lines (ctrl+o to expand)
+
+  Thought for 7s (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx tsc --noEmit 2>&1
+      | tail -20)
+  ⎿  (No output)
+  ⎿  (timeout 5m)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run 2>&1 |
+      tail -30)
+  ⎿  (!) Your Vite config uses features that are unsupported by `configLoad
+     er: 'native'`, which is planned to become the default in a future majo
+     r version of Vite:
+     … +13 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+  Thought for 14s (ctrl+o to expand)
+
+● Baseline verified green: tsc --noEmit clean, 121 tests passing across 21
+  files. Now working through the remaining open backlog items myself (no
+  subagents).
+
+  Let me start with the Jobs group, where jobs-report.tsx already exists but is
+  unmounted and untested.
+
+  Thought for 20s, read 5 files (ctrl+o to expand)
+
+● Now let me write the Jobs group: a test for the existing jobs-report.tsx, plus
+  background-task-analytics.tsx, and mount both.
+
+● Update(components\common\jobs-report.tsx)
+  ⎿  Removed 1 line
+       6  import { toastError } from "@/lib/toast";
+       7  import type { JobHistory, JobStatus, JobType } from "@/lib/type
+          s";
+       8  import { cn } from "@/lib/utils";
+       9 -import { Badge } from "@/components/ui/badge";                 
+       9  import { Button } from "@/components/ui/button";
+      10  import {
+      11    Card,
+
+● Write(components\common\jobs-report.test.tsx)
+  ⎿  Wrote 108 lines to components\common\jobs-report.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen, waitFor } from "@testing-libra
+         ry/react";
+       3 import { jobsApi } from "@/lib/api";
+       4 import { toastError } from "@/lib/toast";
+       6 import type { JobHistory } from "@/lib/types";
+       7 
+       8 vi.mock("@/lib/api", () => ({
+       9   jobsApi: {
+      10     getAll: vi.fn(),
+     … +113 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/jobs-report.test.tsx 2>&1 | tail -40)
+  ⎿  (!) Your Vite config uses features that are unsupported by `configLoad
+     er: 'native'`, which is planned to become the default in a future majo
+     r version of Vite:
+     … +13 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● All 5 pass. Now background-task-analytics.tsx:
+
+● Write(components\common\background-task-analytics.tsx)
+  ⎿  Wrote 275 lines to components\common\background-task-analytics.tsx
+       1 "use client";
+       2 
+       3 import { useCallback, useEffect, useMemo, useState } from "react
+       4 import { Activity, RefreshCw } from "lucide-react";
+       5 import { jobsApi } from "@/lib/api";
+       6 import { toastError } from "@/lib/toast";
+       7 import type { JobHistory, JobStatus, JobType } from "@/lib/types
+       8 import { Button } from "@/components/ui/button";
+       9 import {
+      10   Card,
+     … +281 lines (ctrl+o to expand)
+
+● Write(components\common\background-task-analytics.test.tsx)
+  ⎿  Wrote 113 lines to
+     components\common\background-task-analytics.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen, waitFor } from "@testing-libra
+         ry/react";
+       4 import { toastError } from "@/lib/toast";
+       5 import { BackgroundTaskAnalytics } from "./background-task-analy
+         tics";
+       6 import type { JobHistory } from "@/lib/types";
+       8 vi.mock("@/lib/api", () => ({
+       9   jobsApi: {
+      10     getAll: vi.fn(),
+     … +120 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/background-task-analytics.test.tsx 2>&1 | tail -40)
+  ⎿  (!) Your Vite config uses features that are unsupported by `configLoad
+     er: 'native'`, which is planned to become the default in a future majo
+     r version of Vite:
+     … +13 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Now mount both on the jobs page:
+
+● Update(app\admin\jobs\page.tsx)
+  ⎿  Added 2 lines
+       8  import { toastError, toastSuccess } from "@/lib/toast";
+       9  import { buildPageQuery, DEFAULT_PAGE_SIZE, pageToOffset } from
+           "@/lib/pagination";
+      10  import { PaginationControls } from "@/components/common/paginat
+          ion-controls";
+      11 +import { JobsReport } from "@/components/common/jobs-report";  
+      12 +import { BackgroundTaskAnalytics } from "@/components/common/ba
+         +ckground-task-analytics";                                      
+      13  import type { JobHistory, JobStatus, JobType } from "@/lib/type
+          s";
+      14  import {
+      15    Card,
+
+● Update(app\admin\jobs\page.tsx)
+  ⎿  Added 13 lines
+      457            />
+      458          </CardContent>
+      459        </Card>
+      460 +                                                              
+      461 +      <div className="space-y-8">                             
+      462 +        <div>                                                 
+      463 +          <h2 className="text-2xl font-bold text-foreground mb
+          +-1">                                                          
+      464 +            Reports &amp; Analytics                           
+      465 +          </h2>                                               
+      466 +          <p className="text-muted-foreground text-sm">       
+      467 +            Historical reporting and background task distribut
+          +ion                                                           
+      468 +          </p>                                                
+      469 +        </div>                                                
+      470 +        <JobsReport />                                        
+      471 +        <BackgroundTaskAnalytics />                           
+      472 +      </div>                                                  
+      473      </div>
+      474    );
+      475  }
+
+● Jobs group done. Now the Monitoring group. Let me read the monitoring page and
+  health API.
+  Thought for 11s, read 3 files (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat lib/api/scans.ts
+      && cat lib/api/job-monitor.ts && sed -n 1,40p components/ui/switch.tsx)
+  ⎿  import { apiClient } from "./client";
+     import type { ScanStatus } from "@/lib/types";
+     … +54 lines (ctrl+o to expand)
+
+  Thought for 23s (ctrl+o to expand)
+
+● Write(components\common\trend-visualization.tsx)
+  ⎿  Wrote 187 lines to components\common\trend-visualization.tsx
+       1 "use client";
+       2 
+       3 import { useMemo } from "react";
+       4 import { TrendingUp } from "lucide-react";
+       5 import {
+       6   Card,
+       7   CardContent,
+       8   CardDescription,
+       9   CardHeader,
+      10   CardTitle,
+     … +186 lines (ctrl+o to expand)
+
+● Now the live operational dashboard, which owns the polling and feeds samples
+  to the trend component:
+
+● Write(components\common\live-operational-dashboard.tsx)
+  ⎿  Wrote 265 lines to components\common\live-operational-dashboard.tsx
+       1 "use client";
+       2 
+       3 import { useCallback, useEffect, useRef, useState } from "react"
+         ;
+       4 import {
+       6   AlertTriangle,
+       7   Database,
+       8   RefreshCw,
+       9   Server,
+      10   Waypoints,
+     … +284 lines (ctrl+o to expand)
+
+● Write(components\common\trend-visualization.test.tsx)
+  ⎿  Wrote 102 lines to components\common\trend-visualization.test.tsx
+       1 import { afterEach, describe, expect, it } from "vitest";
+       2 import { cleanup, render, screen } from "@testing-library/react"
+         ;
+       4   TrendVisualization,
+       5   type TrendSample,
+       6 } from "./trend-visualization";
+       7 
+         Sample => ({
+       9   apiHealthy: true,
+      10   dbHealthy: true,
+     … +100 lines (ctrl+o to expand)
+
+● Write(components\common\live-operational-dashboard.test.tsx)
+  ⎿  Wrote 172 lines to
+     components\common\live-operational-dashboard.test.tsx
+      1 import { afterEach, beforeEach, describe, expect, it, vi } from "
+        vitest";
+      2 import { cleanup, render, screen, waitFor } from "@testing-librar
+        y/react";
+      3 import userEvent from "@testing-library/user-event";
+      5 import { toastError } from "@/lib/toast";
+      6 import {
+      7   LIVE_POLL_INTERVAL_MS,
+      8   LiveOperationalDashboard,
+      9 } from "./live-operational-dashboard";
+     … +178 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/trend-visualization.test.tsx
+      components/common/live-operational-dashboard.t…)
+  ⎿                    aria-hidden="true"
+                       class="lucide lucide-refresh-cw w-3.5 h-3.5"
+                       fill="none"
+     … +56 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/live-operational-dashboard.test.tsx 2>&1 | grep -E
+      "✓|×|✗|FAIL|→|AssertionE…)
+  ⎿       × polls on an interval and shows a LIVE badge when enabled 154ms
+          × accumulates trend samples that feed the trend visualization 111
+     9ms
+     … +8 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+  Thought for 12s (ctrl+o to expand)
+
+● The interval is registered under real timers before vi.useFakeTimers() kicks
+  in. Let me install fake timers before render for the timer-based tests and use
+  fireEvent for the toggle:
+
+● Update(components\common\live-operational-dashboard.test.tsx)
+  ⎿  Added 1 line, removed 2 lines
+      1  import { afterEach, beforeEach, describe, expect, it, vi } from 
+         "vitest";
+      2 -import { cleanup, render, screen, waitFor } from "@testing-libra
+        -ry/react";                                                      
+      3 -import userEvent from "@testing-library/user-event";            
+      2 +import { cleanup, fireEvent, render, screen, waitFor } from "@te
+        +sting-library/react";                                           
+      3  import { healthApi, jobMonitorApi, scansApi } from "@/lib/api";
+      4  import { toastError } from "@/lib/toast";
+      5  import {
+
+● Update(components\common\live-operational-dashboard.test.tsx)
+  ⎿  Added 9 lines, removed 12 lines
+       99    });
+      100  
+      101    it("polls on an interval and shows a LIVE badge when enabled
+           ", async () => {
+      102 +    vi.useFakeTimers();                                       
+      103      mockHealthy();
+      103 -    const user = userEvent.setup();                           
+      104  
+      105      render(<LiveOperationalDashboard />);
+      106  
+      107 -    await screen.findByText("API");                           
+      108 -    await user.click(screen.getByRole("switch"));             
+      107 +    await vi.waitFor(() => screen.getByText("API"));          
+      108 +    fireEvent.click(screen.getByRole("switch"));              
+      109  
+      110      expect(screen.getByText("LIVE")).toBeInTheDocument();
+      111  
+      112 -    vi.useFakeTimers();                                       
+      112      await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS);
+      113      expect(healthApi.getHealth).toHaveBeenCalledTimes(2);
+      114      await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS);
+     ...
+      116    });
+      117  
+      118    it("stops polling on unmount", async () => {
+      119 +    vi.useFakeTimers();                                       
+      120      mockHealthy();
+      121 -    const user = userEvent.setup();                           
+      121  
+      122      const { unmount } = render(<LiveOperationalDashboard />);
+      123  
+      125 -    await screen.findByText("API");                           
+      126 -    await user.click(screen.getByRole("switch"));             
+      124 +    await vi.waitFor(() => screen.getByText("API"));          
+      125 +    fireEvent.click(screen.getByRole("switch"));              
+      126  
+      128 -    vi.useFakeTimers();                                       
+      127      unmount();
+      128      await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS * 
+           3);
+      129      expect(healthApi.getHealth).toHaveBeenCalledTimes(1);
+      130    });
+      131  
+      132    it("accumulates trend samples that feed the trend visualizat
+           ion", async () => {
+      133 +    vi.useFakeTimers();                                       
+      134      mockHealthy();
+      136 -    const user = userEvent.setup();                           
+      135  
+      136      render(<LiveOperationalDashboard />);
+      137  
+      140 -    await screen.findByText("API");                           
+      138 +    await vi.waitFor(() => screen.getByText("API"));          
+      139      expect(screen.getByText("Not enough samples yet")).toBeInT
+           heDocument();
+      140  
+      143 -    await user.click(screen.getByRole("switch"));             
+      141 +    fireEvent.click(screen.getByRole("switch"));              
+      142  
+      145 -    vi.useFakeTimers();                                       
+      143      await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS);
+      144  
+      145      await vi.waitFor(() =>
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/live-operational-dashboard.test.tsx 2>&1 | grep -E
+      "✓|×|✗|FAIL|Tests |Asser…)
+  ⎿        Tests  7 passed (7)
+  ⎿  (timeout 5m)
+
+● All 7 pass. Now mount both into a "Live" tab on the monitoring page:
+
+● Update(app\admin\monitoring\page.tsx)
+  ⎿  Added 1 line
+      41    CardTitle,
+      42  } from "@/components/ui/card";
+      43  import { PrometheusMetricsPanel } from "@/components/common/pro
+          metheus-metrics-panel";
+      44 +import { LiveOperationalDashboard } from "@/components/common/l
+         +ive-operational-dashboard";                                    
+      45  
+      46  interface MonitoringData {
+      47    health: HealthStatus;
+
+● Update(app\admin\monitoring\page.tsx)
+  ⎿  Added 1 line
+      279            <Tabs defaultValue="overview">
+      280              <TabsList>
+      281                <TabsTrigger value="overview">Overview</TabsTrig
+           ger>
+      282 +              <TabsTrigger value="live">Live</TabsTrigger>    
+      283                <TabsTrigger value="metrics">Metrics</TabsTrigge
+           r>
+      284              </TabsList>
+      285              <TabsContent value="overview" className="space-y-8
+           ">
+
+● Update(app\admin\monitoring\page.tsx)
+  ⎿  Added 3 lines
+      522                  </Card>
+      523                </div>
+      524              </TabsContent>
+      525 +            <TabsContent value="live" className="space-y-8">  
+      526 +              <LiveOperationalDashboard />                    
+      527 +            </TabsContent>                                    
+      528              <TabsContent value="metrics" className="space-y-8"
+           >
+      529                <PrometheusMetricsPanel />
+      530              </TabsContent>
+
+● Monitoring done. Now the Collections group. Let me read the collection detail
+  page and related types.
+
+  Thought for 8s, read 2 files (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat
+      lib/api/collections.ts && cat lib/types/collection.ts && cat lib/utils.ts
+      && grep -rn "formatBytes\|form…)
+  ⎿  import { apiClient } from "./client";
+     import { archiveApi } from "./archives";
+     import type {
+     … +77 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && grep -rn "file_size"
+      --include=*.tsx --include=*.ts app/ components/ lib/ | head)
+  ⎿  lib/types/archive.ts:60:  file_size?: number;
+
+  Thought for 8s (ctrl+o to expand)
+  ⎿  Interrupted · What should Claude do instead?
+❯ why this ? before vi.useFakeTimers() kicks in.  why r we using faketimers ?   
+  use real ones man                                                             
+
+  Thought for 15s (ctrl+o to expand)
+
+● Fair — fake timers were only there because the poll interval is 10s. Better
+  fix: make the interval a prop (10s default), then tests run on real timers
+  with a short interval. Same code path, no timer mocking.
+
+● Update(components\common\live-operational-dashboard.tsx)
+  ⎿  Added 5 lines, removed 1 line
+      58    );
+      59  }
+      60  
+      61 -export function LiveOperationalDashboard() {                   
+      61 +export function LiveOperationalDashboard({                     
+      62 +  pollIntervalMs = LIVE_POLL_INTERVAL_MS,                      
+      63 +}: {                                                           
+      64 +  pollIntervalMs?: number;                                     
+      65 +} = {}) {                                                      
+      66    const [snapshot, setSnapshot] = useState<LiveSnapshot | null>
+          (null);
+      67    const [samples, setSamples] = useState<TrendSample[]>([]);
+      68    const [live, setLive] = useState(false);
+
+❯ /usage 
+  ⎿  Stats dialog dismissed
+
+● Update(components\common\live-operational-dashboard.tsx)
+  ⎿  Added 2 lines, removed 2 lines
+      114      }
+      115      const intervalId = setInterval(() => {
+      116        loadSnapshot();
+      117 -    }, LIVE_POLL_INTERVAL_MS);                                
+      117 +    }, pollIntervalMs);                                       
+      118  
+      119      return () => clearInterval(intervalId);
+      120 -  }, [live, loadSnapshot]);                                   
+      120 +  }, [live, loadSnapshot, pollIntervalMs]);                   
+      121  
+      122    const renderBody = () => {
+      123      if (error && !snapshot) {
+
+● Now rewrite those three tests on real timers with a 20ms interval:
+
+● Update(components\common\live-operational-dashboard.test.tsx)
+  ⎿  Added 2 lines, removed 1 line
+      1  import { afterEach, beforeEach, describe, expect, it, vi } from 
+         "vitest";
+      2 -import { cleanup, fireEvent, render, screen, waitFor } from "@te
+        -sting-library/react";                                           
+      2 +import { cleanup, render, screen, waitFor } from "@testing-libra
+        +ry/react";                                                      
+      3 +import userEvent from "@testing-library/user-event";            
+      4  import { healthApi, jobMonitorApi, scansApi } from "@/lib/api";
+      5  import { toastError } from "@/lib/toast";
+      6  import {
+
+● Update(components\common\live-operational-dashboard.test.tsx)
+  ⎿  Added 3 lines, removed 4 lines
+       3  import userEvent from "@testing-library/user-event";
+       4  import { healthApi, jobMonitorApi, scansApi } from "@/lib/api";
+       5  import { toastError } from "@/lib/toast";
+       6 -import {                                                       
+       7 -  LIVE_POLL_INTERVAL_MS,                                       
+       8 -  LiveOperationalDashboard,                                    
+       9 -} from "./live-operational-dashboard";                         
+       6 +import { LiveOperationalDashboard } from "./live-operational-da
+         +shboard";                                                      
+       7  
+       8 +const POLL_MS = 20;                                            
+       9 +                                                               
+      10  vi.mock("@/lib/api", () => ({
+      11    healthApi: {
+      12      getHealth: vi.fn(),
+
+● Update(components\common\live-operational-dashboard.test.tsx)
+  ⎿  Removed 1 line
+      53  
+      54    afterEach(() => {
+      55      cleanup();
+      56 -    vi.useRealTimers();                                        
+      56    });
+      57  
+      58    it("renders the service status grid and workload counters", a
+          sync () => {
+
+● Update(components\common\live-operational-dashboard.test.tsx)
+  ⎿  Added 31 lines, removed 34 lines
+       83    });
+       84  
+       85    it("does not poll while live updates are off", async () => {
+       86 -    vi.useFakeTimers();                                       
+       86      mockHealthy();
+       87  
+       89 -    render(<LiveOperationalDashboard />);                     
+       88 +    render(<LiveOperationalDashboard pollIntervalMs={POLL_MS} 
+          +/>);                                                          
+       89  
+       91 -    await vi.waitFor(() =>                                    
+       92 -      expect(healthApi.getHealth).toHaveBeenCalledTimes(1),   
+       93 -    );                                                        
+       90 +    await screen.findByText("API");                           
+       91 +    expect(screen.queryByText("LIVE")).not.toBeInTheDocument()
+          +;                                                             
+       92  
+       95 -    await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS * 
+          -3);                                                           
+       93 +    await new Promise((resolve) => setTimeout(resolve, POLL_MS
+          + * 5));                                                       
+       94      expect(healthApi.getHealth).toHaveBeenCalledTimes(1);
+       97 -    expect(screen.queryByText("LIVE")).not.toBeInTheDocument()
+          -;                                                             
+       95    });
+       96  
+       97    it("polls on an interval and shows a LIVE badge when enabled
+           ", async () => {
+      101 -    vi.useFakeTimers();                                       
+       98      mockHealthy();
+       99 +    const user = userEvent.setup();                           
+      100  
+      104 -    render(<LiveOperationalDashboard />);                     
+      101 +    render(<LiveOperationalDashboard pollIntervalMs={POLL_MS} 
+          +/>);                                                          
+      102  
+      106 -    await vi.waitFor(() => screen.getByText("API"));          
+      107 -    fireEvent.click(screen.getByRole("switch"));              
+      103 +    await screen.findByText("API");                           
+      104 +    await user.click(screen.getByRole("switch"));             
+      105  
+      106      expect(screen.getByText("LIVE")).toBeInTheDocument();
+      110 -                                                              
+      111 -    await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS); 
+      112 -    expect(healthApi.getHealth).toHaveBeenCalledTimes(2);     
+      113 -    await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS); 
+      114 -    expect(healthApi.getHealth).toHaveBeenCalledTimes(3);     
+      107 +    await waitFor(() =>                                       
+      108 +      expect(healthApi.getHealth).toHaveBeenCalledTimes(2),   
+      109 +    );                                                        
+      110 +    await waitFor(() =>                                       
+      111 +      expect(healthApi.getHealth).toHaveBeenCalledTimes(3),   
+      112 +    );                                                        
+      113    });
+      114  
+      115    it("stops polling on unmount", async () => {
+      118 -    vi.useFakeTimers();                                       
+      116      mockHealthy();
+      117 +    const user = userEvent.setup();                           
+      118  
+      121 -    const { unmount } = render(<LiveOperationalDashboard />); 
+      119 +    const { unmount } = render(                               
+      120 +      <LiveOperationalDashboard pollIntervalMs={POLL_MS} />,  
+      121 +    );                                                        
+      122  
+      123 -    await vi.waitFor(() => screen.getByText("API"));          
+      124 -    fireEvent.click(screen.getByRole("switch"));              
+      125 -                                                              
+      123 +    await screen.findByText("API");                           
+      124 +    await user.click(screen.getByRole("switch"));             
+      125      unmount();
+      127 -    await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS * 
+          -3);                                                           
+      128 -    expect(healthApi.getHealth).toHaveBeenCalledTimes(1);     
+      126 +                                                              
+      127 +    const callsAtUnmount = vi.mocked(healthApi.getHealth).mock
+          +.calls.length;                                                
+      128 +    await new Promise((resolve) => setTimeout(resolve, POLL_MS
+          + * 5));                                                       
+      129 +    expect(healthApi.getHealth).toHaveBeenCalledTimes(callsAtU
+          +nmount);                                                      
+      130    });
+      131  
+      132    it("accumulates trend samples that feed the trend visualizat
+           ion", async () => {
+      132 -    vi.useFakeTimers();                                       
+      133      mockHealthy();
+      134 +    const user = userEvent.setup();                           
+      135  
+      135 -    render(<LiveOperationalDashboard />);                     
+      136 +    render(<LiveOperationalDashboard pollIntervalMs={POLL_MS} 
+          +/>);                                                          
+      137  
+      137 -    await vi.waitFor(() => screen.getByText("API"));          
+      138 +    await screen.findByText("API");                           
+      139      expect(screen.getByText("Not enough samples yet")).toBeInT
+           heDocument();
+      140  
+      140 -    fireEvent.click(screen.getByRole("switch"));              
+      141 +    await user.click(screen.getByRole("switch"));             
+      142  
+      142 -    await vi.advanceTimersByTimeAsync(LIVE_POLL_INTERVAL_MS); 
+      143 -                                                              
+      144 -    await vi.waitFor(() =>                                    
+      145 -      expect(                                                 
+      146 -        screen.getByLabelText("API Availability trend"),      
+      147 -      ).toBeInTheDocument(),                                  
+      148 -    );                                                        
+      143 +    expect(                                                   
+      144 +      await screen.findByLabelText("API Availability trend"), 
+      145 +    ).toBeInTheDocument();                                    
+      146    });
+      147  
+      148    it("shows an error state and toasts when the snapshot fetch 
+           fails", async () => {
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/live-operational-dashboard.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |Assertion…)
+  ⎿        Tests  7 passed (7)
+  ⎿  (timeout 5m)
+
+● All 7 pass on real timers — no vi.useFakeTimers() anywhere now. The component
+  takes a pollIntervalMs prop (default 10s), so the monitoring page keeps 10s
+  polling and tests use 20ms.
+
+  Continuing with Collections. Building the stats and recommendations
+  components:
+
+● Write(components\common\collection-stats.tsx)
+  ⎿  Wrote 166 lines to components\common\collection-stats.tsx
+       1 "use client";
+       2 
+       3 import { useMemo } from "react";
+         t";
+       5 import type { ArchiveEntry, VerificationStatus } from "@/lib/typ
+         es";
+       6 import { cn } from "@/lib/utils";
+       8   Card,
+       9   CardContent,
+      10   CardDescription,
+     … +180 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(components\common\collection-stats.test.tsx)
+  ⎿  Wrote 90 lines to components\common\collection-stats.test.tsx
+       1 import { afterEach, describe, expect, it } from "vitest";
+       2 import { cleanup, render, screen } from "@testing-library/react"
+       3 import { CollectionStats, formatFileSize } from "./collection-st
+         ats";
+       4 import type { ArchiveEntry } from "@/lib/types";
+       6 const makeEntry = (overrides: Partial<ArchiveEntry> = {}): Archi
+         veEntry => ({
+       7   id: "entry-1",
+       9   file_path: "/archive/entry.zip",
+      10   metadata_status: "MATCHED",
+     … +87 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/collection-stats.test.tsx 2>&1 | grep -E "×|FAIL|Tests
+      |AssertionError|expe…)
+  ⎿       × renders a verification breakdown row for every status 27ms
+     ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      FAIL  components/common/collection-stats.test.tsx > CollectionStats >
+     … +6 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+  Thought for 6s (ctrl+o to expand)
+
+● Miscounted: VERIFIED is 1, not 2 (e1 only).
+
+● Update(components\common\collection-stats.test.tsx)
+  ⎿  Added 1 line, removed 2 lines
+      75      expect(screen.getByText("CORRUPTED")).toBeInTheDocument();
+      76      expect(screen.getByText("UNKNOWN")).toBeInTheDocument();
+      77  
+      78 -    expect(screen.getByText("2 · 50%")).toBeInTheDocument();   
+      79 -    expect(screen.getAllByText("1 · 25%")).toHaveLength(3);    
+      78 +    expect(screen.getAllByText("1 · 25%")).toHaveLength(4);    
+      79      expect(screen.getByText("0 · 0%")).toBeInTheDocument();
+      80    });
+      81  
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/collection-stats.test.tsx 2>&1 | grep -E "×|FAIL|Tests
+      |AssertionError|Unab…)
+  ⎿        Tests  5 passed (5)
+  ⎿  (timeout 5m)
+
+● Now collection recommendations. It scores other collections by tag/developer
+  Jaccard overlap:
+
+● Write(components\common\collection-recommendations.tsx)
+  ⎿  Wrote 230 lines to components\common\collection-recommendations.tsx
+       1 "use client";
+       2 
+       3 import { useCallback, useEffect, useMemo, useState } from "react
+         ";
+       4 import Link from "next/link";
+       6 import { archiveApi, collectionsApi } from "@/lib/api";
+       7 import { toastError } from "@/lib/toast";
+       8 import type { ArchiveEntry, Collection } from "@/lib/types";
+       9 import { Badge } from "@/components/ui/badge";
+      10 import { Button } from "@/components/ui/button";
+     … +226 lines (ctrl+o to expand)
+
+● Write(components\common\collection-recommendations.test.tsx)
+  ⎿  Wrote 176 lines to
+     components\common\collection-recommendations.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen, waitFor } from "@testing-libra
+         ry/react";
+       4 import { toastError } from "@/lib/toast";
+       5 import { CollectionRecommendations } from "./collection-recommen
+         dations";
+       6 import type { ArchiveEntry, Collection } from "@/lib/types";
+       8 vi.mock("@/lib/api", () => ({
+       9   collectionsApi: {
+      10     getAll: vi.fn(),
+     … +185 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/collection-recommendations.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |Assertion…)  ⎿        Tests  6 passed (6)
+  ⎿  (timeout 5m)
+
+● Now mount both on the collection detail page:
+
+● Update(app\collections\[id]\page.tsx)
+  ⎿  Added 2 lines
+       8  import { useRequireAuth } from "@/hooks/use-protected-route";
+       9  import { ArchiveEntryCard } from "@/components/common/archive-e
+          ntry-card";
+      10  import { RelationshipVisualizer } from "@/components/common/rel
+          ationship-visualizer";
+      11 +import { CollectionStats } from "@/components/common/collection
+         +-stats";                                                       
+      12 +import { CollectionRecommendations } from "@/components/common/
+         +collection-recommendations";                                   
+      13  import { ArrowLeft, Edit2, Eye, EyeOff } from "lucide-react";
+      14  import Link from "next/link";
+      15  import { Button } from "@/components/ui/button";
+
+● Update(app\collections\[id]\page.tsx)
+  ⎿  Added 3 lines
+      145          </div>
+      146        </div>
+      147  
+      148 +      {/* Statistics */}                                      
+      149 +      <CollectionStats entries={entries} />                   
+      150 +                                                              
+      151        {/* Entries Grid */}
+      152        <div>
+      153          <h2 className="text-2xl font-bold text-foreground mb-6
+           ">
+
+● Update(app\collections\[id]\page.tsx)
+  ⎿  Added 3 lines
+      178          }))}
+      179        />
+      180  
+      181 +      {/* Recommendations */}                                 
+      182 +      <CollectionRecommendations collectionId={id} entries={en
+          +tries} />                                                     
+      183 +                                                              
+      184        {/* Tags not provided on backend CollectionRead; omitted
+            */}
+      185      </div>
+      186    );
+
+● Collections done. Let me checkpoint with a full run, then move to the
+  Administration and Auth groups.
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx tsc --noEmit 2>&1
+      | head -20 && echo "--- TSC DONE ---" && npx vitest run 2>&1 | grep -E
+      "×|FAIL|Test Fi…)
+  ⎿  --- TSC DONE ---
+      Test Files  27 passed (27)
+           Tests  155 passed (155)
+  ⎿  (timeout 10m)
+
+  Thought for 6s (ctrl+o to expand)
+
+● Clean: 27 files, 155 tests. Now the Administration group (user analytics):
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat lib/api/admin.ts
+      && cat lib/types/admin.ts && cat lib/api/users.ts && cat
+      lib/types/user.ts)
+  ⎿  import { jobsApi } from "./jobs";
+     import { apiClient } from "./client";
+     import type {
+     … +131 lines (ctrl+o to expand)
+
+  Thought for 7s (ctrl+o to expand)
+
+● User has no created_at, so signup-date analytics aren't derivable from the
+  backend — I'll base the dashboard on audit activity and active/inactive counts
+  instead.
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/backend" && grep -rn
+      "record_audit\|AuditLog(" app/ --include=*.py | head -30)
+  ⎿  app/models/audit_log.py:9:class AuditLog(Base):
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/backend" && grep -rn
+      "AuditLog\|audit" app/ --include=*.py -l | head && echo "---" && grep -rn
+      "action=" app/ --include=*…)
+  ⎿  app/api/admin.py
+     app/api/archive_entries.py
+     app/api/auth.py
+     … +38 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/backend" && grep -rn "class
+      AuditAction" -A 40 app/ --include=*.py | head -50)
+  ⎿  app/utils/audit_actions.py:1:class AuditAction:
+     app/utils/audit_actions.py-2-    CREATE_USER = "CREATE_USER"
+     app/utils/audit_actions.py-3-    UPDATE_USER = "UPDATE_USER"
+     … +21 lines (ctrl+o to expand)
+
+● Real action strings confirmed. Building the user analytics dashboard:
+
+● Write(components\common\user-analytics-dashboard.tsx)
+  ⎿  Wrote 322 lines to components\common\user-analytics-dashboard.tsx
+       1 "use client";
+       2 
+       3 import { useCallback, useEffect, useMemo, useState } from "react
+         ";
+       4 import { RefreshCw, Users } from "lucide-react";
+       6 import { toastError } from "@/lib/toast";
+       7 import type { AuditLogRead, User } from "@/lib/types";
+       8 import { Badge } from "@/components/ui/badge";
+       9 import { Button } from "@/components/ui/button";
+      10 import {
+     … +331 lines (ctrl+o to expand)
+
+● Write(components\common\user-analytics-dashboard.test.tsx)
+  ⎿  Wrote 141 lines to components\common\user-analytics-dashboard.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen, waitFor } from "@testing-libra
+         ry/react";
+       4 import { toastError } from "@/lib/toast";
+       5 import { UserAnalyticsDashboard } from "./user-analytics-dashboa
+         rd";
+       6 import type { AuditLogRead, User } from "@/lib/types";
+       8 vi.mock("@/lib/api", () => ({
+       9   adminApi: {
+      10     getAuditLogs: vi.fn(),
+     … +146 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/user-analytics-dashboard.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |AssertionEr…)
+  ⎿       × summarizes user counts by active state 25ms
+     ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      FAIL  components/common/user-analytics-dashboard.test.tsx > UserAnaly
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+  Thought for 5s (ctrl+o to expand)
+
+● Ambiguous "3" — total users tile vs. alice's action count. Scoping to the
+  tiles:
+
+● Update(components\common\user-analytics-dashboard.test.tsx)
+  ⎿  Added 9 lines, removed 6 lines
+       92  
+       93      render(<UserAnalyticsDashboard />);
+       94  
+       95 -    expect(await screen.findByText("Total Users")).toBeInTheDo
+          -cument();                                                     
+       96 -    expect(screen.getByText("3")).toBeInTheDocument();        
+       97 -    expect(screen.getByText("Active Users")).toBeInTheDocument
+          -();                                                           
+       98 -    expect(screen.getByText("Inactive Users")).toBeInTheDocume
+          -nt();                                                         
+       99 -    expect(screen.getByText("Recorded Events")).toBeInTheDocum
+          -ent();                                                        
+      100 -    expect(screen.getByText("5")).toBeInTheDocument();        
+       95 +    const tileValue = async (label: string) => {              
+       96 +      const tile = (await screen.findByText(label)).closest("d
+          +iv");                                                         
+       97 +      return tile?.querySelector("p:last-of-type")?.textConten
+          +t;                                                            
+       98 +    };                                                        
+       99 +                                                              
+      100 +    expect(await tileValue("Recorded Events")).toBe("5");     
+      101 +    expect(await tileValue("Total Users")).toBe("3");         
+      102 +    expect(await tileValue("Active Users")).toBe("2");        
+      103 +    expect(await tileValue("Inactive Users")).toBe("1");      
+      104    });
+      105  
+      106    it("shows each user's total actions and most recent activity
+           ", async () => {
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/user-analytics-dashboard.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |AssertionEr…)
+  ⎿        Tests  6 passed (6)
+  ⎿  (timeout 5m)
+
+● Now mount it on the analytics page:
+
+● Update(app\admin\analytics\page.tsx)
+  ⎿  Added 1 line
+      17  import { useAuth } from "@/contexts/auth-context";
+      18  import { useRequireAuth } from "@/hooks/use-protected-route";
+      19  import { PaginationControls } from "@/components/common/paginat
+          ion-controls";
+      20 +import { UserAnalyticsDashboard } from "@/components/common/use
+         +r-analytics-dashboard";                                        
+      21  import { buildPageQuery, DEFAULT_PAGE_SIZE, pageToOffset } from
+           "@/lib/pagination";
+      22  import {
+      23    AlertTriangle,
+● Update(app\admin\analytics\page.tsx)
+  ⎿  Added 3 lines
+      467              </Card>
+      468            </div>
+      469  
+      470 +          {/* User Analytics */}                              
+      471 +          <UserAnalyticsDashboard />                          
+      472 +                                                              
+      473            {/* Recent User Activity */}
+      474            <Card className="border-border">
+      475              <CardHeader>
+
+● Now the Auth group — account activity. Let me check the header and auth
+  context:
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat
+      hooks/use-protected-route.ts && cat
+      components/common/effective-permissions-panel.tsx | head -40)
+  ⎿  "use client";
+
+     import { useEffect } from "react";
+     … +52 lines (ctrl+o to expand)
+
+● Now the account activity list component and account page:
+
+● Write(components\common\account-activity-list.tsx)
+  ⎿  Wrote 177 lines to components\common\account-activity-list.tsx
+       1 "use client";
+       2 
+       3 import { useCallback, useEffect, useState } from "react";
+       4 import { History, RefreshCw } from "lucide-react";
+       5 import { adminApi } from "@/lib/api";
+       6 import { toastError } from "@/lib/toast";
+       7 import type { AuditLogRead } from "@/lib/types";
+       8 import { Badge } from "@/components/ui/badge";
+       9 import { Button } from "@/components/ui/button";
+      10 import {
+     … +173 lines (ctrl+o to expand)
+
+● Write(app\account\page.tsx)
+  ⎿  Wrote 105 lines to app\account\page.tsx
+       1 "use client";
+       2 
+         t";
+       4 import { useAuth } from "@/contexts/auth-context";
+       5 import { useRequireAuth } from "@/hooks/use-protected-route";
+         -activity-list";
+       7 import { EffectivePermissionsPanel } from "@/components/common/e
+         ffective-permissions-panel";
+       9 import {
+      10   Card,
+     … +113 lines (ctrl+o to expand)
+
+● Now add the Account link to the header dropdown:
+
+● Update(components\layout\header.tsx)
+  ⎿  Added 1 line, removed 1 line
+      3  import { useState } from "react";
+      4  import Link from "next/link";
+      5  import { useRouter } from "next/navigation";
+      6 -import { Search, Loader2, Settings, LogOut } from "lucide-react"
+        -;                                                               
+      6 +import { Search, Loader2, Settings, LogOut, CircleUser } from "l
+        +ucide-react";                                                   
+      7  import { Input } from "@/components/ui/input";
+      8  import { Button } from "@/components/ui/button";
+      9  import {
+
+● Update(components\layout\header.tsx)
+  ⎿  Added 6 lines
+       98                  </span>
+       99                </DropdownMenuLabel>
+      100                <DropdownMenuSeparator />
+      101 +              <DropdownMenuItem asChild>                      
+      102 +                <Link href="/account">                        
+      103 +                  <CircleUser size={18} />                    
+      104 +                  Account                                     
+      105 +                </Link>                                       
+      106 +              </DropdownMenuItem>                             
+      107                {user.is_superuser ? (
+      108                  <DropdownMenuItem asChild>
+      109                    <Link href="/admin/settings">
+
+● Now tests for both. Let me check the existing page-test pattern first:
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(components\common\account-activity-list.test.tsx)
+  ⎿  Wrote 94 lines to components\common\account-activity-list.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen, waitFor } from "@testing-libra
+         ry/react";
+       3 import { adminApi } from "@/lib/api";
+       4 import { toastError } from "@/lib/toast";
+       6 import type { AuditLogRead } from "@/lib/types";
+       7 
+       8 vi.mock("@/lib/api", () => ({
+       9   adminApi: {
+      10     getAuditLogs: vi.fn(),
+     … +92 lines (ctrl+o to expand)
+
+● Write(app\account\page.test.tsx)
+  ⎿  Wrote 113 lines to app\account\page.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen } from "@testing-library/react"
+         ;
+       3 import { adminApi } from "@/lib/api";
+       4 import { useAuth } from "@/contexts/auth-context";
+       6 import type { AuditLogRead, User } from "@/lib/types";
+       7 
+       8 const mockPush = vi.fn();
+       9 
+      10 vi.mock("next/navigation", () => ({
+     … +109 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/account-activity-list.test.tsx app/account/page.test.tsx
+      2>&1 | grep -E "×|…)
+  ⎿        Tests  8 passed (8)
+  ⎿  (timeout 5m)
+
+● Auth group done. Now the Metadata + Artwork groups on the archive detail page
+  — the biggest remaining chunk. Let me read the page and relevant APIs.
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat
+      lib/api/metadata.ts && cat lib/types/metadata.ts && cat
+      components/common/metadata-history-card.tsx && c…)
+  ⎿  import { apiClient } from "./client";
+     import type { MetadataDetails, MetadataSearchResult } from "@/lib/type
+     s";
+     … +168 lines (ctrl+o to expand)
+
+● Now the metadata comparison component:
+
+● Write(components\common\metadata-comparison.tsx)
+  ⎿  Wrote 305 lines to components\common\metadata-comparison.tsx
+       1 "use client";
+       2 
+       3 import { useCallback, useEffect, useMemo, useState } from "react
+         ";
+       4 import { GitCompare, RefreshCw } from "lucide-react";
+       6 import { toastError } from "@/lib/toast";
+       7 import type {
+       8   ArchiveEntry,
+       9   MetadataDetails,
+      10   MetadataSearchResult,
+     … +312 lines (ctrl+o to expand)
+
+● Now the metadata audit trail (timeline styling), artwork quality indicators,
+  comparison dialog, and version history:
+
+● Write(components\common\metadata-audit-trail.tsx)
+  ⎿  Wrote 170 lines to components\common\metadata-audit-trail.tsx
+       1 "use client";
+       2 
+       3 import { useCallback, useEffect, useState } from "react";
+       4 import { History, RefreshCw } from "lucide-react";
+       5 import { adminApi } from "@/lib/api";
+       6 import { toastError } from "@/lib/toast";
+       7 import type { AuditLogRead } from "@/lib/types";
+       8 import { cn } from "@/lib/utils";
+       9 import { Badge } from "@/components/ui/badge";
+      10 import { Button } from "@/components/ui/button";
+     … +167 lines (ctrl+o to expand)
+
+● Write(components\common\artwork-quality-indicators.tsx)
+  ⎿  Wrote 180 lines to components\common\artwork-quality-indicators.tsx
+       1 "use client";
+       2 
+       3 import { useMemo } from "react";
+       4 import { CheckCircle2, Gauge, XCircle } from "lucide-react";
+       5 import type { ArchiveEntry } from "@/lib/types";
+       6 import { cn } from "@/lib/utils";
+       7 import { Badge } from "@/components/ui/badge";
+       8 import {
+       9   Card,
+      10   CardContent,
+     … +180 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat
+      components/common/screenshot-gallery.tsx | head -60 && echo "=== ARTWORK
+      API ===" && cat lib/api/artwork…)
+  ⎿  "use client";
+
+     import { useEffect, useRef, useState } from "react";
+     … +184 lines (ctrl+o to expand)
+
+● Now the artwork comparison dialog and version history:
+
+● Write(components\common\artwork-comparison-dialog.tsx)  ⎿  Wrote 174 lines to components\common\artwork-comparison-dialog.tsx
+       1 "use client";
+       2 
+       3 import { useMemo, useState } from "react";
+       4 import { Columns2 } from "lucide-react";
+       5 import type { ArchiveEntry, Screenshot } from "@/lib/types";
+       6 import { mediaUrl } from "@/lib/media";
+       7 import { Button } from "@/components/ui/button";
+       8 import {
+       9   Dialog,
+      10   DialogContent,
+     … +173 lines (ctrl+o to expand)
+
+● Write(components\common\artwork-version-history.tsx)
+  ⎿  Wrote 246 lines to components\common\artwork-version-history.tsx
+       1 "use client";
+       2 
+       3 import { useCallback, useEffect, useMemo, useState } from "react
+       4 import { ImageIcon, RefreshCw } from "lucide-react";
+       5 import { adminApi } from "@/lib/api";
+       6 import { toastError } from "@/lib/toast";
+       7 import type { ArchiveEntry, AuditLogRead, Screenshot } from "@/l
+       8 import { Badge } from "@/components/ui/badge";
+       9 import { Button } from "@/components/ui/button";
+      10 import {
+     … +247 lines (ctrl+o to expand)
+
+● Now mount all five into a tabbed section on the archive detail page:
+
+● Update(app\archive\[id]\page.tsx)
+  ⎿  Added 1 line, removed 1 line
+      3  import { useEffect, useState } from "react";
+      4  import Link from "next/link";
+      5  import { useParams, useRouter } from "next/navigation";
+      6 -import { ArchiveEntry, Developer, Publisher } from "@/lib/types"
+        -;                                                               
+      6 +import { ArchiveEntry, Developer, Publisher, Screenshot } from "
+        +@/lib/types";                                                   
+      7  import { archiveApi, developersApi, publishersApi } from "@/lib/
+         api";
+      8  import { useAuth } from "@/contexts/auth-context";
+      9  import { useRequireAuth } from "@/hooks/use-protected-route";
+
+● Update(app\archive\[id]\page.tsx)
+  ⎿  Added 6 lines
+      12  import { ScreenshotGallery } from "@/components/common/screensh
+          ot-gallery";
+      13  import { ProviderSourceBadge } from "@/components/common/provid
+          er-source-badge";
+      14  import { MetadataHistoryCard } from "@/components/common/metada
+          ta-history-card";
+      15 +import { MetadataComparison } from "@/components/common/metadat
+         +a-comparison";                                                 
+      16 +import { MetadataAuditTrail } from "@/components/common/metadat
+         +a-audit-trail";                                                
+      17 +import { ArtworkQualityIndicators } from "@/components/common/a
+         +rtwork-quality-indicators";                                    
+      18 +import { ArtworkComparisonDialog } from "@/components/common/ar
+         +twork-comparison-dialog";                                      
+      19 +import { ArtworkVersionHistory } from "@/components/common/artw
+         +ork-version-history";                                          
+      20 +import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/com
+         +ponents/ui/tabs";                                              
+      21  import { mediaUrl } from "@/lib/media";
+      22  import { toastError, toastSuccess } from "@/lib/toast";
+      23  import {
+
+● Now I need screenshots loaded in the page so the artwork components get them:
+
+● Update(app\archive\[id]\page.tsx)
+  ⎿  Added 1 line
+      39    const [entry, setEntry] = useState<ArchiveEntry | null>(null)
+          ;
+      40    const [developers, setDevelopers] = useState<Developer[]>([])
+          ;
+      41    const [publishers, setPublishers] = useState<Publisher[]>([])
+          ;
+      42 +  const [screenshots, setScreenshots] = useState<Screenshot[]>(
+         +[]);                                                           
+      43    const [loading, setLoading] = useState(true);
+      44    const [isFavorited, setIsFavorited] = useState(false);
+      45  
+
+● Update(app\archive\[id]\page.tsx)
+  ⎿  Added 6 lines
+       89  
+       90          setDevelopers(devs.filter(Boolean) as Developer[]);
+       91          setPublishers(pubs.filter(Boolean) as Publisher[]);
+       92 +                                                              
+       93 +        try {                                                 
+       94 +          setScreenshots(await archiveApi.getScreenshots(entry
+          +Id));                                                         
+       95 +        } catch {                                             
+       96 +          setScreenshots([]);                                 
+       97 +        }                                                     
+       98        } catch (error) {
+       99          console.error("Failed to load archive details:", error
+           );
+      100        } finally {
+
+● Now replace the trailing section with a tabbed layout containing all five
+  features:
+
+● Update(app\archive\[id]\page.tsx)
+  ⎿  Added 32 lines, removed 2 lines
+      394        {/* Screenshots */}
+      395        <ScreenshotGallery entryId={entry.id} />
+      396  
+      397 -      {/* Metadata History */}                                
+      398 -      <MetadataHistoryCard entryId={entry.id} />              
+      397 +      {/* Metadata & Artwork Tools */}                        
+      398 +      <Tabs defaultValue="metadata">                          
+      399 +        <TabsList>                                            
+      400 +          <TabsTrigger value="metadata">Metadata</TabsTrigger>
+      401 +          <TabsTrigger value="artwork">Artwork</TabsTrigger>  
+      402 +          <TabsTrigger value="history">History</TabsTrigger>  
+      403 +        </TabsList>                                           
+      404 +        <TabsContent value="metadata" className="space-y-8">  
+      405 +          <MetadataComparison                                 
+      406 +            entry={entry}                                     
+      407 +            storedDevelopers={developers.map((dev) => dev.name
+          +)}                                                            
+      408 +            storedPublishers={publishers.map((pub) => pub.name
+          +)}                                                            
+      409 +          />                                                  
+      410 +        </TabsContent>                                        
+      411 +        <TabsContent value="artwork" className="space-y-8">   
+      412 +          <ArtworkQualityIndicators                           
+      413 +            entry={entry}                                     
+      414 +            screenshotCount={screenshots.length}              
+      415 +          />                                                  
+      416 +          <div>                                               
+      417 +            <ArtworkComparisonDialog                          
+      418 +              entry={entry}                                   
+      419 +              screenshots={screenshots}                       
+      420 +            />                                                
+      421 +          </div>                                              
+      422 +          <ArtworkVersionHistory entry={entry} screenshots={sc
+          +reenshots} />                                                 
+      423 +        </TabsContent>                                        
+      424 +        <TabsContent value="history" className="space-y-8">   
+      425 +          <MetadataAuditTrail entryId={entry.id} />           
+      426 +          <MetadataHistoryCard entryId={entry.id} />          
+      427 +        </TabsContent>                                        
+      428 +      </Tabs>                                                 
+      429      </div>
+      430    );
+      431  }
+
+● Now tests for the four new archive-detail components:
+
+● Write(components\common\metadata-comparison.test.tsx)
+  ⎿  Wrote 176 lines to components\common\metadata-comparison.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen, waitFor } from "@testing-libra
+         ry/react";
+       3 import { metadataApi } from "@/lib/api";
+       4 import { toastError } from "@/lib/toast";
+       6 import type {
+       7   ArchiveEntry,
+       8   MetadataDetails,
+       9   MetadataSearchResult,
+      10 } from "@/lib/types";
+     … +179 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/metadata-comparison.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |AssertionError|U…)
+  ⎿       × flags only the fields that differ 32ms
+     ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      FAIL  components/common/metadata-comparison.test.tsx > MetadataCompar
+     … +2 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/metadata-comparison.test.tsx 2>&1 | grep -B3 -A12 "flags
+      only the fields" |…)
+  ⎿   RUN  v4.1.10 E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend
+
+      ❯ components/common/metadata-comparison.test.tsx (6 tests | 1 failed)
+     … +19 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+  Thought for 7s (ctrl+o to expand)
+
+● closest("div") matches the cell itself. Targeting the row by attribute:
+
+● Update(components\common\metadata-comparison.test.tsx)
+  ⎿  Added 8 lines, removed 4 lines
+      123  
+      124      expect(await screen.findByText("2 fields differ")).toBeInT
+           heDocument();
+      125  
+      126 -    const descriptionRow = screen.getByText("Description").clo
+          -sest("div");                                                  
+      127 -    expect(descriptionRow).toHaveAttribute("data-differs", "tr
+          -ue");                                                         
+      128 -    const titleRow = screen.getByText("Title").closest("div");
+      129 -    expect(titleRow).toHaveAttribute("data-differs", "false");
+      126 +    const rowFor = (field: string) =>                         
+      127 +      screen.getByText(field).closest("[data-differs]");      
+      128 +                                                              
+      129 +    expect(rowFor("Description")).toHaveAttribute("data-differ
+          +s", "true");                                                  
+      130 +    expect(rowFor("Publishers")).toHaveAttribute("data-differs
+          +", "true");                                                   
+      131 +    expect(rowFor("Title")).toHaveAttribute("data-differs", "f
+          +alse");                                                       
+      132 +    expect(rowFor("Developers")).toHaveAttribute("data-differs
+          +", "false");                                                  
+      133 +    expect(rowFor("Release Date")).toHaveAttribute("data-diffe
+          +rs", "false");                                                
+      134    });
+      135  
+      136    it("reports when the candidate matches stored metadata exact
+           ly", async () => {
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/metadata-comparison.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |AssertionError|U…)
+  ⎿        Tests  6 passed (6)
+  ⎿  (timeout 5m)
+
+● Now tests for the remaining three archive components:
+
+● Write(components\common\artwork-quality-indicators.test.tsx)
+  ⎿  Wrote 120 lines to
+     components\common\artwork-quality-indicators.test.tsx
+       1 import { afterEach, describe, expect, it } from "vitest";
+       2 import { cleanup, render, screen } from "@testing-library/react"
+         ;
+       4   ArtworkQualityIndicators,
+       5   buildQualityChecks,
+       6 } from "./artwork-quality-indicators";
+       7 import type { ArchiveEntry } from "@/lib/types";
+       9 const makeEntry = (overrides: Partial<ArchiveEntry> = {}): Archi
+         veEntry => ({
+      10   id: "entry-1",
+     … +118 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/artwork-quality-indicators.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |Assertion…)
+  ⎿       × scores a partially populated entry as good 18ms
+     ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      FAIL  components/common/artwork-quality-indicators.test.tsx > Artwork
+     … +6 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+  Thought for 7s (ctrl+o to expand)
+
+● Actual score is 90 (only logo missing). Let me fix and make the "Good" case
+  genuinely mid-range:
+
+● Update(components\common\artwork-quality-indicators.test.tsx)
+  ⎿  Added 2 lines, removed 4 lines
+      80        <ArtworkQualityIndicators
+      81          entry={makeEntry({
+      82            cover_path: "covers/portal.png",
+      83 -          banner_path: "banners/portal.png",                   
+      83            metadata_confidence: 0.9,
+      84          })}
+      86 -        screenshotCount={1}                                    
+      85        />,
+      86      );
+      87  
+      90 -    expect(screen.getByText("85")).toBeInTheDocument();        
+      91 -    expect(screen.getByText("Excellent")).toBeInTheDocument(); 
+      88 +    expect(screen.getByText("60")).toBeInTheDocument();        
+      89 +    expect(screen.getByText("Good")).toBeInTheDocument();      
+      90    });
+      91  
+      92    it("renders a checklist row for every quality signal", () => 
+          {
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/artwork-quality-indicators.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |Unable" |…)
+  ⎿        Tests  7 passed (7)
+  ⎿  (timeout 5m)
+● Write(components\common\artwork-comparison-dialog.test.tsx)
+  ⎿  Wrote 134 lines to
+     components\common\artwork-comparison-dialog.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen } from "@testing-library/react"
+         ;
+       3 import userEvent from "@testing-library/user-event";
+       4 import {
+       6   buildArtworkOptions,
+       7 } from "./artwork-comparison-dialog";
+       8 import type { ArchiveEntry, Screenshot } from "@/lib/types";
+       9 
+      10 vi.mock("@/lib/media", () => ({
+     … +137 lines (ctrl+o to expand)
+
+● Write(components\common\artwork-version-history.test.tsx)
+  ⎿  Wrote 151 lines to components\common\artwork-version-history.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen, waitFor } from "@testing-libra
+       3 import { adminApi } from "@/lib/api";
+       4 import { toastError } from "@/lib/toast";
+       5 import { ArtworkVersionHistory } from "./artwork-version-history
+       6 import type { ArchiveEntry, AuditLogRead, Screenshot } from "@/l
+         ib/types";
+       7 
+       9   adminApi: {
+      10     getAuditLogs: vi.fn(),
+     … +156 lines (ctrl+o to expand)
+
+● Write(components\common\metadata-audit-trail.test.tsx)
+  ⎿  Wrote 113 lines to components\common\metadata-audit-trail.test.tsx
+       1 import { afterEach, describe, expect, it, vi } from "vitest";
+       2 import { cleanup, render, screen, waitFor } from "@testing-libra
+         ry/react";
+       3 import { adminApi } from "@/lib/api";
+       4 import { toastError } from "@/lib/toast";
+       6 import type { AuditLogRead } from "@/lib/types";
+       7 
+       8 vi.mock("@/lib/api", () => ({
+       9   adminApi: {
+      10     getAuditLogs: vi.fn(),
+     … +111 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/artwork-comparison-dialog.test.tsx
+      components/common/artwork-version-histor…)
+  ⎿        Tests  17 passed (17)
+  ⎿  (timeout 5m)
+
+● All 17 pass. Checkpointing:
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx tsc --noEmit 2>&1
+      | head -20 && echo "--- TSC OK ---" && npx vitest run 2>&1 | grep -E
+      "×|FAIL|Test File…)
+  ⎿  --- TSC OK ---
+      Test Files  35 passed (35)
+           Tests  199 passed (199)
+  ⎿  (timeout 10m)
+
+● 35 files, 199 tests, tsc clean. Now the advanced search builder:
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(components\common\advanced-search-builder.tsx)
+  ⎿  Wrote 263 lines to components\common\advanced-search-builder.tsx
+       1 "use client";
+       2 
+       3 import { useState } from "react";
+       4 import { ListFilter, Plus, Search, Trash2 } from "lucide-react";
+       5 import { Button } from "@/components/ui/button";
+       6 import {
+       7   Card,
+       8   CardContent,
+       9   CardDescription,
+      10   CardHeader,
+     … +266 lines (ctrl+o to expand)
+
+  Thought for 7s (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat lib/api/search.ts
+      && cat lib/types/search.ts)
+  ⎿  import type { SearchFilters, SearchResults } from "@/lib/types";
+     import { archiveApi } from "./archives";
+     import { collectionsApi } from "./collections";
+     … +78 lines (ctrl+o to expand)
+
+  Thought for 6s (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && sed -n 1,80p
+      lib/api/archives.ts)
+  ⎿  import { apiClient } from "./client";
+     import type { ArchiveEntry, SearchFilters } from "@/lib/types";
+     … +76 lines (ctrl+o to expand)
+
+  Thought for 9s (ctrl+o to expand)
+
+● Backend search supports only positive single-value filters, so I'll map
+  equals/contains to server filters and apply not-equals as a client-side
+  exclusion. Wiring into the search page:
+
+● Update(app\search\page.tsx)
+  ⎿  Added 5 lines
+      19  import { CollectionCard } from "@/components/common/collection-
+          card";
+      20  import { TagCard } from "@/components/common/tag-card";
+      21  import { DeveloperCard } from "@/components/common/developer-ca
+          rd";
+      22 +import {                                                       
+      23 +  AdvancedSearchBuilder,                                       
+      24 +  type SearchCondition,                                        
+      25 +  type SearchField,                                            
+      26 +} from "@/components/common/advanced-search-builder";          
+      27  import { Button } from "@/components/ui/button";
+      28  import { Input } from "@/components/ui/input";
+      29  import {
+
+● Update(app\search\page.tsx)
+  ⎿  Added 7 lines, removed 1 line
+      34    SelectValue,
+      35  } from "@/components/ui/select";
+      36  import { toastInfo, toastSuccess } from "@/lib/toast";
+      37 -import { BookmarkPlus, FileText, Search, Trash2 } from "lucide-
+         -react";                                                        
+      37 +import {                                                       
+      38 +  BookmarkPlus,                                                
+      39 +  FileText,                                                    
+      40 +  ListFilter,                                                  
+      41 +  Search,                                                      
+      42 +  Trash2,                                                      
+      43 +} from "lucide-react";                                         
+      44  
+      45  const METADATA_STATUSES = ["MATCHED", "PARTIAL", "UNMATCHED", "
+          MANUAL"];
+      46  const VERIFICATION_STATUSES = [
+
+● Now add the exclusion state, apply handler, toggle, and result filtering:
+
+● Update(app\search\page.tsx)
+  ⎿  Added 2 lines
+      68    const [loading, setLoading] = useState(!!initialQuery);
+      69    const [savedSearches, setSavedSearches] = useState<SavedSearc
+          h[]>([]);
+      70    const [restored, setRestored] = useState(false);
+      71 +  const [showBuilder, setShowBuilder] = useState(false);       
+      72 +  const [exclusions, setExclusions] = useState<SearchCondition[
+         +]>([]);                                                        
+      73  
+      74    const { user, loading: authLoading } = useAuth();
+      75  
+
+● Update(app\search\page.tsx)
+  ⎿  Added 32 lines
+      209      toastSuccess("Saved search deleted");
+      210    };
+      211  
+      212 +  const handleApplyConditions = (conditions: SearchCondition[]
+          +) => {                                                        
+      213 +    const setters: Record<SearchField, (value: string) => void
+          +> = {                                                         
+      214 +      query: setQuery,                                        
+      215 +      genre: setGenre,                                        
+      216 +      tag: setTag,                                            
+      217 +      developer: setDeveloper,                                
+      218 +      publisher: setPublisher,                                
+      219 +      franchise: setFranchise,                                
+      220 +      storageDevice: setStorageDevice,                        
+      221 +      metadataStatus: setMetadataStatus,                      
+      222 +      verificationStatus: setVerificationStatus,              
+      223 +    };                                                        
+      224 +                                                              
+      225 +    for (const condition of conditions) {                     
+      226 +      if (condition.operator === "not-equals") {              
+      227 +        continue;                                             
+      228 +      }                                                       
+      229 +      setters[condition.field](condition.value);              
+      230 +    }                                                         
+      231 +                                                              
+      232 +    setExclusions(                                            
+      233 +      conditions.filter(                                      
+      234 +        (condition) => condition.operator === "not-equals" && 
+          +condition.value,                                              
+      235 +      ),                                                      
+      236 +    );                                                        
+      237 +    toastInfo(                                                
+      238 +      `Applied ${conditions.length} condition${               
+      239 +        conditions.length === 1 ? "" : "s"                    
+      240 +      }`,                                                     
+      241 +    );                                                        
+      242 +  };                                                          
+      243 +                                                              
+      244    return (
+      245      <div className="space-y-8">
+      246        {/* Header */}
+
+● Now apply exclusions to the results and render the toggle + builder:
+
+● Update(app\search\page.tsx)
+  ⎿  Added 1 line, removed 1 line
+      165        setLoading(true);
+      166        try {
+      167          const data = await searchApi.search(query, filters);
+      168 -        setResults(data);                                     
+      168 +        setResults(applyExclusions(data, exclusions));        
+      169        } catch (error) {
+      170          console.error("Search failed:", error);
+      171        } finally {
+
+● Update(app\search\page.tsx)
+  ⎿  Added 1 line, removed 1 line
+      175  
+      176      const debounceTimer = setTimeout(performSearch, 300);
+      177      return () => clearTimeout(debounceTimer);
+      178 -  }, [query, filters, authLoading, user]);                    
+      178 +  }, [query, filters, exclusions, authLoading, user]);        
+      179  
+      180    const handleSearch = (e: React.FormEvent) => {
+      181      e.preventDefault();
+
+● Now add the applyExclusions helper at module scope:
+
+● Update(app\search\page.tsx)
+  ⎿  Added 35 lines
+      51    "UNKNOWN",
+      52  ];
+      53  
+      54 +const ENTRY_FIELD_VALUES: Partial<                             
+      55 +  Record<SearchField, (entry: SearchResults["entries"][number])
+         + => string>                                                    
+      56 +> = {                                                          
+      57 +  query: (entry) => entry.title,                               
+      58 +  storageDevice: (entry) => entry.storage_device ?? "",        
+      59 +  metadataStatus: (entry) => entry.metadata_status,            
+      60 +  verificationStatus: (entry) => entry.verification_status,    
+      61 +};                                                             
+      62 +                                                               
+      63 +function applyExclusions(                                      
+      64 +  data: SearchResults,                                         
+      65 +  exclusions: SearchCondition[],                               
+      66 +): SearchResults {                                             
+      67 +  if (exclusions.length === 0) {                               
+      68 +    return data;                                               
+      69 +  }                                                            
+      70 +                                                               
+      71 +  const entries = data.entries.filter((entry) =>               
+      72 +    exclusions.every((condition) => {                          
+      73 +      const read = ENTRY_FIELD_VALUES[condition.field];        
+      74 +      if (!read) {                                             
+      75 +        return true;                                           
+      76 +      }                                                        
+      77 +      return (                                                 
+      78 +        read(entry).trim().toLowerCase() !==                   
+      79 +        condition.value.trim().toLowerCase()                   
+      80 +      );                                                       
+      81 +    }),                                                        
+      82 +  );                                                           
+      83 +                                                               
+      84 +  const removed = data.entries.length - entries.length;        
+      85 +                                                               
+      86 +  return { ...data, entries, total: data.total - removed };    
+      87 +}                                                              
+      88 +                                                               
+      89  function SearchPageContent() {
+      90    const searchParams = useSearchParams();
+      91    const initialQuery = searchParams.get("q") || "";
+● Now render the toggle button and the builder:
+
+● Update(app\search\page.tsx)
+  ⎿  Added 20 lines, removed 4 lines
+      281        {/* Header */}
+      282        <div className="flex items-center justify-between gap-4"
+           >
+      283          <h1 className="text-3xl font-bold text-foreground">Sea
+           rch</h1>
+      284 -        <Button type="button" variant="outline" onClick={handl
+          -eSaveSearch}>                                                 
+      285 -          <BookmarkPlus size={16} />                          
+      286 -          Save search                                         
+      287 -        </Button>                                             
+      284 +        <div className="flex flex-wrap items-center gap-2">   
+      285 +          <Button                                             
+      286 +            type="button"                                     
+      287 +            variant="outline"                                 
+      288 +            aria-expanded={showBuilder}                       
+      289 +            onClick={() => setShowBuilder((previous) => !previ
+          +ous)}                                                         
+      290 +          >                                                   
+      291 +            <ListFilter size={16} />                          
+      292 +            Advanced                                          
+      293 +          </Button>                                           
+      294 +          <Button type="button" variant="outline" onClick={han
+          +dleSaveSearch}>                                               
+      295 +            <BookmarkPlus size={16} />                        
+      296 +            Save search                                       
+      297 +          </Button>                                           
+      298 +        </div>                                                
+      299        </div>
+      300  
+      301 +      {/* Advanced Search Builder */}                         
+      302 +      {showBuilder && (                                       
+      303 +        <AdvancedSearchBuilder onApply={handleApplyConditions}
+          + />                                                           
+      304 +      )}                                                      
+      305 +                                                              
+      306        {/* Saved Searches */}
+      307        {savedSearches.length > 0 && (
+      308          <div className="flex flex-wrap items-center gap-2">
+
+● Now the tests for the builder and search page integration:
+
+● Write(components\common\advanced-search-builder.test.tsx)
+  ⎿  Wrote 126 lines to components\common\advanced-search-builder.test.tsx
+      1 import { afterEach, describe, expect, it, vi } from "vitest";
+      2 import { cleanup, render, screen } from "@testing-library/react";
+      3 import userEvent from "@testing-library/user-event";
+      4 import { AdvancedSearchBuilder } from "./advanced-search-builder"
+        ;
+      5 
+      6 describe("AdvancedSearchBuilder", () => {
+      7   afterEach(() => {
+      8     cleanup();
+      9   });
+     … +143 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/advanced-search-builder.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |Unable|Found…)
+  ⎿       × offers a fixed value list for status fields 1099ms
+          × clears the value when the field changes 1104ms
+     ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+     … +9 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+  Thought for 5s (ctrl+o to expand)
+
+● Radix Select dropdowns need jsdom stubs. Let me check the setup file:
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat vitest.setup.ts
+      && grep -rln "SelectTrigger\|getByRole(\"option\"" --include=*.test.tsx .
+      | grep -v node…)
+  ⎿  import "@testing-library/jest-dom/vitest";
+     ./components/common/advanced-search-builder.test.tsx
+
+  Thought for 8s (ctrl+o to expand)
+
+● No existing test opens a Radix Select — it needs pointer APIs jsdom lacks.
+  Adding the standard stubs to the shared setup:
+
+● Write(vitest.setup.ts)
+  ⎿  Error writing file
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(vitest.setup.ts)
+  ⎿  Added 24 lines
+       1  import "@testing-library/jest-dom/vitest";
+       2 +                                                               
+       3 +if (!Element.prototype.hasPointerCapture) {                    
+       4 +  Element.prototype.hasPointerCapture = () => false;           
+       5 +}                                                              
+       6 +                                                               
+       7 +if (!Element.prototype.setPointerCapture) {                    
+       8 +  Element.prototype.setPointerCapture = () => {};              
+       9 +}                                                              
+      10 +                                                               
+      11 +if (!Element.prototype.releasePointerCapture) {                
+      12 +  Element.prototype.releasePointerCapture = () => {};          
+      13 +}                                                              
+      14 +                                                               
+      15 +if (!Element.prototype.scrollIntoView) {                       
+      16 +  Element.prototype.scrollIntoView = () => {};                 
+      17 +}                                                              
+      18 +                                                               
+      19 +if (!globalThis.ResizeObserver) {                              
+      20 +  globalThis.ResizeObserver = class ResizeObserver {           
+      21 +    observe() {}                                               
+      22 +    unobserve() {}                                             
+      23 +    disconnect() {}                                            
+      24 +  };                                                           
+      25 +}                                                              
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      components/common/advanced-search-builder.test.tsx 2>&1 | grep -E
+      "×|FAIL|Tests |Unable|Expec…)
+  ⎿        Tests  7 passed (7)
+  ⎿  (timeout 5m)
+
+● All 7 pass. Now the search page integration test:
+
+● Write(app\search\page.test.tsx)
+  ⎿  Wrote 189 lines to app\search\page.test.tsx
+      1 import { afterEach, describe, expect, it, vi } from "vitest";
+      2 import { cleanup, render, screen, waitFor } from "@testing-librar
+        y/react";
+      3 import userEvent from "@testing-library/user-event";
+      4 import { searchApi } from "@/lib/api";
+      6 import SearchPage from "./page";
+      7 import type { ArchiveEntry, SearchResults, User } from "@/lib/typ
+        es";
+      8 
+      9 const mockPush = vi.fn();
+     … +204 lines (ctrl+o to expand)
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      app/search/page.test.tsx 2>&1 | grep -E "×|FAIL|Tests
+      |Unable|Expected|Received|toHaveBeen" |…)
+  ⎿       × applies a built condition to the search filters 1722ms
+     ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      FAIL  app/search/page.test.tsx > SearchPage advanced builder > applie
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+  Thought for 6s (ctrl+o to expand)
+
+● The page skips searching when the keyword is empty — so a developer-only
+  condition correctly performs no request. Adding a keyword to that test:
+
+● Update(app\search\page.test.tsx)
+  ⎿  Added 2 lines, removed 1 line
+      115      await user.click(screen.getByLabelText("Condition 1 field"
+           ));
+      116      await user.click(await screen.findByRole("option", { name:
+            "Developer" }));
+      117      await user.type(screen.getByLabelText("Condition 1 value")
+           , "Valve");
+      118 +    await user.type(screen.getByLabelText("Search archive"), "
+          +portal");                                                     
+      119      await user.click(screen.getByRole("button", { name: /^appl
+           y$/i }));
+      120  
+      121      await waitFor(() =>
+      122        expect(searchApi.search).toHaveBeenCalledWith(
+      122 -        "",                                                   
+      123 +        "portal",                                             
+      124          expect.objectContaining({ developers: ["Valve"] }),
+      125        ),
+      126      );
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && npx vitest run
+      app/search/page.test.tsx 2>&1 | grep -E "×|FAIL|Tests
+      |Unable|Expected|Received" | head -20)
+  ⎿        Tests  4 passed (4)
+  ⎿  (timeout 5m)
+
+● Now the UX group: micro-interactions, animation polish, enhanced transitions.
+
+● Bash(cd "E:/OPERA/Opus_10 - Ludexis/Ludexis/frontend" && cat app/globals.css |
+      head -80 && echo "=== TAIL ===" && tail -40 app/globals.css)
+  ⎿  @import 'tailwindcss';
+     @import 'tw-animate-css';
+     … +118 lines (ctrl+o to expand)
+
+● API Error: 400 You have exceeded your daily token limit. You can 
+  resume at 2026-08-05 00:00 UTC.
+
+✻ Churned for 18m 45s

@@ -18,9 +18,9 @@ export default function PublisherDetailPage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -28,18 +28,15 @@ export default function PublisherDetailPage() {
     }
 
     const loadData = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const publisherData = await publishersApi.getById(id, accessToken);
+        const publisherData = await publishersApi.getById(id);
         setPublisher(publisherData);
 
-        const publisherEntries = await publishersApi.getEntries(
-          id,
-          accessToken,
-        );
+        const publisherEntries = await publishersApi.getEntries(id);
         setEntries(publisherEntries);
       } catch (error) {
         console.error("Failed to load publisher:", error);
@@ -49,7 +46,7 @@ export default function PublisherDetailPage() {
     };
 
     loadData();
-  }, [id]);
+  }, [id, authLoading, user]);
 
   if (loading) {
     return (

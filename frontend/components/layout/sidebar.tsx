@@ -39,6 +39,9 @@ const adminItems = [
   { label: 'Permissions', href: '/admin/permissions' },
   { label: 'Settings', href: '/admin/settings' },
   { label: 'Audit Logs', href: '/admin/audit-logs' },
+  { label: 'Monitoring', href: '/admin/monitoring' },
+  { label: 'Analytics', href: '/admin/analytics' },
+  { label: 'Duplicates', href: '/admin/duplicates' },
 ]
 
 export function Sidebar() {
@@ -51,9 +54,12 @@ export function Sidebar() {
     <>
       {/* Mobile Toggle */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-50 p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-accent">Ludexis</h1>
+        <p className="text-xl font-bold text-accent">Ludexis</p>
         <button
           onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={isOpen}
+          aria-controls="app-sidebar"
           className="p-2 hover:bg-muted rounded-lg transition-colors"
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
@@ -62,17 +68,18 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <aside
+        id="app-sidebar"
         className={`fixed lg:relative top-0 left-0 h-screen w-64 bg-card border-r border-border overflow-y-auto transition-transform lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } z-40 lg:z-auto pt-20 lg:pt-0`}
       >
         {/* Logo */}
         <div className="hidden lg:flex items-center justify-center h-20 border-b border-border">
-          <h1 className="text-2xl font-bold text-accent">Ludexis</h1>
+          <p className="text-2xl font-bold text-accent">Ludexis</p>
         </div>
 
         {/* Navigation */}
-        <nav className="p-4">
+        <nav aria-label="Primary" className="p-4">
           <div className="space-y-2">
             {navigationItems.map((item) => {
               const Icon = item.icon

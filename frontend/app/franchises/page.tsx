@@ -10,6 +10,7 @@ import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { Input } from "@/components/ui/input";
 import { Search, Film } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { mediaUrl } from "@/lib/media";
 
 export default function FranchisesPage() {
   const [franchises, setFranchises] = useState<Franchise[]>([]);
@@ -21,9 +22,9 @@ export default function FranchisesPage() {
   );
   const [franchiseEntries, setFranchiseEntries] = useState<ArchiveEntry[]>([]);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -31,12 +32,12 @@ export default function FranchisesPage() {
     }
 
     const loadFranchises = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await franchisesApi.getAll(accessToken);
+        const data = await franchisesApi.getAll();
         setFranchises(data);
         setFilteredFranchises(data);
         if (data.length > 0) {
@@ -50,7 +51,7 @@ export default function FranchisesPage() {
     };
 
     loadFranchises();
-  }, []);
+  }, [authLoading, user]);
 
   // Filter franchises
   useEffect(() => {
@@ -75,12 +76,9 @@ export default function FranchisesPage() {
     }
 
     const loadEntries = async () => {
-      if (!selectedFranchise || !accessToken) return;
+      if (!selectedFranchise || !user) return;
       try {
-        const entries = await franchisesApi.getEntries(
-          selectedFranchise.id,
-          accessToken,
-        );
+        const entries = await franchisesApi.getEntries(selectedFranchise.id);
         setFranchiseEntries(entries);
       } catch (error) {
         console.error("Failed to load franchise entries:", error);
@@ -88,7 +86,7 @@ export default function FranchisesPage() {
     };
 
     loadEntries();
-  }, [selectedFranchise]);
+  }, [selectedFranchise, authLoading, user]);
 
   if (authLoading || loading) {
     return (
@@ -159,7 +157,7 @@ export default function FranchisesPage() {
                 {selectedFranchise.banner_path && (
                   <div className="w-full h-48 rounded-lg overflow-hidden border border-border">
                     <img
-                      src={selectedFranchise.banner_path}
+                      src={mediaUrl(selectedFranchise.banner_path)}
                       alt={selectedFranchise.name}
                       className="w-full h-full object-cover"
                     />

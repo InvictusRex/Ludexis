@@ -7,9 +7,13 @@ import { collectionsApi, archiveApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
+import { RelationshipVisualizer } from "@/components/common/relationship-visualizer";
+import { CollectionStats } from "@/components/common/collection-stats";
+import { CollectionRecommendations } from "@/components/common/collection-recommendations";
 import { ArrowLeft, Edit2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { mediaUrl } from "@/lib/media";
 
 export default function CollectionDetailPage() {
   const params = useParams();
@@ -18,9 +22,9 @@ export default function CollectionDetailPage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -28,15 +32,15 @@ export default function CollectionDetailPage() {
     }
 
     const loadData = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const collectionData = await collectionsApi.getById(id, accessToken);
+        const collectionData = await collectionsApi.getById(id);
         setCollection(collectionData);
 
-        const allEntries = await archiveApi.getAll(0, 100, accessToken);
+        const allEntries = await archiveApi.getAll(0, 100);
         const collectionEntries = allEntries.filter((e) =>
           collectionData.entry_ids?.includes(e.id),
         );
@@ -49,7 +53,7 @@ export default function CollectionDetailPage() {
     };
 
     loadData();
-  }, [id]);
+  }, [id, authLoading, user]);
 
   if (loading) {
     return (
@@ -90,7 +94,7 @@ export default function CollectionDetailPage() {
       <div className="relative h-96 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
         {collection.banner_path ? (
           <img
-            src={collection.banner_path}
+            src={mediaUrl(collection.banner_path)}
             alt={collection.name}
             className="w-full h-full object-cover"
           />
@@ -141,6 +145,9 @@ export default function CollectionDetailPage() {
         </div>
       </div>
 
+      {/* Statistics */}
+      <CollectionStats entries={entries} />
+
       {/* Entries Grid */}
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-6">
@@ -160,6 +167,19 @@ export default function CollectionDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Related Entries */}
+      <RelationshipVisualizer
+        title="Related Entries"
+        relations={entries.map((entry) => ({
+          label: "Member",
+          title: entry.title,
+          href: `/archive/${entry.id}`,
+        }))}
+      />
+
+      {/* Recommendations */}
+      <CollectionRecommendations collectionId={id} entries={entries} />
 
       {/* Tags not provided on backend CollectionRead; omitted */}
     </div>

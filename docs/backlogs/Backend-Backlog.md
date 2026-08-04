@@ -177,3 +177,22 @@
 - ✅~~Metadata provider tests.~~
 - ✅~~Background job tests.~~
 - ✅~~End-to-end API test suite.~~
+- ✅~~Screenshots listing endpoint & metadata_confidence persistence tests.~~ (`backend/tests/test_screenshots_api.py`, 7 tests; full suite 140 passed)
+
+---
+
+## ✅~~Backend Additions (Latest Wave)~~
+
+- ✅~~`GET /api/archive-entries/{id}/screenshots` endpoint with `ScreenshotRead` schema.~~
+- ✅~~`metadata_confidence` field on archive entries, persisted by `auto_match_archive` (`round(score, 3)`, incl. `0.0` on UNMATCHED).~~
+- ✅~~Alembic migration `4c81f2a9b6d7_add_metadata_confidence` (applied to dev DB).~~
+- ✅~~Static `/media` mount serving the artwork storage dir (fixes frontend cover/banner/logo/screenshot URL resolution).~~
+
+---
+
+## Known Issues
+
+### Low Priority
+
+- [ ] ~~Fix `ArchiveEntryService.update` PATCH semantics.~~ The service uses `model_dump(exclude_none=False)` (`app/services/archive_entry.py`), so a partial `PATCH /api/archive-entries/{id}` nulls NOT-NULL columns (`file_path`, `metadata_status`, `verification_status`) and returns a 500. Current design is intentional: callers must send a full merged (old + new) payload, which the frontend does. Future improvement: switch to `exclude_none=True` for true PATCH semantics.
+- [ ] `frontend/lib/api/archives.ts` `archiveApi.update` accepts `Partial<ArchiveEntry>` and has no callers today; if ever called with a partial payload it will hit the 500 above. Revisit when the backend fix above lands.

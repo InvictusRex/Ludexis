@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import type { User } from "@/lib/types";
 
-export function useRequireAuth(accessToken: string | null, loading: boolean) {
+export function useRequireAuth(user: User | null, loading: boolean) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && accessToken === null) {
+    if (!loading && user === null) {
       router.push("/auth/login");
     }
-  }, [accessToken, loading, router]);
+  }, [loading, router, user]);
 }

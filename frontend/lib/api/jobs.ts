@@ -1,45 +1,44 @@
 import { apiClient } from "./client";
-import type { LibraryJob } from "@/lib/types";
+import type { JobHistory, JobHistoryCreate, JobType } from "@/lib/types";
 
 export const jobsApi = {
   async getAll(
-    jobType?: string,
+    jobType?: JobType,
     status?: string,
     offset = 0,
     limit = 100,
-    token?: string,
-  ): Promise<LibraryJob[]> {
+  ): Promise<JobHistory[]> {
     const params = new URLSearchParams();
     if (jobType) params.set("job_type", jobType);
     if (status) params.set("status", status);
     params.set("offset", String(offset));
     params.set("limit", String(limit));
 
-    const qs = params.toString() ? `?${params.toString()}` : "";
-    return apiClient.get<LibraryJob[]>(`/jobs/${qs}`, token);
+    return apiClient.get<JobHistory[]>(`/jobs/?${params.toString()}`);
   },
 
-  async getQueue(token?: string) {
-    return jobsApi.getAll(undefined, "QUEUED", 0, 100, token);
+  async getById(id: string): Promise<JobHistory> {
+    return apiClient.get<JobHistory>(`/jobs/${id}`);
   },
 
-  async getRunning(token?: string) {
-    return jobsApi.getAll(undefined, "RUNNING", 0, 100, token);
+  async getPending(offset = 0, limit = 100): Promise<JobHistory[]> {
+    return jobsApi.getAll(undefined, "PENDING", offset, limit);
   },
 
-  async getCompleted(token?: string) {
-    return jobsApi.getAll(undefined, "COMPLETED", 0, 100, token);
+  async getRunning(offset = 0, limit = 100): Promise<JobHistory[]> {
+    return jobsApi.getAll(undefined, "RUNNING", offset, limit);
   },
 
-  async start(jobPayload: unknown, token?: string) {
-    return apiClient.post<LibraryJob>(`/jobs/start`, jobPayload, token);
+  async getCompleted(offset = 0, limit = 100): Promise<JobHistory[]> {
+    return jobsApi.getAll(undefined, "SUCCESS", offset, limit);
   },
 
-  async cancel(jobId: string, token?: string) {
-    return apiClient.post<LibraryJob>(
-      `/jobs/${jobId}/cancel`,
-      undefined,
-      token,
-    );
+  async start(jobType: JobType): Promise<JobHistory> {
+    const payload: JobHistoryCreate = { job_type: jobType };
+    return apiClient.post<JobHistory>("/jobs/start", payload);
+  },
+
+  async cancel(jobId: string): Promise<JobHistory> {
+    return apiClient.post<JobHistory>(`/jobs/${jobId}/cancel`);
   },
 };

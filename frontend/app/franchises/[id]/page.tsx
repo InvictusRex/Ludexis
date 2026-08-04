@@ -7,9 +7,11 @@ import { franchisesApi, archiveApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
+import { RelationshipVisualizer } from "@/components/common/relationship-visualizer";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { mediaUrl } from "@/lib/media";
 
 export default function FranchiseDetailPage() {
   const params = useParams();
@@ -18,9 +20,9 @@ export default function FranchiseDetailPage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -28,18 +30,15 @@ export default function FranchiseDetailPage() {
     }
 
     const loadData = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const franchiseData = await franchisesApi.getById(id, accessToken);
+        const franchiseData = await franchisesApi.getById(id);
         setFranchise(franchiseData);
 
-        const franchiseEntries = await franchisesApi.getEntries(
-          id,
-          accessToken,
-        );
+        const franchiseEntries = await franchisesApi.getEntries(id);
         setEntries(franchiseEntries);
       } catch (error) {
         console.error("Failed to load franchise:", error);
@@ -49,7 +48,7 @@ export default function FranchiseDetailPage() {
     };
 
     loadData();
-  }, [id, accessToken, authLoading]);
+  }, [id, authLoading, user]);
 
   if (loading) {
     return (
@@ -90,7 +89,7 @@ export default function FranchiseDetailPage() {
       <div className="relative h-80 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20">
         {franchise.banner_path ? (
           <img
-            src={franchise.banner_path}
+            src={mediaUrl(franchise.banner_path)}
             alt={franchise.name}
             className="w-full h-full object-cover"
           />
@@ -125,6 +124,16 @@ export default function FranchiseDetailPage() {
           {/* chronologyInfo not provided by backend; omitted */}
         </div>
       </div>
+
+      {/* Related Series */}
+      <RelationshipVisualizer
+        title="Related Series"
+        relations={entries.map((entry) => ({
+          label: "Series entry",
+          title: entry.title,
+          href: `/archive/${entry.id}`,
+        }))}
+      />
 
       {/* Timeline View */}
       {entries.length > 0 && (

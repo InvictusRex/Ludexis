@@ -16,9 +16,9 @@ export default function DevelopersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -26,12 +26,12 @@ export default function DevelopersPage() {
     }
 
     const loadDevelopers = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await developersApi.getAll(accessToken);
+        const data = await developersApi.getAll();
         setDevelopers(data);
         setFilteredDevelopers(data);
       } catch (error) {
@@ -42,7 +42,7 @@ export default function DevelopersPage() {
     };
 
     loadDevelopers();
-  }, []);
+  }, [authLoading, user]);
 
   // Filter developers
   useEffect(() => {

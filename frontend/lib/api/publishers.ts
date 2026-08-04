@@ -3,15 +3,15 @@ import { archiveApi } from "./archives";
 import type { Publisher } from "@/lib/types";
 
 export const publishersApi = {
-  async getAll(token?: string): Promise<Publisher[]> {
-    return apiClient.get<Publisher[]>("/publishers", token);
+  async getAll(): Promise<Publisher[]> {
+    return apiClient.get<Publisher[]>("/publishers");
   },
 
-  async getById(id: string, token?: string): Promise<Publisher> {
-    return apiClient.get<Publisher>(`/publishers/${id}`, token);
+  async getById(id: string): Promise<Publisher> {
+    return apiClient.get<Publisher>(`/publishers/${id}`);
   },
 
-  async getEntries(id: string, token?: string) {
-    return archiveApi.getByPublisher(id, token);
+  async getEntries(id: string) {
+    return archiveApi.getByPublisher(id);
   },
 };
