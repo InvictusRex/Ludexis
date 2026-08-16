@@ -9,7 +9,11 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col lg:mt-20">
         <Header />
-        <main className="flex-1 min-w-0 w-full px-4 lg:px-8 overflow-auto mt-16 lg:mt-0">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="flex-1 min-w-0 w-full px-4 lg:px-8 overflow-auto mt-16 lg:mt-0 outline-none"
+        >
           {children}
         </main>
       </div>

@@ -38,9 +38,9 @@ export default function Home() {
   });
   const [loading, setLoading] = useState(true);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -48,7 +48,7 @@ export default function Home() {
     }
 
     const loadData = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
@@ -60,22 +60,22 @@ export default function Home() {
           allDevelopers,
           allFranchises,
         ] = await Promise.all([
-          collectionsApi.getAll(accessToken),
-          archiveApi.getAll(0, 100, accessToken),
-          tagsApi.getAll(accessToken),
-          developersApi.getAll(accessToken),
-          franchisesApi.getAll(accessToken),
+          collectionsApi.getAll(),
+          archiveApi.getAll(0, 100),
+          tagsApi.getAll(),
+          developersApi.getAll(),
+          franchisesApi.getAll(),
         ]);
 
         // Use a simple preview slice (backend does not expose featured flags)
         const featuredCollections = allCollections.slice(0, 6);
-        const featuredTags = allTags.slice(0, 8);
+        const featuredTags = allTags.items.slice(0, 8);
 
         setCollections(featuredCollections);
         setEntries(allEntries.slice(0, 8));
         setTags(featuredTags);
-        setDevelopers(allDevelopers.slice(0, 6));
-        setFranchises(allFranchises);
+        setDevelopers(allDevelopers.items.slice(0, 6));
+        setFranchises(allFranchises.items);
 
         // Calculate stats
         const matchedCount = allEntries.filter(
@@ -89,8 +89,8 @@ export default function Home() {
         setStats({
           totalEntries: allEntries.length,
           totalCollections: allCollections.length,
-          totalTags: allTags.length,
-          totalDevelopers: allDevelopers.length,
+          totalTags: allTags.total,
+          totalDevelopers: allDevelopers.total,
           metadataCoverage: coverage,
         });
       } catch (error) {
@@ -101,7 +101,7 @@ export default function Home() {
     };
 
     loadData();
-  }, []);
+  }, [authLoading, user]);
 
   if (authLoading || loading) {
     return (
@@ -115,6 +115,7 @@ export default function Home() {
 
   return (
     <div className="space-y-12">
+      <h1 className="sr-only">Home</h1>
       {/* Archive Stats */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
         <div className="bg-card p-6 rounded-lg border border-border">
@@ -155,7 +156,7 @@ export default function Home() {
 
       {/* Featured Collections */}
       {collections.length > 0 && (
-        <section>
+        <section className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-foreground">
               Featured Collections
@@ -174,7 +175,7 @@ export default function Home() {
 
       {/* Featured Tags */}
       {tags.length > 0 && (
-        <section>
+        <section className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-foreground">
               Featured Tags
@@ -183,7 +184,7 @@ export default function Home() {
               View All →
             </Link>
           </div>
-          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
+      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(220px,1fr))] animate-fade-in-up">
             {tags.map((tag) => (
               <TagCard key={tag.id} tag={tag} />
             ))}
@@ -193,7 +194,7 @@ export default function Home() {
 
       {/* Developer Spotlight */}
       {developers.length > 0 && (
-        <section>
+        <section className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-foreground">
               Developer Spotlight
@@ -212,7 +213,7 @@ export default function Home() {
 
       {/* Recent Entries */}
       {entries.length > 0 && (
-        <section>
+        <section className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-foreground">
               Recent Archive Entries

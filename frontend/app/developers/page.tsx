@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Developer } from "@/lib/types";
 import { developersApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
@@ -16,9 +15,9 @@ export default function DevelopersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -26,14 +25,14 @@ export default function DevelopersPage() {
     }
 
     const loadDevelopers = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await developersApi.getAll(accessToken);
-        setDevelopers(data);
-        setFilteredDevelopers(data);
+        const { items } = await developersApi.getAll();
+        setDevelopers(items);
+        setFilteredDevelopers(items);
       } catch (error) {
         console.error("Failed to load developers:", error);
       } finally {
@@ -42,7 +41,7 @@ export default function DevelopersPage() {
     };
 
     loadDevelopers();
-  }, []);
+  }, [authLoading, user]);
 
   // Filter developers
   useEffect(() => {
@@ -116,9 +115,7 @@ export default function DevelopersPage() {
       {filteredDevelopers.length > 0 ? (
         <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
           {filteredDevelopers.map((developer) => (
-            <Link key={developer.id} href={`/developers/${developer.id}`}>
-              <DeveloperCard developer={developer} />
-            </Link>
+            <DeveloperCard key={developer.id} developer={developer} />
           ))}
         </div>
       ) : (

@@ -2,95 +2,102 @@ import { apiClient } from "./client";
 import type { ArchiveEntry, SearchFilters } from "@/lib/types";
 
 export const archiveApi = {
-  async getAll(
-    offset = 0,
-    limit = 100,
-    token?: string,
-  ): Promise<ArchiveEntry[]> {
+  async getAll(offset = 0, limit = 100): Promise<ArchiveEntry[]> {
     const qs = `?offset=${offset}&limit=${limit}`;
-    return apiClient.get<ArchiveEntry[]>(`/archive-entries/${qs}`, token);
+    return apiClient.get<ArchiveEntry[]>(`/archive-entries/${qs}`);
   },
 
-  async getById(id: string, token?: string): Promise<ArchiveEntry> {
-    return apiClient.get<ArchiveEntry>(`/archive-entries/${id}`, token);
+  async getById(id: string): Promise<ArchiveEntry> {
+    return apiClient.get<ArchiveEntry>(`/archive-entries/${id}`);
   },
 
   async search(
     query: string,
     filters?: SearchFilters,
-    token?: string,
+    offset = 0,
+    limit = 200,
   ): Promise<ArchiveEntry[]> {
-    // Backend does not expose a dedicated search endpoint for archive entries,
-    // so fetch a page of entries and filter client-side. Consider implementing
-    // a backend search endpoint for large datasets.
-    const entries = await archiveApi.getAll(0, 1000, token);
+    const params = new URLSearchParams();
 
-    const q = query?.toLowerCase() ?? "";
-
-    let results = entries.filter(
-      (e) =>
-        e.title.toLowerCase().includes(q) ||
-        (e.description ?? "").toLowerCase().includes(q),
-    );
-
-    if (filters?.genres && filters.genres.length > 0) {
-      results = results.filter((e) =>
-        // `genres` field may not exist on backend model; this preserves previous behavior
-        // if present on ArchiveEntry.
-        (e as any).genres?.some((g: string) => filters.genres!.includes(g)),
-      );
+    if (query?.trim()) {
+      params.set("q", query.trim());
     }
 
-    if (filters?.metadataStatus && filters.metadataStatus.length > 0) {
-      results = results.filter((e) =>
-        filters.metadataStatus!.includes(e.metadata_status),
-      );
-    }
+    const setFilter = (key: string, values?: string[]) => {
+      const value = values?.[0];
+      if (value) {
+        params.set(key, value);
+      }
+    };
 
-    return results;
+    setFilter("genre", filters?.genres);
+    setFilter("tag", filters?.tags);
+    setFilter("developer", filters?.developers);
+    setFilter("publisher", filters?.publishers);
+    setFilter("franchise", filters?.franchises);
+    setFilter("metadata_status", filters?.metadataStatus);
+    setFilter("verification_status", filters?.verificationStatus);
+    setFilter("storage_device", filters?.storageDevices);
+
+    params.set("offset", String(offset));
+    params.set("limit", String(limit));
+
+    return apiClient.get<ArchiveEntry[]>(`/search/?${params.toString()}`);
   },
 
-  async getByDeveloper(
-    developerId: string,
-    token?: string,
-  ): Promise<ArchiveEntry[]> {
-    const entries = await archiveApi.getAll(0, 1000, token);
+  async getByDeveloper(developerId: string): Promise<ArchiveEntry[]> {
+    const entries = await archiveApi.getAll(0, 1000);
     return entries.filter((e) => e.developer_ids?.includes(developerId));
   },
 
-  async getByPublisher(
-    publisherId: string,
-    token?: string,
-  ): Promise<ArchiveEntry[]> {
-    const entries = await archiveApi.getAll(0, 1000, token);
+  async getByPublisher(publisherId: string): Promise<ArchiveEntry[]> {
+    const entries = await archiveApi.getAll(0, 1000);
     return entries.filter((e) => e.publisher_ids?.includes(publisherId));
   },
 
-  async getByTag(tagId: string, token?: string): Promise<ArchiveEntry[]> {
-    const entries = await archiveApi.getAll(0, 1000, token);
+  async getByTag(tagId: string): Promise<ArchiveEntry[]> {
+    const entries = await archiveApi.getAll(0, 1000);
     return entries.filter((e) => e.tag_ids?.includes(tagId));
   },
 
-  async getByFranchise(
-    franchiseId: string,
-    token?: string,
-  ): Promise<ArchiveEntry[]> {
-    const entries = await archiveApi.getAll(0, 1000, token);
+  async getByFranchise(franchiseId: string): Promise<ArchiveEntry[]> {
+    const entries = await archiveApi.getAll(0, 1000);
     return entries.filter(
       (e) =>
         e.parent_series_id === franchiseId || e.franchise_id === franchiseId,
     );
   },
 
+  async getDuplicates(): Promise<import("@/lib/types").DuplicateGroup[]> {
+    return apiClient.get<import("@/lib/types").DuplicateGroup[]>(
+      "/archive-entries/duplicates",
+    );
+  },
+
+  async getScreenshots(id: string): Promise<import("@/lib/types").Screenshot[]> {
+    return apiClient.get<import("@/lib/types").Screenshot[]>(
+      `/archive-entries/${id}/screenshots`,
+    );
+  },
+
   async update(
     id: string,
     data: Partial<ArchiveEntry>,
-    token?: string,
   ): Promise<ArchiveEntry> {
-    return apiClient.patch<ArchiveEntry>(`/archive-entries/${id}`, data, token);
+    return apiClient.patch<ArchiveEntry>(`/archive-entries/${id}`, data);
   },
 
-  async delete(id: string, token?: string): Promise<void> {
-    return apiClient.delete<void>(`/archive-entries/${id}`, token);
+  async updateMetadata(
+    id: string,
+    data: import("@/lib/types").ArchiveMetadataUpdate,
+  ): Promise<ArchiveEntry> {
+    return apiClient.patch<ArchiveEntry>(
+      `/archive-entries/${id}/metadata`,
+      data,
+    );
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/archive-entries/${id}`);
   },
 };

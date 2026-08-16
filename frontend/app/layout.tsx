@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { Toaster } from "sonner";
 import { AppWrapper } from "@/components/layout/app-wrapper";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 
@@ -42,9 +44,17 @@ export default function RootLayout({
         suppressHydrationWarning
         className="font-sans antialiased bg-background text-foreground"
       >
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-md focus:ring-2 focus:ring-ring"
+        >
+          Skip to content
+        </a>
         <AuthProvider>
           <AppWrapper>{children}</AppWrapper>
         </AuthProvider>
+
+        <Toaster richColors position="bottom-right" />
 
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>

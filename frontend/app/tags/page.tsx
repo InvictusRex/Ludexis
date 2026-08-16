@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Tag } from "@/lib/types";
 import { tagsApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
@@ -17,9 +16,9 @@ export default function TagsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -27,14 +26,14 @@ export default function TagsPage() {
     }
 
     const loadTags = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await tagsApi.getAll(accessToken);
-        setTags(data);
-        setFilteredTags(data);
+        const { items } = await tagsApi.getAll();
+        setTags(items);
+        setFilteredTags(items);
       } catch (error) {
         console.error("Failed to load tags:", error);
       } finally {
@@ -43,7 +42,7 @@ export default function TagsPage() {
     };
 
     loadTags();
-  }, []);
+  }, [authLoading, user]);
 
   // Filter tags
   useEffect(() => {
@@ -135,9 +134,7 @@ export default function TagsPage() {
       {filteredTags.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filteredTags.map((tag) => (
-            <Link key={tag.id} href={`/tags/${tag.id}`}>
-              <TagCard tag={tag} />
-            </Link>
+            <TagCard key={tag.id} tag={tag} />
           ))}
         </div>
       ) : (

@@ -26,11 +26,23 @@ export interface JobHistory {
   completed_at?: string;
 }
 
-export interface LibraryJob {
-  id: string;
-  type: string;
-  status: "queued" | "running" | "completed" | "failed" | "canceled" | string;
-  progress?: number;
-  startTime?: string | Date | null;
-  endTime?: string | Date | null;
+export interface JobHistoryCreate {
+  job_type: JobType;
+}
+
+export interface JobMonitorStats {
+  workers: number;
+  active_tasks: number;
+  reserved_tasks: number;
+}
+
+export type JobMonitorWorker = Record<string, { ok?: string }>;
+
+export interface ScanStatus {
+  pending: number;
+  running: number;
+  success: number;
+  failed: number;
+  canceled: number;
+  total: number;
 }

@@ -161,6 +161,7 @@ class MetadataService:
             archive.metadata_status = (
                 MetadataStatus.UNMATCHED
             )
+            archive.metadata_confidence = 0.0
             archive.last_metadata_refresh = (
                 datetime.now(UTC)
             )
@@ -192,21 +193,26 @@ class MetadataService:
         archive.metadata_source_code = (
             match.provider_id
         )
-        details = self.get_details(
-            match.provider,
-            match.provider_id,
-        )
-        if details:
+        if archive.metadata_status != MetadataStatus.UNMATCHED:
+            archive.metadata_confidence = round(
+                score,
+                3,
+            )
+            details = self.get_details(
+                match.provider,
+                match.provider_id,
+            )
+            if details:
 
-            if details.description:
-                archive.description = (
-                    details.description
-                )
+                if details.description:
+                    archive.description = (
+                        details.description
+                    )
 
-            if details.release_date:
-                archive.release_date = (
-                    details.release_date
-                )
+                if details.release_date:
+                    archive.release_date = (
+                        details.release_date
+                    )
         archive.last_metadata_refresh = (
             datetime.now(UTC)
         )
