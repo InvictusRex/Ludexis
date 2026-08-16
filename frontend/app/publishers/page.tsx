@@ -16,9 +16,9 @@ export default function PublishersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -26,14 +26,14 @@ export default function PublishersPage() {
     }
 
     const loadPublishers = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await publishersApi.getAll(accessToken);
-        setPublishers(data);
-        setFilteredPublishers(data);
+        const { items } = await publishersApi.getAll();
+        setPublishers(items);
+        setFilteredPublishers(items);
       } catch (error) {
         console.error("Failed to load publishers:", error);
       } finally {
@@ -42,7 +42,7 @@ export default function PublishersPage() {
     };
 
     loadPublishers();
-  }, []);
+  }, [authLoading, user]);
 
   // Filter publishers
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function PublishersPage() {
                   </div>
                   <div className="text-right">
                     <Badge variant="outline" className="ml-2">
-                      0
+                      {publisher.entry_count}
                     </Badge>
                   </div>
                 </div>

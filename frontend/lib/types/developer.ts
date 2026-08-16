@@ -3,4 +3,5 @@ export interface Developer {
   name: string;
   description?: string;
   website?: string | null;
+  entry_count: number;
 }

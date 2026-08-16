@@ -3,4 +3,5 @@ export interface Tag {
   name: string;
   description?: string;
   color?: string | null;
+  entry_count: number;
 }

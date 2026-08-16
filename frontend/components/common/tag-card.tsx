@@ -15,9 +15,6 @@ export function TagCard({ tag }: TagCardProps) {
           borderLeftWidth: "4px",
         }}
       >
-        {/* Cover Art not provided by backend */}
-
-        {/* Content */}
         <h3 className="font-bold text-foreground line-clamp-2 mb-1">
           {tag.name}
         </h3>
@@ -25,8 +22,9 @@ export function TagCard({ tag }: TagCardProps) {
           {tag.description || "No description"}
         </p>
 
-        {/* Entry Count not provided by backend */}
-        <div className="text-sm font-semibold text-accent">0 entries</div>
+        <div className="text-sm font-semibold text-accent">
+          {tag.entry_count} {tag.entry_count === 1 ? "entry" : "entries"}
+        </div>
       </div>
     </Link>
   );

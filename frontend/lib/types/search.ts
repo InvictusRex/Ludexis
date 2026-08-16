@@ -17,5 +17,11 @@ export interface SearchResults {
 
 export interface SearchFilters {
   genres?: string[];
+  tags?: string[];
+  developers?: string[];
+  publishers?: string[];
+  franchises?: string[];
   metadataStatus?: string[];
+  verificationStatus?: string[];
+  storageDevices?: string[];
 }

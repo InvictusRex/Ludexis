@@ -3,21 +3,32 @@ import { archiveApi } from "./archives";
 import type { Tag } from "@/lib/types";
 
 export const tagsApi = {
-  async getAll(token?: string): Promise<Tag[]> {
-    return apiClient.get<Tag[]>("/tags", token);
+  async getAll(
+    offset = 0,
+    limit = 100,
+    q?: string,
+  ): Promise<{ items: Tag[]; total: number }> {
+    const params = new URLSearchParams({
+      offset: String(offset),
+      limit: String(limit),
+    });
+    if (q?.trim()) {
+      params.set("q", q.trim());
+    }
+    return apiClient.getList<Tag>(`/tags/?${params.toString()}`);
   },
 
-  async getById(id: string, token?: string): Promise<Tag> {
-    return apiClient.get<Tag>(`/tags/${id}`, token);
+  async getById(id: string): Promise<Tag> {
+    return apiClient.get<Tag>(`/tags/${id}`);
   },
 
-  async getEntries(id: string, token?: string) {
-    return archiveApi.getByTag(id, token);
+  async getEntries(id: string) {
+    return archiveApi.getByTag(id);
   },
 
-  async getRelatedTags(id: string, token?: string) {
+  async getRelatedTags(id: string) {
     // Naive related tags: return some tags from all tags for now
-    const all = await tagsApi.getAll(token);
-    return all.filter((t) => t.id !== id).slice(0, 6);
+    const { items } = await tagsApi.getAll();
+    return items.filter((t) => t.id !== id).slice(0, 6);
   },
 };

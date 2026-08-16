@@ -18,9 +18,9 @@ export default function DeveloperDetailPage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -28,18 +28,15 @@ export default function DeveloperDetailPage() {
     }
 
     const loadData = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const developerData = await developersApi.getById(id, accessToken);
+        const developerData = await developersApi.getById(id);
         setDeveloper(developerData);
 
-        const developerEntries = await developersApi.getEntries(
-          id,
-          accessToken,
-        );
+        const developerEntries = await developersApi.getEntries(id);
         setEntries(developerEntries);
       } catch (error) {
         console.error("Failed to load developer:", error);
@@ -49,7 +46,7 @@ export default function DeveloperDetailPage() {
     };
 
     loadData();
-  }, [id]);
+  }, [id, authLoading, user]);
 
   if (loading) {
     return (

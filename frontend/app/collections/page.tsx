@@ -7,7 +7,9 @@ import { collectionsApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
 import { CollectionCard } from "@/components/common/collection-card";
+import { PaginationControls } from "@/components/common/pagination-controls";
 import { Button } from "@/components/ui/button";
+import { buildPageQuery, DEFAULT_PAGE_SIZE, pageToOffset } from "@/lib/pagination";
 import { Plus, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -19,10 +21,12 @@ export default function CollectionsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showPublicOnly, setShowPublicOnly] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
-  const { accessToken, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  useRequireAuth(accessToken, authLoading);
+  useRequireAuth(user, authLoading);
 
   useEffect(() => {
     if (authLoading) {
@@ -30,12 +34,13 @@ export default function CollectionsPage() {
     }
 
     const loadCollections = async () => {
-      if (!accessToken) {
+      if (!user) {
         return;
       }
 
       try {
-        const data = await collectionsApi.getAll(accessToken);
+        const query = buildPageQuery(1, 100);
+        const data = await collectionsApi.getAll(query.offset, query.limit);
         setCollections(data);
         setFilteredCollections(data);
       } catch (error) {
@@ -46,7 +51,7 @@ export default function CollectionsPage() {
     };
 
     loadCollections();
-  }, []);
+  }, [authLoading, user]);
 
   // Filter collections
   useEffect(() => {
@@ -68,7 +73,14 @@ export default function CollectionsPage() {
     }
 
     setFilteredCollections(result);
+    setPage(1);
   }, [collections, searchQuery, showPublicOnly]);
+
+  const pageStart = pageToOffset(page, PAGE_SIZE);
+  const visibleCollections = filteredCollections.slice(
+    pageStart,
+    pageStart + PAGE_SIZE,
+  );
 
   if (authLoading || loading) {
     return (
@@ -91,7 +103,7 @@ export default function CollectionsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Collections
@@ -145,7 +157,7 @@ export default function CollectionsPage() {
       {/* Collections Grid */}
       {filteredCollections.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-          {filteredCollections.map((collection) => (
+          {visibleCollections.map((collection) => (
             <CollectionCard key={collection.id} collection={collection} />
           ))}
         </div>
@@ -164,6 +176,13 @@ export default function CollectionsPage() {
           </Button>
         </div>
       )}
+
+      <PaginationControls
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={filteredCollections.length}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

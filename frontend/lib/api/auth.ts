@@ -11,18 +11,18 @@ import type { User } from "@/lib/types/user";
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<TokenResponse> => {
-    return apiClient.post<TokenResponse>("/auth/login", credentials);
+    return apiClient.post<TokenResponse>("/auth/login", credentials, false);
   },
 
   refresh: async (request: RefreshRequest): Promise<TokenResponse> => {
-    return apiClient.post<TokenResponse>("/auth/refresh", request);
+    return apiClient.post<TokenResponse>("/auth/refresh", request, false);
   },
 
   logout: async (request: LogoutRequest): Promise<void> => {
-    return apiClient.post<void>("/auth/logout", request);
+    return apiClient.post<void>("/auth/logout", request, false);
   },
 
-  getCurrentUser: async (accessToken: string): Promise<User> => {
-    return apiClient.get<User>("/auth/me", accessToken);
+  getCurrentUser: async (): Promise<User> => {
+    return apiClient.get<User>("/auth/me");
   },
 };
