@@ -1,0 +1,5 @@
+{"id":"layer:model","type":"Layer","name":"Model","source_file":"docs/knowledge/_schema.md","source_line_start":41,"discovered_at":"2026-09-07T16:42:32Z","properties":{"description":"SQLAlchemy ORM model layer."}}
+{"id":"layer:provider","type":"Layer","name":"Provider","source_file":"docs/knowledge/_schema.md","source_line_start":44,"discovered_at":"2026-09-07T16:42:32Z","properties":{"description":"External integration provider layer."}}
+{"id":"layer:repository","type":"Layer","name":"Repository","source_file":"docs/knowledge/_schema.md","source_line_start":40,"discovered_at":"2026-09-07T16:42:32Z","properties":{"description":"Data access repository layer."}}
+{"id":"layer:service","type":"Layer","name":"Service","source_file":"docs/knowledge/_schema.md","source_line_start":39,"discovered_at":"2026-09-07T16:42:32Z","properties":{"description":"Business logic service layer."}}
+{"id":"layer:task","type":"Layer","name":"Task","source_file":"docs/knowledge/_schema.md","source_line_start":43,"discovered_at":"2026-09-07T16:42:32Z","properties":{"description":"Celery background task layer."}}

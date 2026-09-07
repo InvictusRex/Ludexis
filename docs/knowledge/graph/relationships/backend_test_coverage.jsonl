@@ -1,0 +1,111 @@
+{"source_id": "test:backend/tests/test_auth.py", "target_id": "service:app.services.auth.AuthService", "type": "TESTS", "source_file": "backend/tests/test_auth.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_auth.py", "target_id": "repo:app.repositories.user.UserRepository", "type": "TESTS", "source_file": "backend/tests/test_auth.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_auth.py", "target_id": "repo:app.repositories.refresh_token.RefreshTokenRepository", "type": "TESTS", "source_file": "backend/tests/test_auth.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_auth.py", "target_id": "api:POST:/auth/login", "type": "TESTS", "source_file": "backend/tests/test_auth.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_auth.py", "target_id": "api:POST:/auth/refresh", "type": "TESTS", "source_file": "backend/tests/test_auth.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_auth.py", "target_id": "api:POST:/auth/logout", "type": "TESTS", "source_file": "backend/tests/test_auth.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_auth.py", "target_id": "api:GET:/auth/me", "type": "TESTS", "source_file": "backend/tests/test_auth.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "repo:app.repositories.user.UserRepository", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "api:GET:/users/", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "api:POST:/users/", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "api:GET:/users/{user_id}", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "api:PATCH:/users/{user_id}", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "api:DELETE:/users/{user_id}", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "api:POST:/users/{user_id}/activate", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "api:POST:/users/{user_id}/deactivate", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_users_api.py", "target_id": "api:POST:/users/{user_id}/reset-password", "type": "TESTS", "source_file": "backend/tests/test_users_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_archive_entries_api.py", "target_id": "service:app.services.archive_entry.ArchiveEntryService", "type": "TESTS", "source_file": "backend/tests/test_archive_entries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_archive_entries_api.py", "target_id": "repo:app.repositories.archive_entry.ArchiveEntryRepository", "type": "TESTS", "source_file": "backend/tests/test_archive_entries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_archive_entries_api.py", "target_id": "api:POST:/archive-entries/", "type": "TESTS", "source_file": "backend/tests/test_archive_entries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_archive_entries_api.py", "target_id": "api:GET:/archive-entries/{archive_entry_id}", "type": "TESTS", "source_file": "backend/tests/test_archive_entries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_archive_entries_api.py", "target_id": "api:PATCH:/archive-entries/{archive_entry_id}", "type": "TESTS", "source_file": "backend/tests/test_archive_entries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_archive_entries_api.py", "target_id": "api:DELETE:/archive-entries/{archive_entry_id}", "type": "TESTS", "source_file": "backend/tests/test_archive_entries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_archive_entries_api.py", "target_id": "api:PATCH:/archive-entries/{archive_entry_id}/metadata", "type": "TESTS", "source_file": "backend/tests/test_archive_entries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_archive_entries_api.py", "target_id": "api:GET:/archive-entries/duplicates", "type": "TESTS", "source_file": "backend/tests/test_archive_entries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_collections_api.py", "target_id": "service:app.services.collection.CollectionService", "type": "TESTS", "source_file": "backend/tests/test_collections_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_collections_api.py", "target_id": "api:POST:/collections/", "type": "TESTS", "source_file": "backend/tests/test_collections_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_collections_api.py", "target_id": "api:GET:/collections/", "type": "TESTS", "source_file": "backend/tests/test_collections_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_collections_api.py", "target_id": "api:GET:/collections/{collection_id}", "type": "TESTS", "source_file": "backend/tests/test_collections_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_collections_api.py", "target_id": "api:PATCH:/collections/{collection_id}", "type": "TESTS", "source_file": "backend/tests/test_collections_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_collections_api.py", "target_id": "api:DELETE:/collections/{collection_id}", "type": "TESTS", "source_file": "backend/tests/test_collections_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_collections_api.py", "target_id": "api:POST:/collections/{collection_id}/entries", "type": "TESTS", "source_file": "backend/tests/test_collections_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_collections_api.py", "target_id": "api:DELETE:/collections/{collection_id}/entries/{entry_id}", "type": "TESTS", "source_file": "backend/tests/test_collections_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_libraries_api.py", "target_id": "service:app.services.library.LibraryService", "type": "TESTS", "source_file": "backend/tests/test_libraries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_libraries_api.py", "target_id": "api:POST:/libraries/", "type": "TESTS", "source_file": "backend/tests/test_libraries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_libraries_api.py", "target_id": "api:GET:/libraries/", "type": "TESTS", "source_file": "backend/tests/test_libraries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_libraries_api.py", "target_id": "api:GET:/libraries/{library_id}", "type": "TESTS", "source_file": "backend/tests/test_libraries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_libraries_api.py", "target_id": "api:PATCH:/libraries/{library_id}", "type": "TESTS", "source_file": "backend/tests/test_libraries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_libraries_api.py", "target_id": "api:DELETE:/libraries/{library_id}", "type": "TESTS", "source_file": "backend/tests/test_libraries_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_artwork_api.py", "target_id": "service:app.services.artwork.ArtworkService", "type": "TESTS", "source_file": "backend/tests/test_artwork_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_artwork_api.py", "target_id": "api:POST:/artwork/upload", "type": "TESTS", "source_file": "backend/tests/test_artwork_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_artwork_api.py", "target_id": "api:PATCH:/artwork/replace", "type": "TESTS", "source_file": "backend/tests/test_artwork_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_artwork_api.py", "target_id": "api:DELETE:/artwork/{artwork_id}", "type": "TESTS", "source_file": "backend/tests/test_artwork_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_artwork_api.py", "target_id": "api:GET:/artwork/missing", "type": "TESTS", "source_file": "backend/tests/test_artwork_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_artwork_api.py", "target_id": "api:POST:/artwork/auto-download", "type": "TESTS", "source_file": "backend/tests/test_artwork_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_screenshots_api.py", "target_id": "service:app.services.artwork.ArtworkService", "type": "TESTS", "source_file": "backend/tests/test_screenshots_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_screenshots_api.py", "target_id": "repo:app.repositories.screenshot.ScreenshotRepository", "type": "TESTS", "source_file": "backend/tests/test_screenshots_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_screenshots_api.py", "target_id": "api:GET:/archive-entries/{archive_entry_id}/screenshots", "type": "TESTS", "source_file": "backend/tests/test_screenshots_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_screenshots_api.py", "target_id": "api:POST:/artwork/upload", "type": "TESTS", "source_file": "backend/tests/test_screenshots_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "service:app.services.job.JobService", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "service:app.services.job_monitor.JobMonitorService", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:POST:/scan/full", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:POST:/scan/incremental", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:GET:/scan/status", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:POST:/jobs/start", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:GET:/jobs/", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:GET:/jobs/{job_id}", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:POST:/jobs/{job_id}/cancel", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:GET:/job-monitor/stats", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_scan_jobs_api.py", "target_id": "api:GET:/job-monitor/workers", "type": "TESTS", "source_file": "backend/tests/test_scan_jobs_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_metadata_api.py", "target_id": "service:app.services.metadata.MetadataService", "type": "TESTS", "source_file": "backend/tests/test_metadata_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_metadata_api.py", "target_id": "api:GET:/metadata/search", "type": "TESTS", "source_file": "backend/tests/test_metadata_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_metadata_api.py", "target_id": "api:GET:/metadata/details/{provider_name}/{provider_id}", "type": "TESTS", "source_file": "backend/tests/test_metadata_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_metadata_api.py", "target_id": "api:GET:/metadata/artwork/{provider_name}/{provider_id}", "type": "TESTS", "source_file": "backend/tests/test_metadata_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_admin_api.py", "target_id": "service:app.services.admin.AdminService", "type": "TESTS", "source_file": "backend/tests/test_admin_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_admin_api.py", "target_id": "service:app.services.audit.AuditService", "type": "TESTS", "source_file": "backend/tests/test_admin_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_admin_api.py", "target_id": "api:GET:/admin/stats", "type": "TESTS", "source_file": "backend/tests/test_admin_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_admin_api.py", "target_id": "api:GET:/admin/audit-logs", "type": "TESTS", "source_file": "backend/tests/test_admin_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_admin_api.py", "target_id": "api:GET:/admin/permission-report", "type": "TESTS", "source_file": "backend/tests/test_admin_api.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_jobs.py", "target_id": "service:app.services.job.JobService", "type": "TESTS", "source_file": "backend/tests/test_jobs.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_jobs.py", "target_id": "repo:app.repositories.job_history.JobHistoryRepository", "type": "TESTS", "source_file": "backend/tests/test_jobs.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_scanner.py", "target_id": "service:app.services.scanner.ScannerService", "type": "TESTS", "source_file": "backend/tests/test_scanner.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_metadata.py", "target_id": "service:app.services.metadata.MetadataService", "type": "TESTS", "source_file": "backend/tests/test_metadata.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_metadata.py", "target_id": "provider:app.providers.metadata_provider.MetadataProvider", "type": "TESTS", "source_file": "backend/tests/test_metadata.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_rbac.py", "target_id": "api:POST:/scan/full", "type": "TESTS", "source_file": "backend/tests/test_rbac.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_rbac.py", "target_id": "api:GET:/auth/me", "type": "TESTS", "source_file": "backend/tests/test_rbac.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_rbac.py", "target_id": "api:GET:/jobs/", "type": "TESTS", "source_file": "backend/tests/test_rbac.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_permissions.py", "target_id": "api:POST:/scan/full", "type": "TESTS", "source_file": "backend/tests/test_permissions.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_permissions.py", "target_id": "api:GET:/users/", "type": "TESTS", "source_file": "backend/tests/test_permissions.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_permissions.py", "target_id": "api:GET:/admin/stats", "type": "TESTS", "source_file": "backend/tests/test_permissions.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_permissions.py", "target_id": "api:GET:/admin/audit-logs", "type": "TESTS", "source_file": "backend/tests/test_permissions.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_permissions.py", "target_id": "api:POST:/collections/", "type": "TESTS", "source_file": "backend/tests/test_permissions.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_permissions.py", "target_id": "api:POST:/tags/", "type": "TESTS", "source_file": "backend/tests/test_permissions.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_health.py", "target_id": "api:GET:/health/", "type": "TESTS", "source_file": "backend/tests/test_health.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_health.py", "target_id": "api:GET:/health/db", "type": "TESTS", "source_file": "backend/tests/test_health.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_health.py", "target_id": "api:GET:/health/redis", "type": "TESTS", "source_file": "backend/tests/test_health.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_e2e.py", "target_id": "service:app.services.auth.AuthService", "type": "TESTS", "source_file": "backend/tests/test_e2e.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_e2e.py", "target_id": "service:app.services.job.JobService", "type": "TESTS", "source_file": "backend/tests/test_e2e.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_e2e.py", "target_id": "service:app.services.library.LibraryService", "type": "TESTS", "source_file": "backend/tests/test_e2e.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "test:backend/tests/test_e2e.py", "target_id": "service:app.services.search.SearchService", "type": "TESTS", "source_file": "backend/tests/test_e2e.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_token_expiration.py", "target_id": "service:app.services.auth.AuthService", "type": "TESTS", "source_file": "backend/tests/test_token_expiration.py", "source_line": 1, "confidence": 1.0, "inferred": false}
+
+{"source_id": "test:backend/tests/test_smoke.py", "target_id": "service:app.services.auth.AuthService", "type": "TESTS", "source_file": "backend/tests/test_smoke.py", "source_line": 1, "confidence": 0.5, "inferred": true}
+
+{"source_id": "test:backend/tests/test_ci_database.py", "target_id": "service:app.services.auth.AuthService", "type": "TESTS", "source_file": "backend/tests/test_ci_database.py", "source_line": 1, "confidence": 1.0, "inferred": false}
