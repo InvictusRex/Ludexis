@@ -1,194 +1,112 @@
-# Repository Analysis State
+# Knowledge Graph State
 
-## 1. Repository Overview
+Status, coverage, known gaps, and findings. Update at the end of every change to the graph.
 
-**Project**: Ludexis — Self-Hosted Game Archive & Metadata Management Platform
-
-**Purpose**: Catalog, organize, enrich, and preserve large collections of game archives (ZIP, RAR, 7z, installers, visual novels, ROMs, preservation projects) through automated scanning, metadata enrichment (IGDB, Steam, GOG), artwork acquisition, and advanced organization (collections, tags, franchises).
-
-**Tech Stack**:
-- **Backend**: Python 3.12+, FastAPI 0.115+, SQLAlchemy 2.0, PostgreSQL 16+, Redis 7+, Celery 5.4+
-- **Frontend**: Next.js 16.2.6, React 19, TypeScript 5.7, Tailwind CSS 4.2, Radix UI, shadcn/ui patterns
-- **Infrastructure**: Docker Compose, Prometheus, Grafana, Node Exporter
-- **Testing**: pytest (backend), Vitest + Playwright (frontend)
-- **Auth**: JWT (access + refresh tokens), RBAC, audit logging
-
-**Architecture**: Layered service-oriented
-```
-Client → API Layer (FastAPI routers) → Service Layer (business logic)
-                                    → Repository Layer (data access)
-                                    → Database (PostgreSQL)
-Background: Redis → Celery Workers → Services/Repositories → PostgreSQL
-External: Services/Tasks → Providers (IGDB, Steam, GOG)
-Storage: Artwork files on persistent volumes
-```
+| | |
+|-|-|
+| Graph version | v2 (schema in `_schema.md`) |
+| Verified at commit | `633a512` |
+| Last verified | 2026-10-06 |
+| Validator | `python docs/knowledge/queries/validate.py`, must exit 0 |
+| Size | 727 entities, 3,425 relationships |
 
 ---
 
-## 2. Areas Discovered
+## Project Summary
 
-### Backend (`backend/`)
-| Area | Path | Key Files | Status |
-|------|------|-----------|--------|
-| **Entry Point** | `main.py` | FastAPI app, CORS, metrics, media serving | ✅ Scanned |
-| **API Layer** | `app/api/` | 22 routers (auth, users, libraries, archive_entries, collections, tags, developers, publishers, franchises, artwork, scan, jobs, metadata, search, admin, health, setup, roles, permissions) | ✅ Scanned |
-| **Core** | `app/core/` | config, auth, security, dependencies, logging, metrics | ✅ Scanned |
-| **Database** | `app/db/` | base, session | ✅ Scanned |
-| **Models** | `app/models/` | 18 SQLAlchemy models (User, ArchiveEntry, Library, Collection, Tag, Genre, Developer, Publisher, Franchise, MetadataSource, Screenshot, Note, Rating, JobHistory, AuditLog, RefreshToken, Role, Permission + association tables) | ✅ Scanned |
-| **Repositories** | `app/repositories/` | 16 repository classes mirroring models | ✅ Scanned |
-| **Schemas** | `app/schemas/` | 21 Pydantic schemas for request/response | ✅ Scanned |
-| **Services** | `app/services/` | 16 service classes (Auth, User, ArchiveEntry, Artwork, Metadata, Scanner, Collection, Library, Tag, Developer, Publisher, Franchise, Search, Storage, Job, Audit) | ✅ Scanned |
-| **Tasks** | `app/tasks/` | 4 Celery task modules (scan_tasks, artwork_tasks, metadata_tasks, celery_app) | ✅ Scanned |
-| **Providers** | `app/providers/` | 5 providers (IGDB, IGDBClient, Steam, GOG, Manual + base MetadataProvider) | ✅ Scanned |
-| **Utils** | `app/utils/` | enums, normalization, artwork helpers, audit_actions | ✅ Scanned |
-| **Migrations** | `alembic/versions/` | 1 baseline migration (ecabaf1d5dab) | ✅ Scanned |
-| **Tests** | `tests/` | pytest structure | ⚠️ Not inspected |
-| **Config** | `.env*`, `docker-compose.yml`, `Dockerfile`, `requirements.txt` | Deployment config | ✅ Scanned |
+**Ludexis** is a self-hosted catalog for game archives (ZIP, RAR, 7z, installers, ROMs). It scans library folders, detects duplicates by hash, enriches entries with metadata from IGDB and Steam, manages artwork, and organizes entries into collections, tags, developers, publishers, and franchises. Access is controlled by JWT auth with RBAC and audit logging.
 
-### Frontend (`frontend/`)
-| Area | Path | Key Files | Status |
-|------|------|-----------|--------|
-| **App Router Pages** | `app/` | 15 route groups (library, archive/[id], collections, developers, franchises, publishers, search, tags, account, auth, admin/*) | ✅ Scanned |
-| **Components** | `components/` | 60+ components (common/, layout/, ui/) | ✅ Scanned |
-| **Hooks** | `hooks/` | 4 custom hooks | ✅ Scanned |
-| **Contexts** | `contexts/` | Not yet inspected | ⚠️ Not inspected |
-| **Lib/Utilities** | `lib/` | api, auth, mock, types, pagination, saved-searches, errors, toast, media, config | ✅ Scanned |
-| **E2E Tests** | `e2e/` | Playwright tests | ⚠️ Not inspected |
-| **Config** | `package.json`, `tsconfig.json`, `next.config.mjs`, `vitest.config.ts`, `playwright.config.ts` | Build/test config | ✅ Scanned |
+| Part | Stack |
+|------|-------|
+| Backend | Python, FastAPI 0.111, SQLAlchemy 2.0, Pydantic 2.8, Celery 5.4, PostgreSQL 16, Redis |
+| Frontend | Next.js 16.2, React 19, TypeScript 5.7, Tailwind 4, Radix/shadcn UI |
+| Tests | pytest (backend), Vitest and Playwright (frontend) |
+| Infra | Docker Compose (dev, demo, monitoring), Prometheus, Grafana, GitHub Actions backend CI |
 
-### Documentation (`docs/`)
-| Area | Path | Key Files | Status |
-|------|------|-----------|--------|
-| **Architecture** | `docs/architecture/` | Architecture-Overview.md, Backend-Architecture.md (3182 lines), Data-Model.md (2017 lines), Processing-Pipeline.md (1951 lines), Entity Relation Diagram.png | ✅ Scanned |
-| **API** | `docs/api/` | API-Guide.md (1070 lines) | ✅ Scanned |
-| **Deployment** | `docs/deployment/` | Deployment.md | ✅ Scanned |
-| **Integrations** | `docs/integrations/` | curl.md, javascript.md, python.md | ✅ Scanned |
-| **Backlogs** | `docs/backlogs/` | Backend-Backlog.md, Frontend-Backlog.md | ✅ Scanned |
-| **Release** | `docs/release/` | RELEASE_NOTES.md | ✅ Scanned |
+Recent work (from git history): frontend-to-backend integration (real API client, auth flow, admin pages gated on superuser), server-side search and pagination with entry counts, hash-based duplicate detection, auth on the media route, CORS fixes.
 
 ---
 
-## 3. Existing Documentation Discovered
+## Coverage
 
-| Document | Location | Coverage |
-|----------|----------|----------|
-| Architecture Overview | `docs/architecture/Architecture-Overview.md` | High-level system architecture, goals, components, request lifecycle, auth, RBAC, audit logging, design principles |
-| Backend Architecture | `docs/architecture/Backend-Architecture.md` | Layered architecture, request lifecycle, package structure, service layer, major services (Auth, User, ArchiveEntry, Artwork, Metadata, Scanner, Collection, Library, Tag, Developer, Publisher, Franchise, Search, Storage, Job, Audit), repository layer, database, Celery tasks, providers |
-| Data Model | `docs/architecture/Data-Model.md` | ER diagrams, IAM tables, library management, metadata domain, collections, relationship tables, background processing, detailed column descriptions |
-| Processing Pipeline | `docs/architecture/Processing-Pipeline.md` | Full scan, incremental scan, metadata enrichment, artwork acquisition, job tracking, duplicate detection, scanner internals |
-| API Guide | `docs/api/API-Guide.md` | All endpoints with auth, permissions, request/response examples |
-| Deployment | `docs/deployment/Deployment.md` | Docker Compose, environment variables, monitoring stack, Windows Exporter |
-| Integration Examples | `docs/integrations/` | cURL, Python, JavaScript client examples |
-| Backlogs | `docs/backlogs/` | Planned features for backend and frontend |
-
----
-
-## 4. Areas That Still Need Analysis
-
-| Area | Priority | Notes |
+| Area | In graph | Notes |
 |------|----------|-------|
-| **Backend Tests** | High | `backend/tests/` - understand test patterns, coverage |
-| **Frontend Contexts** | Medium | `frontend/contexts/` - global state management |
-| **Frontend E2E Tests** | Medium | `frontend/e2e/` - Playwright test scenarios |
-| **Alembic Migration Details** | Medium | Single baseline migration; understand schema evolution |
-| **Service Implementation Details** | High | Deep-dive into each service's public methods, dependencies, job dispatching |
-| **Repository Query Patterns** | High | Understand custom query methods beyond CRUD |
-| **Provider Implementation** | Medium | IGDB, Steam, GOG client details, error handling, rate limiting |
-| **Celery Task Definitions** | High | Task signatures, retry policies, progress tracking |
-| **Frontend Component Props/Types** | Medium | TypeScript interfaces, component composition |
-| **API Route → Service Mapping** | High | Trace each endpoint to its service method |
-| **Database Index Strategy** | Medium | Review all indexes from models and migration |
-| **Configuration System** | Low | Pydantic Settings, environment variable mapping |
-| **Monitoring/Metrics** | Low | Prometheus metrics exposed, Grafana dashboards |
+| Backend routers and routes | Yes | 20 routers + `main.py`; 90 routes with `full_path`, permissions, request/response schemas |
+| Services, repositories, models, schemas, providers | Yes | Public methods and line ranges verified |
+| Celery tasks and beat schedule | Yes | |
+| Database tables, columns, enums, migration | Yes | Association tables are `DBTable` with `is_association` |
+| `app/core`, `app/utils`, `app/db`, `main.py`, seed scripts | Yes | File-level `Module` entities |
+| Frontend pages, layout, components, hooks, context | Yes | Auth guard per page, render tree, API calls |
+| Frontend API client layer | Yes | Every API function mapped to its backend route |
+| Frontend types | Yes | `MIRRORS` edges to backend schemas with field mismatches |
+| Tests | Yes, file level | 20 backend, 43 frontend test files with `TESTS` edges |
+| Docker, Compose, monitoring, CI config | No | See `docs/deployment/Deployment.md` |
+| Individual settings fields usage | No | Fields listed on `module:app.core.config`; use grep for usage (ADR-013) |
+| CSS, static assets, `components.json` | No | Not useful for navigation |
 
 ---
 
-## 5. Proposed Analysis Phases
+## Findings in the Code
 
-| Phase | Focus | Deliverables |
-|-------|-------|--------------|
-| **Phase 1: Foundation** (Current) | Repository structure, existing docs, high-level architecture | `_state.md`, `_schema.md`, `_decisions.md`, `index.md` |
-| **Phase 2: Backend Deep-Dive** | Services, repositories, models, schemas, tasks, providers | Entity/relationship extraction for `backend/app/` |
-| **Phase 3: Database Schema** | Tables, columns, relationships, indexes, enums, migrations | DB entity graph, migration history |
-| **Phase 4: API Surface** | All routes, auth/perm requirements, request/response schemas | API route graph with service bindings |
-| **Phase 5: Frontend Deep-Dive** | Pages, components, hooks, contexts, lib utilities | Frontend component graph, page compositions |
-| **Phase 6: Cross-Cutting** | Auth flow, RBAC, audit, background jobs, providers, testing | End-to-end flows, integration points |
-| **Phase 7: Knowledge Graph Build** | Populate graph per `_schema.md`, create indexes, validation scripts | Queryable knowledge graph in `docs/knowledge/graph/` |
+These surfaced while the graph was built. They are recorded here, not fixed (ADR-017).
 
----
+### Bugs
 
-## 6. Current Phase / Status
+| Finding | Where |
+|---------|-------|
+| `usersApi.resetPassword` sends `{new_password}`, but the backend `PasswordResetRequest` requires `password`, so a password reset fails with 422. | `frontend/lib/api/users.ts:34`, `backend/app/schemas/auth.py:59` |
+| The `/auth/setup` page never calls the backend: it simulates setup with timeouts and writes `isAuthenticated`, `userEmail`, `setupCompleted` to localStorage. `setupApi` and `POST /api/setup/initialize` exist but are unused by the UI. | `frontend/app/auth/setup/page.tsx:45-75` |
+| A scan fails on any library containing a subdirectory: `_scan_folder` builds an item without a hash, then `_ensure_file_hash` calls `_compute_file_hash`, which does `open()` on the directory. | `backend/app/services/scanner.py:49-56, 322, 446` |
+| Starting a `METADATA_REFRESH`, `DUPLICATE_DETECTION`, or `INTEGRITY_VERIFICATION` job (including the admin dashboard buttons) runs the demo task `run_job`, which only advances progress. Real metadata refresh runs only from the 03:00 UTC beat schedule. | `backend/app/services/job.py:42-49` |
+| `PATCH /api/archive-entries/{archive_entry_id}` dumps the update schema with `exclude_none=False` and no `exclude_unset`, so every omitted field is written as `None`. | `backend/app/services/archive_entry.py:34-38` |
+| `/media/{path:path}` requires a Bearer token, but the frontend renders artwork with plain `<img src>` from `mediaUrl()`, which cannot send the header, so images fail to load. | `backend/main.py`, `frontend/lib/media.ts` |
+| Scanner-created entries are never `MATCHED` and `auto_match_archive` is only called from tests, so the scheduled metadata refresh only touches entries whose status and source were set through the archive-entries API. | `backend/app/services/metadata.py`, `backend/app/services/scanner.py` |
+| Artwork `upload` and `replace` use a raw multipart `fetch` instead of `apiClient`, so they do not refresh an expired token on 401 and throw a plain `Error` instead of `ApiError`. | `frontend/lib/api/artwork.ts` |
 
-**Phase**: 11 — Graph Repair & Validation Complete
+### Integration gaps
 
-**Completed**:
-- ✅ Phase 1: Foundation — Repository structure, existing docs, `_schema.md`, `_decisions.md`, `index.md`, `_state.md`
-- ✅ Phase 2a: Services Deep-Dive — All 20 services analyzed
-- ✅ Phase 2b: Repositories Deep-Dive — All 17 repositories analyzed
-- ✅ Phase 2c: Models Deep-Dive — All 18 models + 9 associations analyzed
-- ✅ Phase 2d: Schemas Deep-Dive — All 67 Pydantic schemas analyzed
-- ✅ Phase 2e: API Routes Deep-Dive — 20 routers + 87 API routes analyzed
-- ✅ Phase 2f: Providers Deep-Dive — 10 provider entities analyzed
-- ✅ Phase 2g: Celery Tasks Deep-Dive — 7 task entities analyzed
-- ✅ Phase 2h: DB Enums & Tables — 7 DB enums + 27 DB tables analyzed
-- ✅ Phase 2i: Relationships — All cross-entity relationships extracted
-- ✅ Phase 3: Database Schema — DB enums, DB tables with columns/indexes/FKs
-- ✅ Phase 4: API Surface — All routes with auth/perm requirements, request/response schemas
-- ✅ Phase 5: Providers — Provider hierarchy, external provider bindings
-- ✅ Phase 6: Cross-Layer Relationships — 108 cross-layer flow relationships
-- ✅ Phase 7: Domain/Flow Enrichment — 18 domain files + 6 flow diagrams
-- ✅ Phase 8: Test Coverage — 20 test files mapped to entities (92 TESTS relationships)
-- ✅ Phase 9: Global Audit — All JSONL files validated
-- ✅ Phase 10: State/Index Update
-- ✅ Phase 11: Graph Repair — Created 19 Domain + 5 Layer entities, fixed 15 broken class: references, deduplicated 32 relationships, full referential-integrity audit passed
+- 14 of 87 `/api` routes have no frontend caller: `POST /auth/token` (OAuth2 form login for tooling), `POST /archive-entries/`, and create/update/delete for tags, developers, publishers, and franchises.
+- The frontend `ArchiveEntry` type omits the backend's nested `tags`, `developers`, `publishers`, `collections` and uses only the `*_ids` fields.
 
-**Current Status**: Knowledge graph contains **332 entities** and **861 relationships** (1,193 total graph records). Zero broken references. Zero duplicate relationships.
+### Dead code and duplication
 
----
+- Never rendered: `components/common/archive-edit-dialog.tsx` (only its test uses it), `components/theme-provider.tsx`, and 32 unused shadcn primitives under `components/ui/`. `ErrorBoundary` is imported in `app/layout.tsx` but not used in JSX.
+- `components/ui/use-toast.ts` and `components/ui/use-mobile.tsx` are byte-identical copies of the files in `hooks/` (modeled as `Hook` with `duplicate_of`).
+- Two parallel audit services exist: `AuditService` (`services/audit.py`, `record`/`list_logs`) and `AuditLogService` (`services/audit_log.py`, `log`). Routers use one or the other.
+- Unused backend schemas: `ArtworkValidationResult`, `TokenPayload`, `JobStartRequest`.
+- The `franchise_entries` table is created by the migration and imported in `models/archive_entry.py`, but no ORM relationship uses it.
+- `PermissionName` and `RoleName` enums are not used by any column (permission and role names are stored as strings).
 
-## 7. Explicit TODOs for Next Session
+### Stubs
 
-### All Phases Complete — No Immediate TODOs
+- `GOGProvider` and `ManualProvider` return empty results; only IGDB and Steam provide metadata.
+- `run_job` in `tasks/celery_app.py` is a demo task that simulates progress.
 
-The knowledge graph is fully built. Future work may include:
-- **Frontend extraction**: Pages, components, hooks, contexts, lib utilities
-- **Graph query scripts**: CLI tools for traversals under `docs/knowledge/queries/`
-- **Visualization**: Generate ER diagrams or dependency graphs from the JSONL data
-- **CI integration**: Auto-validate graph consistency on PRs
+### Repository hygiene
 
-### Completed Summary
-
-| Phase | Deliverable | Records |
-|-------|-------------|---------|
-| Phase 1 | Foundation (`_schema.md`, `_decisions.md`, `index.md`, `_state.md`) | 4 files |
-| Phase 2a | `entities/backend_services.jsonl` | 20 entities |
-| Phase 2b | `entities/backend_repositories.jsonl` | 17 entities |
-| Phase 2c | `entities/backend_models.jsonl` | 18 entities |
-| Phase 2d | `entities/backend_schemas.jsonl` | 67 entities |
-| Phase 2e | `entities/backend_api_routes.jsonl` | 107 entities |
-| Phase 2f | `entities/backend_providers.jsonl` | 10 entities |
-| Phase 2g | `entities/backend_tasks.jsonl` | 7 entities |
-| Phase 2h | `entities/backend_db_enums.jsonl`, `backend_db_tables.jsonl`, `backend_associations.jsonl` | 44 entities |
-| Phase 2i | Relationships (7 files) | 893 relationships (pre-repair) |
-| Phase 6 | `relationships/backend_cross_layer.jsonl` | 108 relationships |
-| Phase 7 | `domains/*.md` (18 files) + `flows/*.md` (6 files) | 24 files |
-| Phase 8 | `entities/backend_test_files.jsonl` + `relationships/backend_test_coverage.jsonl` | 20 + 92 records |
-| Phase 9 | Global audit | Passed |
-| Phase 10 | `_state.md` + `index.md` updated | This update |
-| Phase 11 | Graph repair — 24 entities added, 32 duplicates removed, 15 broken refs fixed | 332 entities, 861 relationships |
-
-### Unresolved / Future Considerations
-
-- **Service → Schema dependencies**: Services use Pydantic schemas but these are modeled via Schema entities (not as direct DEPENDS_ON)
-- **Celery tasks not unit tested**: Tasks are integration-tested via API endpoints; no direct Celery task unit tests
-- **GOG/Manual providers are stubs**: Not implemented beyond search/get_details/download_artwork signatures
-- **AdminService reads directly**: bypasses repository layer for 7 tables
-- **Frontend not yet extracted**: App Router pages, components, hooks, contexts, lib utilities
+- The Celery beat schedule files (`backend/celerybeat-schedule.bak`, `.dat`, `.dir`) are runtime state that was tracked in git; the `.gitignore` entry `celerybeat-schedule` did not match the extensions. Fixed: pattern is now `celerybeat-schedule*` and the files are untracked.
 
 ---
 
-## Notes
+## Known Limits of the Graph
 
-- This state file is the **single source of truth** for analysis progress. Update it at the end of each session.
-- Do not rely on conversation memory — all decisions and progress must be persisted here.
-- The knowledge graph schema in `_schema.md` is the contract for all future extraction work.
+- `FLOWS_TO` edges are derived (route -> service -> repository/table) and marked `inferred`.
+- `TESTS` edges for backend API tests come from the routes and classes the tests exercise, so some are indirect.
+- Delegating frontend API functions (for example `searchApi.search`, `*.getEntries`) have `inferred` `CALLS_ENDPOINT` edges to the routes reached through the functions they call.
+- Line numbers are exact at the verified commit; after code changes rely on the validator's staleness warning.
+
+---
+
+## Maintenance Procedure
+
+1. Change code.
+2. Update the affected records in the matching `graph/*.jsonl` files and domain/flow docs; set `last_verified_at` and `commit_hash`.
+3. Run `validate.py` until it exits 0.
+4. Update the counts in `index.md` from `validate.py --stats-json` and the table at the top of this file.
+
+## Change Log
+
+| Date | Change |
+|------|--------|
+| 2026-09-07 | v1: backend-only graph (332 entities, 861 relationships) |
+| 2026-10-06 | v2: audit against code. Fixed wrong and missing backend edges (task consumers, route-to-service calls, provider dependency), merged duplicate association tables, corrected domain membership, added route `full_path`, request/response schema edges, core/utils modules, migration. Added the full frontend graph (pages, components, hooks, context, API client mapped to backend routes, types mirrored to schemas, tests). Rewrote domain and flow docs from code (removed non-existent method names and wrong storage and hashing claims). Added `validate.py` and `kg.py`. Removed em dashes and mojibake. |

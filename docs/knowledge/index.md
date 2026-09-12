@@ -1,21 +1,62 @@
-# Ludexis Knowledge Graph Index
+# Ludexis Knowledge Graph
 
-> **Persistent knowledge representation for the Ludexis codebase.**  
-> This directory contains a structured, queryable index of the repository's architecture, code entities, relationships, and design decisions — enabling fast onboarding and analysis across sessions.
+The verified map of the Ludexis codebase: which files implement which feature, how a request moves from a page to the database, and what depends on what.
+Use it before searching the repo. It is checked against the code by `queries/validate.py`.
 
 ---
 
-## Quick Navigation
+## How to Use It
 
-| Document | Purpose |
-|----------|---------|
-| [`_state.md`](_state.md) | **Current analysis state** — what's been discovered, what remains, phase status, next TODOs |
-| [`_schema.md`](_schema.md) | **Graph schema definition** — entity types, relationship types, properties, storage format |
-| [`_decisions.md`](_decisions.md) | **Architectural decision log** — ADRs with context, alternatives, consequences |
-| [`graph/`](graph/) | **Extracted graph data** — JSONL entities/relationships (332 entities, 861 relationships) |
-| [`domains/`](domains/) | **Domain definitions** — 19 domain IDs (18 files) describing business areas |
-| [`flows/`](flows/) | **Flow diagrams** — 6 end-to-end flow descriptions |
-| [`queries/`](queries/) | **Query scripts** — CLI tools for common graph traversals (planned) |
+| I want to... | Go to |
+|--------------|-------|
+| Find every file for a feature (backend and frontend) | `domains/<domain>.md`, or `python docs/knowledge/queries/kg.py files <domain>` |
+| Follow a request end to end | `flows/<flow>.md`, or `kg.py trace <page or route id>` |
+| See what breaks if I change something | `kg.py impact <id>` (includes the tests that cover it) |
+| Look up a class, route, page, or function | `kg.py find <text>`, then `kg.py show <id>` |
+| Understand the ID formats and edge types | `_schema.md` |
+| Know why the graph is modeled this way | `_decisions.md` |
+| Know what is covered, known gaps, and open bugs | `_state.md` |
+| Check the graph is still accurate | `python docs/knowledge/queries/validate.py` |
+
+---
+
+## Domains
+
+Each domain file lists its backend and frontend files, graph IDs, endpoints (with permissions and frontend callers), tables, and a change guide.
+
+| Domain | Backend router | Frontend pages |
+|--------|----------------|----------------|
+| [admin](domains/admin.md) | `backend/app/api/admin.py` | `/admin`, `/admin/analytics`, `/admin/monitoring`, `/admin/settings` |
+| [archive](domains/archive.md) | `backend/app/api/archive_entries.py` | `/`, `/library`, `/archive/[id]`, `/admin/duplicates` |
+| [artwork](domains/artwork.md) | `backend/app/api/artwork.py` | `/admin/artwork` |
+| [audit](domains/audit.md) | (used by most routers through `AuditService` / `AuditLogService`) | `/admin/audit-logs` |
+| [auth](domains/auth.md) | `backend/app/api/auth.py`, `backend/app/api/setup.py` | `/auth/login`, `/auth/setup`, `/account` |
+| [collection](domains/collection.md) | `backend/app/api/collections.py` | `/collections`, `/collections/[id]`, `/collections/[id]/edit`, `/collections/new`, `/admin/collections` |
+| [core](domains/core.md) | `backend/app/api/health.py`, `backend/main.py`, `backend/app/core/` | root layout, shared UI |
+| [developer](domains/developer.md) | `backend/app/api/developers.py` | `/developers`, `/developers/[id]` |
+| [franchise](domains/franchise.md) | `backend/app/api/franchises.py` | `/franchises`, `/franchises/[id]` |
+| [genre](domains/genre.md) | (no router; genres are synced by metadata enrichment) | none |
+| [job](domains/job.md) | `backend/app/api/jobs.py`, `backend/app/api/job_monitor.py` | `/admin/jobs` |
+| [library](domains/library.md) | `backend/app/api/libraries.py` | `/admin/library` |
+| [metadata](domains/metadata.md) | `backend/app/api/metadata.py` | `/admin/metadata` |
+| [publisher](domains/publisher.md) | `backend/app/api/publishers.py` | `/publishers`, `/publishers/[id]` |
+| [rbac](domains/rbac.md) | `backend/app/api/users.py`, `roles.py`, `permissions.py` | `/admin/users`, `/admin/permissions` |
+| [scan](domains/scan.md) | `backend/app/api/scan.py` | (started from admin pages) |
+| [search](domains/search.md) | `backend/app/api/search.py` | `/search` |
+| [storage](domains/storage.md) | `GET /media/{path:path}` in `backend/main.py` | (artwork URLs via `frontend/lib/media.ts`) |
+| [tag](domains/tag.md) | `backend/app/api/tags.py` | `/tags`, `/tags/[id]` |
+
+## Flows
+
+| Flow | Covers |
+|------|--------|
+| [frontend-request](flows/frontend-request.md) | Page -> `lib/api/<x>.ts` -> `lib/api/client.ts` (base URL, auth header, refresh) -> router -> service -> repository -> DB |
+| [auth](flows/auth.md) | Login, token refresh, logout, first-run setup |
+| [rbac](flows/rbac.md) | Users, roles, permissions, permission checks on routes |
+| [scan](flows/scan.md) | Full and incremental library scans, duplicate detection |
+| [metadata](flows/metadata.md) | Provider search, auto-match, scheduled refresh, conflict resolution |
+| [artwork](flows/artwork.md) | Upload, replace, auto-download, validation, garbage collection |
+| [jobs](flows/jobs.md) | Job start, Celery dispatch, progress, cancel, beat schedule |
 
 ---
 
@@ -23,190 +64,123 @@
 
 ```
 Ludexis/
-├── backend/                 # FastAPI + SQLAlchemy + Celery
-│   ├── app/
-│   │   ├── api/            # 22 API routers
-│   │   ├── core/           # Config, auth, security, deps
-│   │   ├── db/             # Base, session
-│   │   ├── models/         # 18 SQLAlchemy models
-│   │   ├── repositories/   # 16 data access classes
-│   │   ├── schemas/        # 21 Pydantic schemas
-│   │   ├── services/       # 16 business logic services
-│   │   ├── tasks/          # 4 Celery task modules
-│   │   ├── providers/      # 5 metadata providers (IGDB, Steam, GOG)
-│   │   └── utils/          # Enums, normalization, helpers
-│   ├── alembic/            # Database migrations
-│   └── tests/              # Pytest suite
-│
-├── frontend/                # Next.js 16 + React 19 + TypeScript
-│   ├── app/                # App Router pages (15 route groups)
-│   ├── components/         # 60+ components (common, layout, ui)
-│   ├── hooks/              # 4 custom hooks
-│   ├── contexts/           # React contexts
-│   ├── lib/                # API client, auth, types, utilities
-│   └── e2e/                # Playwright tests
-│
-├── docs/                    # Project documentation
-│   ├── architecture/       # 4 major architecture docs
-│   ├── api/                # API reference guide
-│   ├── deployment/         # Deployment guide
-│   ├── integrations/       # Client examples
-│   └── backlogs/           # Feature backlogs
-│
-└── docs/knowledge/         # ← THIS DIRECTORY (knowledge graph)
-    ├── _schema.md          # Graph schema definition
-    ├── _state.md           # Current analysis state
-    ├── _decisions.md       # Architectural decision log
-    ├── index.md            # ← THIS FILE (navigation)
-    ├── graph/
-    │   ├── entities/       # 13 JSONL files (332 entities)
-    │   └── relationships/  # 9 JSONL files (861 relationships)
-    ├── domains/            # 18 domain definition files
-    └── flows/              # 6 end-to-end flow diagrams
+├── backend/                     FastAPI 0.111 + SQLAlchemy 2.0 + Celery 5.4 + PostgreSQL + Redis
+│   ├── main.py                  app factory, CORS, /media, /healthz, /api/metrics
+│   ├── app/api/                 20 routers, 87 routes under /api (+3 in main.py)
+│   ├── app/services/            20 services (+ ArchiveScanItem helper class)
+│   ├── app/repositories/        15 repositories + BaseRepository
+│   ├── app/models/              18 models + association_tables.py (27 tables)
+│   ├── app/schemas/             20 modules, 67 Pydantic schemas
+│   ├── app/tasks/               celery_app + scan/metadata/artwork tasks (7 tasks)
+│   ├── app/providers/           MetadataProvider base, IGDB (+client), Steam, GOG, Manual
+│   ├── app/core/ app/utils/ app/db/   config, auth/permissions, security, logging, metrics, enums, helpers
+│   ├── alembic/versions/        1 baseline migration (ecabaf1d5dab)
+│   └── tests/                   20 pytest files
+├── frontend/                    Next.js 16 + React 19 + TypeScript 5.7 + Tailwind 4
+│   ├── app/                     32 pages + root layout
+│   ├── components/              89 components (29 common, 3 layout, 54 ui, 3 root)
+│   ├── hooks/ contexts/         hooks (incl. use-protected-route), auth-context
+│   ├── lib/api/                 21 API modules, 88 API functions (+ client.ts)
+│   ├── lib/types/               20 type modules, 58 exported types
+│   └── e2e/                     Playwright specs (+ 38 vitest files beside the code)
+└── docs/knowledge/              this graph
 ```
 
----
+## Directory Layout
 
-## Key Architectural Concepts
+```
+docs/knowledge/
+├── index.md          this file
+├── _schema.md        entity types, ID formats, relationship types
+├── _decisions.md     modeling decisions (ADRs)
+├── _state.md         coverage, known gaps, findings, maintenance
+├── domains/          19 per-feature files
+├── flows/            7 end-to-end flows
+├── queries/          validate.py, kg.py (stdlib only)
+└── graph/
+    ├── entities/       backend_*.jsonl, frontend_*.jsonl
+    └── relationships/  backend_*.jsonl, frontend_*.jsonl
+```
 
-| Concept | Description |
-|---------|-------------|
-| **Archive Entry** | Core entity — a discovered game archive (ZIP, RAR, 7z, installer, etc.) |
-| **Library** | Configured filesystem root for scanning |
-| **Metadata Enrichment** | Automated matching via IGDB/Steam/GOG providers |
-| **Artwork Pipeline** | Cover/banner/logo/screenshot acquisition & management |
-| **Collections** | User-curated groupings of archive entries |
-| **RBAC** | Role-Based Access Control (Users → Roles → Permissions) |
-| **Background Jobs** | Celery tasks for scans, enrichment, artwork (async, tracked) |
-| **Audit Logging** | Immutable record of all security-relevant actions |
+### Graph Files
 
----
+Load only the file you need.
+
+| File | Contents |
+|------|----------|
+| `entities/backend_api_routes.jsonl` | Routers and APIRoutes (method, path, `full_path`, permissions, schemas) |
+| `entities/backend_services.jsonl` / `backend_repositories.jsonl` / `backend_models.jsonl` / `backend_schemas.jsonl` | Classes with public methods and line ranges |
+| `entities/backend_tasks.jsonl` / `backend_providers.jsonl` | Celery tasks (schedules), metadata providers, external providers |
+| `entities/backend_db_tables.jsonl` / `backend_db_enums.jsonl` / `backend_migrations.jsonl` | Tables (columns, FKs, indexes), enums, migrations |
+| `entities/backend_modules.jsonl` | `app/core`, `app/utils`, `app/db`, `main.py`, seed scripts |
+| `entities/backend_test_files.jsonl`, `frontend_tests.jsonl` | Test files with test counts |
+| `entities/backend_domains.jsonl` / `backend_layers.jsonl` | The 19 domains and 16 layers |
+| `entities/frontend_pages.jsonl` / `frontend_components.jsonl` / `frontend_hooks_contexts.jsonl` | Pages (auth guard, API calls), components, hooks, context |
+| `entities/frontend_api.jsonl` | API modules and functions (HTTP method, path, backend route) |
+| `entities/frontend_types.jsonl` / `frontend_lib.jsonl` | TS types, lib utilities |
+| `relationships/backend_api_to_service.jsonl` | Route -> service/repository (`CALLS`), schemas (`ACCEPTS`/`RETURNS`), domains |
+| `relationships/backend_service_deps.jsonl` / `backend_repo_deps.jsonl` / `backend_task_deps.jsonl` / `backend_provider_deps.jsonl` | Dependencies and table access |
+| `relationships/backend_model_deps.jsonl` / `backend_schema_deps.jsonl` / `backend_migration_deps.jsonl` | ORM relations, schema mapping, migration tables |
+| `relationships/backend_module_deps.jsonl` | Imports of core/utils/db modules |
+| `relationships/backend_cross_layer.jsonl` | Derived route -> repository/table flows |
+| `relationships/frontend_ui_deps.jsonl` | Renders, hooks, context, API calls, imports |
+| `relationships/frontend_api_deps.jsonl` | API function -> backend route (`CALLS_ENDPOINT`), contains, imports |
+| `relationships/frontend_type_deps.jsonl` | TS type -> backend schema (`MIRRORS`) |
+| `relationships/*_test_coverage.jsonl` | Test file -> covered entity |
 
 ## Graph Statistics
 
-| Category | Count |
-|----------|-------|
-| **Entities** | 332 |
-| **Relationships** | 861 |
-| **Total Graph Records** | 1,193 |
-| **Domain Files** | 18 |
-| **Flow Diagrams** | 6 |
-| **Test Coverage Records** | 92 |
+Verified at commit `633a512` on 2026-10-06. Regenerate with `validate.py --stats-json`.
 
-### Entity Breakdown
+| | Count |
+|-|-------|
+| Entities | 727 |
+| Relationships | 3,425 |
 
-| Entity Type | Count |
-|-------------|-------|
-| Router | 20 |
-| APIRoute | 87 |
-| Service | 20 |
-| Repository | 16 |
-| Model | 18 |
-| Schema | 67 |
-| Provider | 6 |
-| Task | 7 |
-| DBTable | 27 |
-| DBEnum | 7 |
-| Association | 9 |
-| TestFile | 20 |
-| Domain | 19 |
-| Layer | 5 |
-| ExternalProvider | 4 |
+| Entity type | Count | Entity type | Count |
+|-------------|-------|-------------|-------|
+| APIRoute | 90 | Component | 89 |
+| Schema | 67 | ApiFunction | 88 |
+| DBTable | 27 | TestFile | 63 (20 backend, 43 frontend) |
+| Router | 21 | Type | 58 |
+| Service | 20 | Page | 32 |
+| Domain | 19 | ApiModule | 21 |
+| Model | 18 | TypeModule | 20 |
+| Module | 18 | LibUtil | 11 |
+| Repository | 16 | Hook | 5 |
+| Layer | 16 | Context | 1 |
+| DBEnum | 7 | Layout | 1 |
+| Task | 7 | Class | 1 |
+| Provider | 6 | Migration | 1 |
+| ExternalProvider | 4 | | |
 
-### Relationship Breakdown
-
-| Relationship Type | Count |
-|-------------------|-------|
-| EXPOSES | 87 |
-| BELONGS_TO | 132 |
-| TESTS | 92 |
-| CALLS | 84 |
-| EXTENDS | 41 |
-| ACCESSES | 32 |
-| READS | 64 |
-| FLOWS_TO | 108 |
-| DEPENDS_ON | 34 |
-| MAPS_TO | 25 |
-| WRITES | 49 |
-| ASSOCIATED_THROUGH | 16 |
-| DEFINES | 18 |
-| MANY_TO_MANY | 17 |
-| MANY_TO_ONE | 12 |
-| ONE_TO_MANY | 11 |
-| USES_PROVIDER | 10 |
-| NESTS | 8 |
-| CONSUMES | 8 |
-| USES_ENUM | 5 |
-| DISPATCHES | 5 |
-| PROVIDES | 3 |
+| Relationship type | Count | Relationship type | Count |
+|-------------------|-------|-------------------|-------|
+| BELONGS_TO | 1250 | DEPENDS_ON | 35 |
+| IMPORTS | 436 | ACCEPTS | 27 |
+| RENDERS | 285 | ACCESSES | 27 |
+| TESTS | 162 | CREATES | 27 |
+| CONTAINS | 146 | MAPS_TO | 25 |
+| CALLS | 127 | USES_CLIENT | 19 |
+| CALLS_API | 126 | DEFINES | 18 |
+| FLOWS_TO | 107 | MANY_TO_MANY | 15 |
+| CALLS_ENDPOINT | 93 | ASSOCIATED_THROUGH | 13 |
+| EXPOSES | 90 | MANY_TO_ONE | 12 |
+| RETURNS | 68 | ONE_TO_MANY | 11 |
+| READS | 64 | USES_PROVIDER | 10 |
+| WRITES | 49 | CONSUMES | 9 |
+| EXTENDS | 45 | NESTS | 9 |
+| MIRRORS | 40 | DISPATCHES | 6 |
+| USES_CONTEXT | 34 | USES_ENUM | 5 |
+| USES_HOOK | 32 | PROVIDES | 3 |
 
 ---
 
-## Getting Started
+## Keeping It Accurate
 
-### For New Sessions
+1. After changing code, update the affected records (stable IDs make this a patch, not a rebuild) and set `last_verified_at` and `commit_hash`.
+2. Run `python docs/knowledge/queries/validate.py`. It must exit 0 before the change is committed. A staleness WARN means code has changed since the recorded `commit_hash`.
+3. If types, ID formats, or edge types change, update `_schema.md`, `_decisions.md`, and `validate.py` together.
+4. Update the counts above from `validate.py --stats-json` and the status in `_state.md`.
 
-1. **Read `_state.md`** — Understand current phase and completed work
-2. **Review `_schema.md`** — Learn entity/relationship types
-3. **Check `_decisions.md`** — Understand architectural commitments
-4. **Browse `domains/`** — Read domain overviews for the area you're working on
-5. **Browse `flows/`** — Read end-to-end flow diagrams
-
-### For Querying Existing Graph
-
-```bash
-# List all entity types
-jq -r '.type' graph/entities/*.jsonl | sort -u
-
-# Find entities by type
-grep '"type":"Service"' graph/entities/backend_services.jsonl
-
-# Find relationships
-grep '"type":"DEPENDS_ON"' graph/relationships/*.jsonl
-
-# Count entities per file
-for f in graph/entities/*.jsonl; do echo "$(wc -l < $f) $f"; done | sort -rn
-
-# Find all FLOWS_TO chains (cross-layer tracing)
-grep '"type":"FLOWS_TO"' graph/relationships/backend_cross_layer.jsonl
-
-# Find test coverage for a service
-grep 'TESTS.*MetadataService' graph/relationships/backend_test_coverage.jsonl
-```
-
----
-
-## Maintenance
-
-| Task | Frequency | Owner |
-|------|-----------|-------|
-| Update `_state.md` after each session | Every session | Active analyst |
-| Re-extract changed files | On significant code changes | Active analyst |
-| Validate graph consistency | After each phase | Active analyst |
-| Archive old graph versions | Quarterly | Maintainer |
-
----
-
-## Related Documentation
-
-| Document | Location |
-|----------|----------|
-| Architecture Overview | `docs/architecture/Architecture-Overview.md` |
-| Backend Architecture | `docs/architecture/Backend-Architecture.md` |
-| Data Model (ERD) | `docs/architecture/Data-Model.md` |
-| Processing Pipeline | `docs/architecture/Processing-Pipeline.md` |
-| API Reference | `docs/api/API-Guide.md` |
-| Deployment Guide | `docs/deployment/Deployment.md` |
-
----
-
-## Version Information
-
-- **Graph Schema Version**: 1.0 (defined in `_schema.md`)
-- **Repository Commit**: Run `git rev-parse HEAD` in repo root
-- **Last Updated**: 2026-09-07 (Graph repair & validation complete)
-- **Total Graph Records**: 1,193 (332 entities + 861 relationships)
-
----
-
-> **Remember**: This knowledge graph is a *derived artifact*. Always verify against source code. The graph enables fast navigation; the source code is the ground truth.
+Related project docs: `docs/architecture/` (architecture, backend, data model, pipeline), `docs/api/API-Guide.md`, `docs/deployment/Deployment.md`.

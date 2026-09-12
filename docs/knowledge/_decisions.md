@@ -1,349 +1,278 @@
-# Architectural Decisions Log
+# Knowledge Graph Decision Log
 
-This document records significant architectural decisions made during the analysis and knowledge graph construction for Ludexis. Each entry follows the format: **Decision**, **Context**, **Alternatives Considered**, **Consequences**, **Status**.
+Decisions about how the Ludexis knowledge graph is modeled, stored, and maintained.
+Each entry: **Decision**, **Context**, **Alternatives**, **Consequences**, **Status**.
+Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 ---
 
-## ADR-001: Knowledge Graph Schema Design
+## ADR-001: Fixed Graph Schema
 
-**Decision**: Define a comprehensive entity/relationship schema (`_schema.md`) covering files, code constructs, architecture layers, database, frontend, tests, and domains before extraction begins.
+**Decision**: All graph data conforms to the entity and relationship types defined in `_schema.md`. A type not listed there is invalid.
 
-**Context**: The knowledge graph must serve multiple query patterns (impact analysis, data flow tracing, test coverage, API mapping, database schema). A fixed schema ensures consistency across extraction phases.
+**Context**: The graph serves several query patterns (impact analysis, data-flow tracing, test coverage, frontend-to-backend mapping). Consistency across extraction passes requires one contract.
 
-**Alternatives Considered**:
-- Ad-hoc schema evolving during extraction → Rejected: leads to inconsistency, requires re-extraction
-- Minimal schema (only files/classes/functions) → Rejected: insufficient for architectural queries
-- Use existing schema (e.g., CodeQL, LSIF) → Rejected: not tailored to Ludexis-specific concepts (domains, layers, background jobs, providers)
+**Alternatives**: Ad-hoc types that evolve during extraction (rejected: drift, which is what happened in v1); generic code-index formats such as LSIF (rejected: no notion of domains, layers, jobs, providers).
 
-**Consequences**:
-- Upfront schema design effort
-- All extractors must conform to schema
-- Schema changes require migration of existing graph data
+**Consequences**: Schema changes must update `_schema.md`, the data, and `queries/validate.py` together.
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted
 
 ---
 
 ## ADR-002: Entity ID Format
 
-**Decision**: Use deterministic, human-readable IDs with type prefixes:
-- `module:app.services.metadata`
-- `class:app.services.metadata.MetadataService`
-- `route:GET /api/archive-entries`
-- `table:archive_entries`
-- `page:/library`
+**Decision**: Deterministic, human-readable IDs with a type prefix. The canonical prefixes are listed in `_schema.md`. Examples: `service:app.services.metadata.MetadataService`, `api:GET:/archive-entries/{archive_entry_id}`, `table:archive_entries`, `page:/archive/[id]`, `apifn:lib/api/archives.archiveApi.getById`.
 
-**Context**: IDs must be stable across extractions, sortable, and debuggable. UUIDs are opaque; path-based IDs are transparent.
+**Context**: IDs must be stable across extractions, mergeable, and readable. Because they are deterministic, independent extraction passes (backend, frontend) can reference each other's IDs without coordination.
 
-**Alternatives Considered**:
-- UUIDv4 → Rejected: not deterministic, not human-readable
-- Hash of content → Rejected: changes on any modification, breaks stability
-- Simple incrementing integers → Rejected: not mergeable across parallel extractions
+**Alternatives**: UUIDs (rejected: opaque, not deterministic); content hashes (rejected: change on every edit); integers (rejected: not mergeable).
 
-**Consequences**:
-- IDs encode type and location
-- Renaming a file/module changes IDs (intentional — reflects actual change)
-- Cross-references use same ID format
+**Consequences**: Renaming a file, class, or route changes its ID; that is intentional and caught by the validator. The v1 documentation described `class:` and `route:GET /api/...` prefixes that were never used in the data; v2 documents what is actually stored.
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted (revised 2026-10-06)
 
 ---
 
-## ADR-003: Provenance Tracking on Every Entity/Relationship
+## ADR-003: Provenance on Every Record
 
-**Decision**: Every entity and relationship must include `source_file`, `source_line_start`, `source_line_end` (entities) or `source_line` (relationships), plus `discovered_at` and `commit_hash`.
+**Decision**: Entities carry `source_file`, `source_line_start`, `source_line_end`, `discovered_at`, `last_verified_at`, `commit_hash`. Relationships carry `source_file`, `source_line`, `confidence`, `inferred`.
 
-**Context**: The graph is a derived artifact. Users must be able to verify any claim by navigating to source code. Git commit enables historical tracking.
+**Context**: The graph is a derived artifact. Every claim must be checkable by opening the source at a given line.
 
-**Alternatives Considered**:
-- Provenance only on entities → Rejected: relationships need verification too
-- Provenance in separate index → Rejected: adds join complexity, risks separation
-- No provenance → Rejected: defeats purpose of verifiable knowledge base
+**Alternatives**: Provenance only on entities (rejected: edges need verification too); no provenance (rejected).
 
-**Consequences**:
-- Larger graph storage
-- Extraction tools must capture line numbers (AST-based parsing preferred)
-- Enables "go to definition" from graph queries
+**Consequences**: Extraction is AST/parse based so line numbers are exact. `commit_hash` lets the validator warn when code has moved on since the last verification.
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted
 
 ---
 
-## ADR-004: Layer-Based Domain Classification
+## ADR-004: Layer and Domain Classification
 
-**Decision**: Classify every backend entity into both an **architectural layer** (`api`, `service`, `repository`, `model`, `schema`, `task`, `provider`) and a **business domain** (`archive`, `metadata`, `auth`, `rbac`, `artwork`, `scan`, `collection`, `library`, `search`, `job`, `audit`, `user`).
+**Decision**: Every code entity has exactly one `BELONGS_TO layer:*` edge and exactly one `BELONGS_TO domain:*` edge. Layers cover both stacks (`api`, `service`, `repository`, `model`, `schema`, `task`, `provider`, `core`, `database`, `frontend-page`, `frontend-component`, `frontend-hook`, `frontend-context`, `frontend-api`, `frontend-lib`, `frontend-type`). Domains are the 19 listed in `_schema.md`, each with a file under `domains/`.
 
-**Context**: Queries need both perspectives: "all services in metadata domain" and "all entities in service layer".
+**Context**: Queries need both views: "everything in the metadata domain" (feature work) and "everything in the service layer" (architectural work). Domain membership is how a developer finds all files for a feature across backend and frontend.
 
-**Alternatives Considered**:
-- Single classification hierarchy → Rejected: layer and domain are orthogonal concerns
-- Tags instead of structured classification → Rejected: less queryable, no validation
-- Infer domain from file path → Rejected: `app/services/metadata.py` is clear, but `app/services/scanner.py` spans `scan` + `archive` domains
+**Alternatives**: Single hierarchy (rejected: layer and domain are orthogonal); infer domain from file path (rejected: e.g. `JobHistory` lives in models but belongs to `job`).
 
-**Consequences**:
-- Each entity has `BELONGS_TO layer:x` and `BELONGS_TO domain:y` relationships
-- Extractors must assign both (may require manual review for ambiguous cases)
-- Enables powerful cross-dimensional queries
+**Consequences**: Ambiguous cases are decided once and recorded here:
+- `JobHistory`, `JobHistoryRepository`, `JobService`, `JobMonitorService`, `run_job` belong to `job`.
+- `AuditLog`, `AuditLogRepository`, `AuditService`, `AuditLogService` belong to `audit`.
+- API routes take the domain of their router (`health` and `main.py` routes belong to `core`, except `/media` which belongs to `storage`).
+- UI primitives (`components/ui/*`) and generic libraries belong to `core`.
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted (revised 2026-10-06)
 
 ---
 
-## ADR-005: Relationship Directionality Semantics
+## ADR-005: Directed Relationships
 
-**Decision**: Relationships are directed with specific semantics:
-- `DEPENDS_ON`: A requires B to function (A → B)
-- `USES`: A uses B as a tool/dependency (A → B)
-- `CALLS`: A directly invokes B (A → B)
-- `READS`/`WRITES`: Service/Repository → DBTable (direction = data flow)
-- `DISPATCHES`: API/Service → Task (enqueues)
-- `CONSUMES`: Task → Service/Repository (executes)
-- `EXPOSES`: Router → Route (router registers)
-- `RENDERS`: Page/Component → Component (parent renders child)
-- `TESTS`: TestCase → Target (test covers)
+**Decision**: All relationships are directed, source to target, with the semantics listed in `_schema.md` (for example `CALLS`: route handler uses service; `CALLS_ENDPOINT`: frontend API function hits backend route; `TESTS`: test file covers target).
 
-**Context**: Direction must be unambiguous for graph traversal algorithms (impact analysis = reverse DEPENDS_ON; data flow = forward READS/WRITES).
+**Context**: Traversal must be unambiguous: `trace` follows edges forward, `impact` follows them in reverse.
 
-**Alternatives Considered**:
-- Undirected relationships with type → Rejected: loses semantic direction
-- Bidirectional for all → Rejected: adds noise, complicates traversal
+**Alternatives**: Undirected edges (rejected: loses meaning).
 
-**Consequences**:
-- Extractors must determine direction correctly
-- Some relationships are inherently bidirectional (e.g., `HAS_RELATIONSHIP` between tables) — model as two directed edges or single undirected with symmetric semantics
+**Consequences**: ORM relationships are stored once per declaring model (`MANY_TO_ONE`, `ONE_TO_MANY`, `MANY_TO_MANY`).
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted
 
 ---
 
-## ADR-006: Graph Storage as JSON Lines
+## ADR-006: JSON Lines Storage, Split by Area
 
-**Decision**: Store graph as `.jsonl` files (one entity/relationship per line) with per-type and per-file indexes.
+**Decision**: Store the graph as JSONL, one record per line, split into files by stack and area (`backend_*.jsonl`, `frontend_*.jsonl`) under `graph/entities/` and `graph/relationships/`. Lines are sorted for stable diffs. There is no combined `entities.jsonl`; the split files are the index.
 
-**Context**: JSONL is streaming-friendly, line-oriented, easily processed by standard tools (jq, awk, Python), and append-only for incremental updates.
+**Context**: One file would be too large to read in one pass. Split files let a reader load only the area it needs (for example only `frontend_api.jsonl` when changing an API client).
 
-**Alternatives Considered**:
-- SQLite → Rejected: requires schema migrations, less portable
-- Neo4j/Cypher → Rejected: external dependency, overkill for static analysis artifact
-- Single large JSON → Rejected: memory issues, not streaming-friendly
-- Protocol Buffers → Rejected: requires schema compilation, less human-readable
+**Alternatives**: SQLite (rejected: binary, not diffable); a graph database (rejected: external service); a single JSON file (rejected: too large).
 
-**Consequences**:
-- Simple tooling for queries (grep, jq, Python scripts)
-- Index files enable fast filtering by type/file
-- No graph database features (traversal, path finding) — must implement in query scripts
+**Consequences**: Cross-file references are resolved by `queries/kg.py` and checked by `queries/validate.py`.
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted (revised 2026-10-06: v1 promised per-type index files that never existed)
 
 ---
 
-## ADR-007: Extraction Phases Aligned to Architecture Layers
+## ADR-007: Extraction Order
 
-**Decision**: Structure extraction phases to match backend architectural layers (Phase 2: Services/Repositories/Models → Phase 3: Database → Phase 4: API → Phase 5: Frontend → Phase 6: Cross-cutting).
+**Decision**: Extract in dependency order: backend structure, database, API surface, frontend, then cross-cutting edges. Backend and frontend passes can run in parallel because IDs are deterministic (ADR-002).
 
-**Context**: The layered architecture has clear dependencies (API → Services → Repositories → Models). Extracting in dependency order ensures referenced entities exist when needed.
+**Context**: Later passes reference IDs from earlier ones.
 
-**Alternatives Considered**:
-- Extract by file system walk → Rejected: creates forward references, requires multi-pass resolution
-- Extract by feature/domain → Rejected: crosses layers, duplicates effort
-- Single-pass extraction of everything → Rejected: too large, error-prone, hard to validate incrementally
+**Alternatives**: Single-pass extraction of everything (rejected: hard to validate).
 
-**Consequences**:
-- Phase 2 produces entities that Phase 4 references
-- Validation at phase boundaries catches missing entities early
-- Frontend extraction (Phase 5) independent until cross-cutting (Phase 6)
+**Consequences**: Each pass validates its own files; `validate.py` checks the whole graph at the end.
 
-**Status**: ✅ Accepted — Defined in `_state.md`
+**Status**: Accepted
 
 ---
 
-## ADR-008: Frontend Entity Types Aligned to Next.js App Router
+## ADR-008: Next.js-Aligned Frontend Entities
 
-**Decision**: Model frontend entities as `Page`, `Layout`, `Component`, `Hook`, `Context`, `LibUtil`, `Type` rather than generic `Function`/`Class`.
+**Decision**: Model the frontend as `Page`, `Layout`, `Component`, `Hook`, `Context`, `ApiModule`, `ApiFunction`, `LibUtil`, `TypeModule`, `Type`, and frontend `TestFile`, rather than generic classes and functions.
 
-**Context**: Next.js App Router has distinct conventions (pages, layouts, server/client components) that map poorly to backend code entities.
+**Context**: App Router conventions (route folders, client components, provider contexts) and the `lib/api` client layer carry the meaning developers need: which page shows what, and which backend route it hits.
 
-**Alternatives Considered**:
-- Reuse backend types (`Class`, `Function`) → Rejected: loses framework semantics (e.g., `Page` has route, `Component` has props interface)
-- Model every React element → Rejected: too granular, volatile
+**Alternatives**: Reuse backend types (rejected: loses route and client-call semantics); model every JSX element (rejected: too granular).
 
-**Consequences**:
-- Frontend extraction needs Next.js-aware parsing (file conventions, `use client` directive)
-- `Page` entities link to `route` property for URL mapping
-- `Component` entities track `is_client_component` for hydration analysis
+**Consequences**: `ApiFunction` is the bridge between stacks: `Page/Component -CALLS_API-> ApiFunction -CALLS_ENDPOINT-> APIRoute -CALLS-> Service`. `Type -MIRRORS-> Schema` records where frontend types track backend schemas, including field mismatches.
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted (implemented 2026-10-06)
 
 ---
 
-## ADR-009: Background Job as First-Class Graph Entity
+## ADR-009: Celery Tasks as Entities
 
-**Decision**: Model Celery tasks as `Task` entities and job types as `BackgroundJob` entities, with `DISPATCHES` (API/Service → Task) and `CONSUMES` (Task → Service/Repository) relationships.
+**Decision**: Model Celery tasks as `Task` entities with `DISPATCHES` (Service to Task) and `CONSUMES` (Task to Service/Repository) edges. Beat schedules are stored as task properties.
 
-**Context**: Background processing is central to Ludexis (scans, metadata, artwork). Understanding async flows requires explicit job entities.
+**Context**: Scans, metadata refresh, and artwork validation all run in the background.
 
-**Alternatives Considered**:
-- Model only as `CALLS` to `celery_app.send_task` → Rejected: loses task signature, retry policy, queue info
-- Ignore background jobs → Rejected: misses critical async architecture
+**Alternatives**: A separate `BackgroundJob` entity per job type (dropped: `JobType` is already a `DBEnum`, and tasks carry the job semantics).
 
-**Consequences**:
-- Task extraction parses `@celery_app.task` decorators
-- `DISPATCHES` links show where async work originates
-- `CONSUMES` links show what tasks actually execute
+**Consequences**: `CONSUMES` edges must reflect what the task body actually instantiates (v1 had four incorrect edges to `JobService`; the tasks use `JobHistoryRepository` directly).
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted (revised 2026-10-06)
 
 ---
 
 ## ADR-010: External Providers as Distinct Entities
 
-**Decision**: Model external integrations (IGDB, Steam, GOG) as `ExternalProvider` entities, with provider implementations as `Provider` entities linked via `PROVIDES`/`USES_PROVIDER`.
+**Decision**: External services (IGDB, Steam, GOG) are `ExternalProvider` entities. Provider classes are `Provider` entities linked with `PROVIDES`; services link to providers with `USES_PROVIDER` or `DEPENDS_ON`.
 
-**Context**: Provider abstraction is a key architectural pattern. The graph should show which services use which external systems.
+**Context**: Enables "which features depend on IGDB?".
 
-**Alternatives Considered**:
-- Treat provider classes as regular `Service` → Rejected: loses "external" distinction, can't query "all external dependencies"
-- Inline provider calls as `CALLS` to HTTP client → Rejected: too low-level, misses provider abstraction
+**Alternatives**: Treat provider classes as services (rejected: loses the external boundary).
 
-**Consequences**:
-- `Provider` entities belong to `layer:provider` and `domain:metadata`
-- `ExternalProvider` entities are singleton references (IGDB, Steam, GOG)
-- Enables query: "Which domains depend on IGDB?"
+**Consequences**: The GOG and manual providers are stubs; this is recorded in their properties.
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted
 
 ---
 
-## ADR-011: Soft Delete Awareness in Graph
+## ADR-011: Soft Delete Awareness
 
-**Decision**: Mark entities with soft-delete capability (`deleted_at` column) via property `is_soft_delete: true` on `Model` entities.
+**Decision**: `Model` entities carry `is_soft_delete: true` when the model has a `deleted_at` column (currently `ArchiveEntry`, `Collection`, `Library`, `User`).
 
-**Context**: Many Ludexis models use soft delete. This affects data flow analysis (DELETE → UPDATE).
+**Context**: Deletes on these tables are updates, which matters for data-flow analysis.
 
-**Alternatives Considered**:
-- Ignore soft delete → Rejected: misrepresents data lifecycle
-- Model as separate `DELETE` operation → Rejected: not a hard delete
+**Alternatives**: Ignore soft delete (rejected: misrepresents the data lifecycle).
 
-**Consequences**:
-- `WRITES` relationship to soft-delete tables may be UPDATE not DELETE
-- Query tools can filter soft-delete tables for audit scenarios
+**Consequences**: Repositories expose `*_active` query methods for these models.
 
-**Status**: ✅ Accepted — Defined in `_schema.md` (Model properties)
+**Status**: Accepted
 
 ---
 
-## ADR-012: Test Entity Granularity
+## ADR-012: Test Granularity at File Level
 
-**Decision**: Model tests at `TestFile` → `TestSuite` → `TestCase` hierarchy, with `TESTS` relationships from `TestCase` to target code entities.
+**Decision**: Tests are modeled as `TestFile` entities with `test_count`, and `TESTS` edges go from the test file to the code it exercises. Individual test cases are not modeled.
 
-**Context**: Need to answer "what tests cover this service?" and "what is untested?"
+**Context**: The question developers ask is "which test files do I run or update when I change X?". File level answers it; per-case entities would double the graph for little gain.
 
-**Alternatives Considered**:
-- Only `TestFile` level → Rejected: too coarse for coverage analysis
-- Only `TestCase` level → Rejected: loses organization, hard to navigate
+**Alternatives**: Per-case `TestSuite`/`TestCase` entities (dropped: high churn, low value).
 
-**Consequences**:
-- Requires parsing test framework structures (pytest `class TestX`, `def test_y`; Vitest `describe`/`it`)
-- `TESTS` relationships may be inferred (naming convention) or explicit (imports)
+**Consequences**: The validator checks `test_count` against the source.
 
-**Status**: ✅ Accepted — Defined in `_schema.md`
+**Status**: Accepted (revised 2026-10-06; supersedes the v1 per-case plan, which was never implemented)
 
 ---
 
-## ADR-013: Configuration as Graph Entities
+## ADR-013: Configuration Captured on Module Entities
 
-**Decision**: Model configuration (Pydantic Settings, environment variables, Docker Compose services) as `Config` entities with `READS` relationships from code that accesses them.
+**Decision**: Configuration is not a separate entity type. The `module:app.core.config` entity lists the `Settings` fields in `settings_fields`. Environment and Compose files are documented in `docs/deployment/Deployment.md`.
 
-**Context**: Configuration drives behavior (DB URLs, API keys, feature flags). Tracking config access enables "what breaks if this env var changes?"
+**Context**: Per-field `Config` entities with `READS` edges from every `settings.X` access would be high-volume and churn-prone.
 
-**Alternatives Considered**:
-- Ignore config → Rejected: misses critical deployment/runtime dependencies
-- Model only `.env` files → Rejected: misses code that reads config
+**Alternatives**: Full config entity graph (deferred until a concrete need appears).
 
-**Consequences**:
-- Extract `app.core.config.Settings` fields as `Config` entities
-- Link `READS` from services/functions that access `settings.X`
-- Track `.env*` files as `File` entities with `CONTAINS` config
+**Consequences**: "Who reads setting X" is answered with grep, not the graph.
 
-**Status**: 🟡 Proposed — Add to Phase 2/6 extraction
+**Status**: Accepted (2026-10-06)
 
 ---
 
-## ADR-014: Migration History in Graph
+## ADR-014: Migrations in the Graph
 
-**Decision**: Include Alembic migrations as `Migration` entities with `DEFINES`/`MODIFIES` relationships to `DBTable`/`DBColumn`.
+**Decision**: Alembic revisions are `Migration` entities with `CREATES` edges to the tables they create.
 
-**Context**: Single baseline migration exists now, but future migrations should be tracked for schema evolution queries.
+**Context**: The schema currently has one baseline revision (`ecabaf1d5dab`); later revisions should be added as they appear.
 
-**Alternatives Considered**:
-- Only current schema → Rejected: loses history, can't answer "when was this column added?"
-- External tool (e.g., alembic history) → Rejected: not integrated with graph
+**Alternatives**: Current schema only (rejected: no history).
 
-**Consequences**:
-- Parse `alembic/versions/*.py` for `upgrade()`/`downgrade()` operations
-- Link migration → tables/columns created/modified/dropped
-- Enables temporal queries on schema
+**Consequences**: Adding a migration requires adding a `Migration` entity; the validator reports revisions missing from the graph.
 
-**Status**: 🟡 Proposed — Add to Phase 3 extraction
+**Status**: Accepted (implemented 2026-10-06)
 
 ---
 
-## ADR-015: Incremental Graph Updates
+## ADR-015: Incremental Updates Gated by the Validator
 
-**Decision**: Design extraction to support incremental updates — new/changed files re-extracted, graph patched via ID matching.
+**Decision**: The graph is updated incrementally: re-extract the files that changed, patch records by ID, and set `last_verified_at` and `commit_hash`. `queries/validate.py` must pass before a change to the graph is committed.
 
-**Context**: Knowledge graph must stay current as codebase evolves. Full re-extraction is wasteful.
+**Context**: Full re-extraction is expensive. Without a mechanical check, v1 drifted (wrong counts, made-up method names in flow docs).
 
-**Alternatives Considered**:
-- Full re-extraction on every update → Rejected: slow, loses historical provenance
-- Git diff-based patching → Rejected: complex, error-prone for semantic changes
+**Alternatives**: Full re-extraction every time (rejected: slow); trust manual review (rejected: failed in v1).
 
-**Consequences**:
-- Stable IDs (ADR-002) enable merge-by-ID
-- `last_verified_at` timestamp tracks freshness
-- Extraction tools must support "update mode" (scan changed files only)
-- Deleted entities marked with `deleted_at` in graph (soft delete in graph)
+**Consequences**: Deleted code means deleted records; there is no soft delete inside the graph. The validator warns when the newest commit touching `backend/` or `frontend/` differs from the recorded `commit_hash`.
 
-**Status**: 🟡 Proposed — Implement in Phase 7 tooling
+**Status**: Accepted (2026-10-06)
 
 ---
 
 ## ADR-016: Query Interface as CLI Scripts
 
-**Decision**: Provide graph queries as standalone Python/CLI scripts in `docs/knowledge/queries/` rather than a graph database or API.
+**Decision**: Queries are standard-library Python scripts in `queries/`: `validate.py` (consistency check against code) and `kg.py` (`find`, `show`, `files`, `trace`, `impact`).
 
-**Context**: Primary consumers are developers and AI agents in CLI context. Scripts are portable, version-controlled, composable.
+**Context**: Readers are developers and tools working from a shell. Scripts are portable and version-controlled.
 
-**Alternatives Considered**:
-- GraphQL API → Rejected: requires running service
-- Neo4j + Cypher → Rejected: external dependency
-- VS Code extension → Rejected: editor-specific, not CI-friendly
+**Alternatives**: GraphQL API or graph database (rejected: needs a running service).
 
-**Consequences**:
-- Scripts use standard library + `json`, `pathlib`
-- Common queries: `find_service_deps.py`, `trace_api_to_db.py`, `check_test_coverage.py`, `impact_analysis.py`
-- Output as JSON or human-readable tables
+**Consequences**: No third-party dependencies, so the scripts run anywhere Python 3.12+ runs.
 
-**Status**: 🟡 Proposed — Implement in Phase 7
+**Status**: Accepted (implemented 2026-10-06)
 
 ---
 
 ## ADR-017: No Source Code Modification
 
-**Decision**: Knowledge graph construction must never modify source code. All outputs go to `docs/knowledge/`.
+**Decision**: Building or updating the graph never modifies application code. All outputs live in `docs/knowledge/`.
 
-**Context**: This is an analysis/documentation task. The repository must remain pristine.
+**Context**: The graph documents the code; it must not change it.
 
-**Alternatives Considered**:
-- Annotate source with graph IDs → Rejected: pollutes source, merge conflicts
-- Generate code from graph → Rejected: opposite direction, not this task
+**Alternatives**: Annotating source with graph IDs (rejected: noise, merge conflicts).
 
-**Consequences**:
-- `docs/knowledge/` is the only output directory
-- Graph is read-only relative to source
-- CI can verify graph freshness without modifying repo
+**Consequences**: Integration bugs found during extraction (for example frontend calls to non-existent routes) are reported in `_state.md`, not fixed as part of graph work.
 
-**Status**: ✅ Accepted — Enforced by task instructions
+**Status**: Accepted
+
+---
+
+## ADR-018: Association Tables Are DBTables
+
+**Decision**: The nine association tables are `DBTable` entities with `is_association: true`. The v1 `AssociationTable` type and `assoc:` prefix are removed.
+
+**Context**: v1 stored every association table twice (for example `table:user_roles` and an `assoc:` duplicate of it), and four of the `table:` copies had no edges.
+
+**Alternatives**: Keep a separate type (rejected: duplication).
+
+**Consequences**: Models link to them with `ASSOCIATED_THROUGH`.
+
+**Status**: Accepted (2026-10-06)
+
+---
+
+## ADR-019: Plain ASCII Punctuation
+
+**Decision**: Files under `docs/knowledge/` use plain ASCII punctuation; em and en dashes are not used.
+
+**Context**: v1 domain records contained mojibake (a UTF-8 em dash decoded as cp1252). Avoiding the character removes the failure mode.
+
+**Alternatives**: Keep Unicode punctuation and enforce encoding (rejected: the same tools that broke it would break it again).
+
+**Consequences**: `validate.py` reports any em dash, en dash, or mojibake as an error.
+
+**Status**: Accepted (2026-10-06)
 
 ---
 
@@ -351,29 +280,30 @@ This document records significant architectural decisions made during the analys
 
 | ID | Title | Status |
 |----|-------|--------|
-| ADR-001 | Knowledge Graph Schema Design | ✅ Accepted |
-| ADR-002 | Entity ID Format | ✅ Accepted |
-| ADR-003 | Provenance Tracking | ✅ Accepted |
-| ADR-004 | Layer + Domain Classification | ✅ Accepted |
-| ADR-005 | Relationship Directionality | ✅ Accepted |
-| ADR-006 | JSONL Storage Format | ✅ Accepted |
-| ADR-007 | Layer-Aligned Extraction Phases | ✅ Accepted |
-| ADR-008 | Next.js-Aligned Frontend Entities | ✅ Accepted |
-| ADR-009 | Background Jobs as First-Class Entities | ✅ Accepted |
-| ADR-010 | External Providers as Distinct Entities | ✅ Accepted |
-| ADR-011 | Soft Delete Awareness | ✅ Accepted |
-| ADR-012 | Test Entity Granularity | ✅ Accepted |
-| ADR-013 | Configuration as Entities | 🟡 Proposed |
-| ADR-014 | Migration History in Graph | 🟡 Proposed |
-| ADR-015 | Incremental Graph Updates | 🟡 Proposed |
-| ADR-016 | CLI Query Scripts | 🟡 Proposed |
-| ADR-017 | No Source Code Modification | ✅ Accepted |
+| ADR-001 | Fixed Graph Schema | Accepted |
+| ADR-002 | Entity ID Format | Accepted (revised) |
+| ADR-003 | Provenance on Every Record | Accepted |
+| ADR-004 | Layer and Domain Classification | Accepted (revised) |
+| ADR-005 | Directed Relationships | Accepted |
+| ADR-006 | JSON Lines Storage, Split by Area | Accepted (revised) |
+| ADR-007 | Extraction Order | Accepted |
+| ADR-008 | Next.js-Aligned Frontend Entities | Accepted |
+| ADR-009 | Celery Tasks as Entities | Accepted (revised) |
+| ADR-010 | External Providers as Distinct Entities | Accepted |
+| ADR-011 | Soft Delete Awareness | Accepted |
+| ADR-012 | Test Granularity at File Level | Accepted (revised) |
+| ADR-013 | Configuration Captured on Module Entities | Accepted |
+| ADR-014 | Migrations in the Graph | Accepted |
+| ADR-015 | Incremental Updates Gated by the Validator | Accepted |
+| ADR-016 | Query Interface as CLI Scripts | Accepted |
+| ADR-017 | No Source Code Modification | Accepted |
+| ADR-018 | Association Tables Are DBTables | Accepted |
+| ADR-019 | Plain ASCII Punctuation | Accepted |
 
 ---
 
 ## How to Add a Decision
 
-1. Create new ADR with next sequential number
-2. Fill all sections: Decision, Context, Alternatives, Consequences, Status
-3. Add to Decision Index table
-4. Reference in `_state.md` TODOs if it affects extraction work
+1. Add an ADR with the next number and fill every section.
+2. Add it to the Decision Index.
+3. If it changes types or IDs, update `_schema.md` and `queries/validate.py` in the same change.

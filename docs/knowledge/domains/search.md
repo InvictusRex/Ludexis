@@ -1,30 +1,53 @@
 # Domain: Search
 
-## Overview
-Full-text search — provides archive entry search with trigram similarity, tag/developer/publisher/franchise filtering.
+Archive entry search with a text query and exact-name filters, plus the frontend search page that fans out to several list endpoints and merges the results.
 
-## Key Entities
-| Type | ID | Name |
-|------|-----|------|
-| Service | `service:app.services.search.SearchService` | SearchService |
-| Repository | `repo:app.repositories.archive_entry.ArchiveEntryRepository` | ArchiveEntryRepository |
+## Files
+| File | Role | Key symbols |
+|---|---|---|
+| `backend/app/api/search.py` | Router `/search` | `search_archive_entries` |
+| `backend/app/services/search.py` | Service (pass-through) | `SearchService.search` |
+| `backend/app/repositories/archive_entry.py` | Query | `ArchiveEntryRepository.search` |
+| `frontend/app/search/page.tsx` | Search page | `searchApi.search` |
+| `frontend/components/common/advanced-search-builder.tsx` | Component | `AdvancedSearchBuilder`, `SEARCH_FIELD_LABELS`, `SearchCondition` |
+| `frontend/lib/api/search.ts` | Aggregating API module | `searchApi.search` |
+| `frontend/lib/api/archives.ts` | Calls the endpoint | `archiveApi.search` |
+| `frontend/lib/saved-searches.ts` | localStorage saved searches | `loadSavedSearches`, `saveSearch`, `deleteSavedSearch`, `loadSearchState`, `saveSearchState` |
+| `frontend/lib/types/search.ts` | Types | `SearchResults`, `SearchFilters` |
+| `frontend/app/search/page.test.tsx`, `frontend/components/common/advanced-search-builder.test.tsx`, `frontend/lib/saved-searches.test.ts` | Frontend tests | |
+| `backend/tests/test_e2e.py` | Backend test (`test_search_journey`) | |
 
-## Related Tables
-- `archive_entries` — trigram indexes on title, description
-- `archive_entry_tags` — tag filter joins
-- `archive_entry_developers` — developer filter joins
-- `archive_entry_publishers` — publisher filter joins
+## Graph IDs
+| Type | ID |
+|---|---|
+| Router | `router:app.api.search` |
+| Service | `service:app.services.search.SearchService` |
+| Repository | `repo:app.repositories.archive_entry.ArchiveEntryRepository` |
+| Schema | `schema:app.schemas.archive_entry.ArchiveEntryRead` |
+| Page | `page:/search` |
+| Component | `comp:components/common/advanced-search-builder` |
+| ApiModule | `apimod:lib/api/search` |
+| ApiFunction | `apifn:lib/api/search.searchApi.search`, `apifn:lib/api/archives.archiveApi.search` |
+| LibUtil | `lib:lib/saved-searches` |
+| TypeModule | `typemod:lib/types/search` |
+| TestFile | `test:frontend/app/search/page.test.tsx`, `test:backend/tests/test_e2e.py` |
 
 ## API Endpoints
-- `GET /search/?q=...&tag_ids=...&developer_ids=...` — search entries
+| Method | Full path | Handler | Permission | Frontend caller |
+|---|---|---|---|---|
+| GET | `/api/search/` | `search_archive_entries` (`backend/app/api/search.py`) | authenticated | `apifn:lib/api/archives.archiveApi.search` |
 
-## Search Features
-- Trigram similarity on title and description
-- Filter by tag IDs, developer IDs, publisher IDs, franchise ID
-- Filter by archive type
-- Results ordered by relevance score
+## Tables
+Read only: `archive_entries`, `archive_entry_tags`, `archive_entry_developers`, `archive_entry_publishers`, `archive_entry_genres`, `collection_entries`, `tags`, `developers`, `publishers`, `genres`, `collections`, `franchises`.
+
+## Change guide
+- New filter: add the query param to `search_archive_entries` (`backend/app/api/search.py`), `SearchService.search`, and `ArchiveEntryRepository.search`; then `archiveApi.search` (`frontend/lib/api/archives.ts`) and `SearchFilters` (`frontend/lib/types/search.ts`).
+- New result section on the search page: add a request in `searchApi.search` (`frontend/lib/api/search.ts`) and a field on `SearchResults`.
 
 ## Notes
-- Uses PostgreSQL `pg_trgm` extension for fuzzy matching
-- Search index: `ix_archive_entries_title_trgm`, `ix_archive_entries_description_trgm`
-- ArchiveEntryRepository.search() performs complex UNION across multiple tables
+- `q` is a case-insensitive `ILIKE '%q%'` over entry title and description plus collection, developer, publisher and tag names (UNION subquery). It does not use `pg_trgm`, although the extension is created in `backend/app/db/base.py` and the baseline migration.
+- `genre`, `tag`, `developer`, `publisher`, `franchise` are exact name matches; `storage_device` is ILIKE; `metadata_status` and `verification_status` are equality.
+- `ArchiveEntryRepository.search` accepts `collection`, but `SearchService.search` and the route never pass it.
+- `archiveApi.search` sends only the first value of each `SearchFilters` array and defaults to `limit=200`.
+- `searchApi.search` runs 6 requests in parallel: `archiveApi.search`, `collectionsApi.getAll`, `developersApi.getAll`, `publishersApi.getAll`, `tagsApi.getAll`, `franchisesApi.getAll` (each with `q`).
+- `GET /api/search/` sets no `X-Total-Count` header.

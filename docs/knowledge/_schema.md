@@ -1,289 +1,161 @@
-# Knowledge Graph Schema
+# Knowledge Graph Schema (v2)
 
-## Overview
+The contract for every record under `graph/`. `queries/validate.py` enforces it.
+A type, prefix, or relationship not listed here is invalid (ADR-001).
 
-This document defines the canonical schema for the Ludexis knowledge graph. The graph represents the codebase as a network of entities and relationships, enabling efficient navigation and analysis across sessions.
+---
 
-Every entity has a **stable identifier** (UUID or deterministic path-based ID) and **source/provenance** information (file path, line numbers, commit hash).
+## Storage
+
+- JSON Lines: one record per line, UTF-8, plain ASCII punctuation (ADR-019).
+- Entities live in `graph/entities/*.jsonl`, relationships in `graph/relationships/*.jsonl`.
+- Files are split by stack and area (`backend_*`, `frontend_*`). Load only what you need.
+- Entity lines are sorted by `id`; relationship lines by (`source_id`, `type`, `target_id`).
+
+### Entity record
+
+```json
+{"id": "service:app.services.metadata.MetadataService", "type": "Service",
+ "name": "MetadataService", "source_file": "backend/app/services/metadata.py",
+ "source_line_start": 27, "source_line_end": 469,
+ "discovered_at": "2026-09-07T12:00:00Z", "last_verified_at": "2026-10-06T00:00:00Z",
+ "commit_hash": "633a512", "properties": {"public_methods": ["..."]}}
+```
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `id` | yes | Prefix per the tables below |
+| `type` | yes | Entity type |
+| `name` | yes | Class, function, route handler, file, or route name |
+| `source_file` | yes | Repo-relative path |
+| `source_line_start` | yes | Definition line |
+| `source_line_end` | no | Last line of the definition |
+| `discovered_at` | yes | ISO 8601 |
+| `last_verified_at` | yes | ISO 8601, last time checked against code |
+| `commit_hash` | yes | Short hash of the commit the record was verified at |
+| `properties` | no | Type-specific, see below |
+
+### Relationship record
+
+```json
+{"source_id": "api:GET:/metadata/search", "target_id": "service:app.services.metadata.MetadataService",
+ "type": "CALLS", "source_file": "backend/app/api/metadata.py", "source_line": 11,
+ "confidence": 1.0, "inferred": false}
+```
+
+`source_id`, `target_id`, `type`, `source_file` are required. `source_line`, `confidence` (0 to 1), `inferred`, and `description` are optional.
 
 ---
 
 ## Entity Types
 
-### Structural Entities
+### Backend
 
-| Type | ID Format | Description |
-|------|-----------|-------------|
-| `Directory` | `dir:<relative_path>` | File system directory |
-| `File` | `file:<relative_path>` | Source file |
-| `Module` | `module:<python_module_path>` | Python module (e.g., `app.api.archive_entries`) |
-| `Package` | `pkg:<python_package_path>` | Python package directory |
+| Type | ID format | Example | Key properties |
+|------|-----------|---------|----------------|
+| `Router` | `router:app.api.<module>`, `router:main` | `router:app.api.tags` | `prefix`, `tags` |
+| `APIRoute` | `api:<METHOD>:<router path>` | `api:GET:/archive-entries/{archive_entry_id}` | `method`, `path` (without `/api`), `full_path` (real URL), `summary`, `requires_auth`, `required_permissions`, `request_schema`, `response_model`, `status_codes` |
+| `Service` | `service:app.services.<module>.<Class>` | `service:app.services.scanner.ScannerService` | `public_methods`, `depends_on`, `dispatches_jobs` |
+| `Repository` | `repo:app.repositories.<module>.<Class>` | `repo:app.repositories.tag.TagRepository` | `public_methods` |
+| `Model` | `model:app.models.<module>.<Class>` | `model:app.models.library.Library` | `table_name`, `columns`, `is_soft_delete` |
+| `Schema` | `schema:app.schemas.<module>.<Class>` | `schema:app.schemas.auth.Token` | `kind`, `fields`, `maps_to_model` |
+| `Provider` | `provider:app.providers.<module>.<Class>` | `provider:app.providers.igdb.IGDBProvider` | `is_abstract`, `public_methods` |
+| `Task` | `task:app.tasks.<module>.<function>` | `task:app.tasks.scan_tasks.scan_full_task` | `celery_task_name`, retry policy, `is_scheduled`, schedule |
+| `Class` | `class:<module>.<Class>` | `class:app.services.scanner.ArchiveScanItem` | helper classes that are not services, repositories, etc. |
+| `Module` | `module:<dotted path>` | `module:app.core.auth`, `module:main` | `public_functions`, `public_classes`, `purpose`, `settings_fields` (config only) |
+| `Migration` | `migration:<revision>` | `migration:ecabaf1d5dab` | `down_revision`, `tables_created` |
+| `DBTable` | `table:<name>` | `table:user_roles` | `columns`, `primary_key`, `foreign_keys`, `indexes`, `is_association` |
+| `DBEnum` | `dbenum:<name>` | `dbenum:job_status` | `values`, `python_class` |
 
-### Backend Code Entities
+### Frontend
 
-| Type | ID Format | Description |
-|------|-----------|-------------|
-| `Class` | `class:<module_path>.<ClassName>` | Python class |
-| `Function` | `func:<module_path>.<function_name>` | Module-level function |
-| `Method` | `method:<module_path>.<ClassName>.<method_name>` | Instance/class method |
-| `Property` | `prop:<module_path>.<ClassName>.<property_name>` | Class property |
-| `Constant` | `const:<module_path>.<CONSTANT_NAME>` | Module-level constant |
-| `Enum` | `enum:<module_path>.<EnumName>` | Python Enum |
+Paths in frontend IDs are relative to `frontend/` and have no file extension.
 
-### Backend Architecture Entities
+| Type | ID format | Example | Key properties |
+|------|-----------|---------|----------------|
+| `Page` | `page:<route>` | `page:/archive/[id]` | `route`, `is_client`, `auth_guard`, `api_functions_used`, `components_used` |
+| `Layout` | `layout:<route>` | `layout:/` | |
+| `Component` | `comp:<path>` | `comp:components/common/archive-entry-card` | `category` (common/layout/ui/root), `is_client`, `exports`, `has_test` |
+| `Hook` | `hook:<path>` | `hook:hooks/use-protected-route` | `exports` |
+| `Context` | `ctx:<path>` | `ctx:contexts/auth-context` | `exports`, `provides` |
+| `ApiModule` | `apimod:<path>` | `apimod:lib/api/archives` | `export_name`, `functions` |
+| `ApiFunction` | `apifn:<path>.<object>.<method>` | `apifn:lib/api/archives.archiveApi.getById` | `http_method`, `client_path`, `backend_route`, `return_type` |
+| `LibUtil` | `lib:<path>` | `lib:lib/pagination` | `exports`, `purpose` |
+| `TypeModule` | `typemod:<path>` | `typemod:lib/types/archive` | `types` |
+| `Type` | `type:<path>.<Name>` | `type:lib/types/archive.ArchiveEntry` | `kind`, `fields` |
 
-| Type | ID Format | Description |
-|------|-----------|-------------|
-| `APIRoute` | `route:<HTTP_METHOD> <path>` | FastAPI endpoint |
-| `Router` | `router:<module_path>` | FastAPI APIRouter instance |
-| `Service` | `service:<module_path>.<ClassName>` | Business logic class in `app/services/` |
-| `Repository` | `repo:<module_path>.<ClassName>` | Data access class in `app/repositories/` |
-| `Model` | `model:<module_path>.<ClassName>` | SQLAlchemy ORM model in `app/models/` |
-| `Schema` | `schema:<module_path>.<ClassName>` | Pydantic schema in `app/schemas/` |
-| `Task` | `task:<module_path>.<function_name>` | Celery task in `app/tasks/` |
-| `Provider` | `provider:<module_path>.<ClassName>` | External integration in `app/providers/` |
-| `Dependency` | `dep:<module_path>.<function_name>` | FastAPI dependency in `app/core/dependencies.py` |
+### Shared
 
-### Database Entities
+| Type | ID format | Example |
+|------|-----------|---------|
+| `TestFile` | `test:<repo-relative path with extension>` | `test:backend/tests/test_auth.py`, `test:frontend/e2e/auth.spec.ts` |
+| `Domain` | `domain:<name>` | `domain:metadata` |
+| `Layer` | `layer:<name>` | `layer:frontend-api` |
+| `ExternalProvider` | `extprov:<Name>` | `extprov:IGDB` |
 
-| Type | ID Format | Description |
-|------|-----------|-------------|
-| `DBTable` | `table:<table_name>` | PostgreSQL table |
-| `DBColumn` | `col:<table_name>.<column_name>` | Table column |
-| `DBIndex` | `idx:<table_name>.<index_name>` | Database index |
-| `DBConstraint` | `constraint:<table_name>.<constraint_name>` | FK, UK, CK constraints |
-| `DBEnum` | `dbenum:<enum_name>` | PostgreSQL enum type |
-| `Migration` | `migration:<revision_id>` | Alembic migration |
+**Domains (19)**: admin, archive, artwork, audit, auth, collection, core, developer, franchise, genre, job, library, metadata, publisher, rbac, scan, search, storage, tag. Each has `domains/<name>.md`.
 
-### Frontend Code Entities
-
-| Type | ID Format | Description |
-|------|-----------|-------------|
-| `Page` | `page:<route_path>` | Next.js App Router page (e.g., `/library`, `/admin/users`) |
-| `Layout` | `layout:<route_path>` | Next.js layout file |
-| `Component` | `comp:<relative_path>` | React component in `components/` |
-| `Hook` | `hook:<relative_path>` | Custom hook in `hooks/` |
-| `Context` | `ctx:<relative_path>` | React Context in `contexts/` |
-| `LibUtil` | `lib:<relative_path>` | Utility in `lib/` (api, auth, types, etc.) |
-| `Type` | `type:<relative_path>.<TypeName>` | TypeScript type/interface |
-
-### Testing Entities
-
-| Type | ID Format | Description |
-|------|-----------|-------------|
-| `TestFile` | `test:<relative_path>` | Test file |
-| `TestSuite` | `suite:<test_file>::<describe_block>` | Test suite/group |
-| `TestCase` | `case:<test_file>::<test_name>` | Individual test |
-
-### Domain/Architectural Entities
-
-| Type | ID Format | Description |
-|------|-----------|-------------|
-| `Domain` | `domain:<name>` | Business domain (e.g., `archive`, `metadata`, `auth`, `rbac`) |
-| `Layer` | `layer:<name>` | Architectural layer (`api`, `service`, `repository`, `model`, `schema`, `task`, `provider`) |
-| `ExternalProvider` | `extprov:<name>` | External service (IGDB, Steam, GOG, etc.) |
-| `BackgroundJob` | `job:<task_name>` | Celery background job type |
+**Layers (16)**: api, service, repository, model, schema, task, provider, core, database, frontend-page, frontend-component, frontend-hook, frontend-context, frontend-api, frontend-lib, frontend-type.
 
 ---
 
 ## Relationship Types
 
-| Relationship | Source → Target | Description |
-|--------------|-----------------|-------------|
-| `CONTAINS` | Directory → File/Directory | File system containment |
-| `DEFINES` | File/Module → Class/Function/Constant | Definition location |
-| `IMPORTS` | Module/File → Module/File | Import dependency |
-| `CALLS` | Function/Method → Function/Method | Direct function call |
-| `USES` | Function/Method → Class/Service/Repository | Uses as dependency |
-| `EXTENDS` | Class → Class | Inheritance |
-| `IMPLEMENTS` | Class → Interface/Protocol | Interface implementation |
-| `DEPENDS_ON` | Service → Repository/Service/Provider | Architectural dependency |
-| `EXPOSES` | Router → APIRoute | Router registers endpoint |
-| `ACCESSES` | Service/Repository → DBTable | Database access |
-| `READS` | Service/Repository → DBTable | Read operation |
-| `WRITES` | Service/Repository → DBTable | Write operation |
-| `DISPATCHES` | Service/APIRoute → Task/Job | Enqueues background job |
-| `CONSUMES` | Task/Job → Service/Repository | Background job consumes service |
-| `RENDERS` | Page/Component → Component | React rendering |
-| `TESTS` | TestCase → Function/Method/Class/Component | Test coverage |
-| `BELONGS_TO` | Entity → Domain | Domain membership |
-| `BELONGS_TO` | Entity → Layer | Layer membership |
-| `IMPLEMENTS_DOMAIN` | Service/Repository → Domain | Implements domain logic |
-| `FLOWS_TO` | Entity → Entity | Data/control flow |
-| `HAS_RELATIONSHIP` | DBTable → DBTable | Foreign key relationship |
-| `PROVIDES` | Provider → ExternalProvider | Implements external integration |
-| `USES_PROVIDER` | Service/Task → Provider | Uses external provider |
+### Backend
+
+| Type | Source -> Target | Meaning |
+|------|------------------|---------|
+| `EXPOSES` | Router -> APIRoute | Router registers the route |
+| `CALLS` | APIRoute -> Service/Repository/Provider | Handler (or a same-file helper it calls) uses the instance |
+| `ACCEPTS` | APIRoute -> Schema | Request body schema |
+| `RETURNS` | APIRoute -> Schema | `response_model` |
+| `DEPENDS_ON` | Service/Provider -> Service/Repository/Provider | Architectural dependency |
+| `USES_PROVIDER` | Service/Task -> Provider | Uses a metadata provider |
+| `PROVIDES` | Provider -> ExternalProvider | Implements the external integration |
+| `EXTENDS` | Class-like -> Class-like | Inheritance |
+| `DISPATCHES` | Service/APIRoute -> Task | Enqueues a Celery task |
+| `CONSUMES` | Task -> Service/Repository | Task body uses it |
+| `READS` / `WRITES` / `ACCESSES` | Service/Repository -> DBTable | Data access (`ACCESSES` when read/write is not distinguished) |
+| `DEFINES` | Model -> DBTable | Model maps the table |
+| `MAPS_TO` | Schema -> Model | Schema represents the model |
+| `NESTS` | Schema -> Schema | Schema embeds another schema |
+| `USES_ENUM` | Model/Schema -> DBEnum | Column or field typed by the enum |
+| `MANY_TO_ONE` / `ONE_TO_MANY` / `MANY_TO_MANY` | Model -> Model | ORM `relationship()` |
+| `ASSOCIATED_THROUGH` | Model -> DBTable | `secondary=` association table |
+| `IMPORTS` | code entity -> Module | File-level import of `app.core`, `app.utils`, `app.db` |
+| `CREATES` | Migration -> DBTable | Revision creates the table |
+| `FLOWS_TO` | APIRoute -> Repository/DBTable | Derived end-to-end flow (inferred) |
+
+### Frontend
+
+| Type | Source -> Target | Meaning |
+|------|------------------|---------|
+| `RENDERS` | Page/Layout/Component -> Component | Component used in JSX |
+| `USES_HOOK` | Page/Component/Context -> Hook | |
+| `USES_CONTEXT` | Page/Component/Hook -> Context | |
+| `CALLS_API` | Page/Component/Hook/Context -> ApiFunction | Function actually invoked |
+| `CALLS_ENDPOINT` | ApiFunction -> APIRoute | **Bridge between stacks** |
+| `USES_CLIENT` | ApiModule -> `apimod:lib/api/client` | |
+| `CONTAINS` | ApiModule -> ApiFunction, TypeModule -> Type | |
+| `IMPORTS` | frontend entity -> LibUtil/TypeModule | |
+| `MIRRORS` | Type -> Schema | TS type tracks a backend schema; `description` lists field mismatches |
+
+### Shared
+
+| Type | Source -> Target | Meaning |
+|------|------------------|---------|
+| `BELONGS_TO` | entity -> Domain / Layer | Exactly one of each for code entities (ADR-004) |
+| `TESTS` | TestFile -> entity | Test file exercises the target |
 
 ---
 
-## Entity Properties
+## Common Queries
 
-### Common Properties (all entities)
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `id` | string | Yes | Stable unique identifier |
-| `type` | string | Yes | Entity type from above |
-| `name` | string | Yes | Human-readable name |
-| `source_file` | string | Yes | Relative path to source file |
-| `source_line_start` | integer | Yes | Starting line number |
-| `source_line_end` | integer | No | Ending line number |
-| `discovered_at` | ISO8601 | Yes | When this entity was added to graph |
-| `last_verified_at` | ISO8601 | No | Last confirmed to exist |
-| `commit_hash` | string | No | Git commit when discovered |
-
-### Type-Specific Properties
-
-#### Class
-```json
-{
-  "is_abstract": boolean,
-  "base_classes": ["class_id"],
-  "decorators": ["decorator_name"],
-  "docstring": "string"
-}
+```bash
+python docs/knowledge/queries/kg.py find ArchiveEntry          # locate entities
+python docs/knowledge/queries/kg.py show service:app.services.metadata.MetadataService
+python docs/knowledge/queries/kg.py files collection           # all files for a feature
+python docs/knowledge/queries/kg.py trace page:/collections    # page -> apifn -> route -> service -> repo -> table
+python docs/knowledge/queries/kg.py impact table:archive_entries
+python docs/knowledge/queries/validate.py                      # check graph and docs against code
 ```
-
-#### Function/Method
-```json
-{
-  "is_async": boolean,
-  "is_generator": boolean,
-  "parameters": [{"name": "str", "type": "str", "default": "any"}],
-  "return_type": "str",
-  "decorators": ["decorator_name"],
-  "docstring": "string",
-  "complexity": integer
-}
-```
-
-#### APIRoute
-```json
-{
-  "method": "GET|POST|PUT|DELETE|PATCH",
-  "path": "/api/...",
-  "summary": "string",
-  "tags": ["tag"],
-  "requires_auth": boolean,
-  "required_permissions": ["perm"],
-  "response_model": "schema_id",
-  "status_codes": [200, 404, ...]
-}
-```
-
-#### Model
-```json
-{
-  "table_name": "string",
-  "columns": ["col_id"],
-  "relationships": ["rel_id"],
-  "indexes": ["idx_id"],
-  "is_soft_delete": boolean
-}
-```
-
-#### Service
-```json
-{
-  "public_methods": ["method_id"],
-  "depends_on": ["service_id", "repo_id", "provider_id"],
-  "dispatches_jobs": ["job_id"]
-}
-```
-
-#### Component
-```json
-{
-  "is_client_component": boolean,
-  "props_interface": "type_id",
-  "hooks_used": ["hook_id"],
-  "contexts_used": ["ctx_id"]
-}
-```
-
-#### Page
-```json
-{
-  "route": "/path",
-  "layout": "layout_id",
-  "components": ["comp_id"],
-  "data_fetching": "server|client|static",
-  "auth_required": boolean
-}
-```
-
-#### DBTable
-```json
-{
-  "schema": "public",
-  "columns": ["col_id"],
-  "primary_key": ["col_id"],
-  "foreign_keys": [{"column": "col_id", "references": "table.column"}],
-  "indexes": ["idx_id"],
-  "row_estimate": integer
-}
-```
-
----
-
-## Relationship Properties
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `source_id` | string | Yes | Source entity ID |
-| `target_id` | string | Yes | Target entity ID |
-| `type` | string | Yes | Relationship type from above |
-| `confidence` | float | No | 0.0-1.0 confidence score |
-| `source_file` | string | Yes | File where relationship is evident |
-| `source_line` | integer | No | Line number |
-| `inferred` | boolean | No | Whether inferred vs explicit |
-
----
-
-## Graph Storage Format
-
-### JSON Lines (`.jsonl`)
-
-Each line is a complete entity or relationship object.
-
-**Entity line:**
-```json
-{"id": "class:app.services.metadata.MetadataService", "type": "Service", "name": "MetadataService", "source_file": "backend/app/services/metadata.py", "source_line_start": 1, "source_line_end": 450, "discovered_at": "2026-09-07T...", "properties": {"public_methods": [...], "depends_on": [...]}}
-```
-
-**Relationship line:**
-```json
-{"source_id": "service:app.services.metadata.MetadataService", "target_id": "provider:app.providers.igdb.IGDBProvider", "type": "USES_PROVIDER", "source_file": "backend/app/services/metadata.py", "source_line": 42, "confidence": 0.95}
-```
-
-### Index Files
-
-- `entities.jsonl` - All entities
-- `relationships.jsonl` - All relationships
-- `entities_by_type/<type>.jsonl` - Per-type indexes
-- `entities_by_file/<file_path>.jsonl` - Per-file indexes
-
----
-
-## Provenance Tracking
-
-Every entity and relationship must track:
-1. **Source file** - Where in the codebase this was discovered
-2. **Line range** - Exact location
-3. **Discovery method** - `ast_parse`, `regex`, `manual`, `import_analysis`
-4. **Confidence** - For inferred relationships
-5. **Git commit** - For historical tracking
-
----
-
-## Query Patterns
-
-The schema supports these key queries:
-
-1. **Find all services in a domain** → Filter `Service` by `BELONGS_TO domain:metadata`
-2. **Find API routes for a feature** → Filter `APIRoute` by path prefix
-3. **Trace data flow** → Follow `READS`/`WRITES`/`FLOWS_TO` from APIRoute → Service → Repository → DBTable
-4. **Find test coverage** → `TESTS` relationships from TestCase
-5. **Impact analysis** → Reverse `DEPENDS_ON`/`USES` from changed entity
-6. **Database schema** → `DBTable` with `HAS_RELATIONSHIP` edges
-7. **Frontend page composition** → `RENDERS` from Page → Component tree
