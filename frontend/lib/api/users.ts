@@ -33,7 +33,7 @@ export const usersApi = {
 
   async resetPassword(id: string, newPassword: string): Promise<User> {
     return apiClient.post<User>(`/users/${id}/reset-password`, {
-      new_password: newPassword,
+      password: newPassword,
     });
   },
 };

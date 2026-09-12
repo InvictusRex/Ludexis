@@ -26,5 +26,5 @@ export interface UserUpdate {
 }
 
 export interface PasswordResetRequest {
-  new_password: string;
+  password: string;
 }
