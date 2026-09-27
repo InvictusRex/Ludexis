@@ -57,7 +57,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 **Alternatives**: Single hierarchy (rejected: layer and domain are orthogonal); infer domain from file path (rejected: e.g. `JobHistory` lives in models but belongs to `job`).
 
 **Consequences**: Ambiguous cases are decided once and recorded here:
-- `JobHistory`, `JobHistoryRepository`, `JobService`, `JobMonitorService`, `run_job` belong to `job`.
+- `JobHistory`, `JobHistoryRepository`, `JobService`, `JobMonitorService` belong to `job`; scanner-backed job tasks (`verify_integrity_task`, `detect_duplicates_task`) belong to `scan` with the other `scan_tasks`.
 - `AuditLog`, `AuditLogRepository`, `AuditService`, `AuditLogService` belong to `audit`.
 - API routes take the domain of their router (`health` and `main.py` routes belong to `core`, except `/media` which belongs to `storage`).
 - UI primitives (`components/ui/*`) and generic libraries belong to `core`.

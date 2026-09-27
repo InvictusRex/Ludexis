@@ -75,6 +75,6 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 - `AuthService.refresh_tokens` revokes the presented refresh token and issues a new pair (rotation). Reusing a revoked token returns 401.
 - `POST /api/auth/token` is the OAuth2 form endpoint used by `oauth2_scheme` (`tokenUrl="/api/auth/token"`); the frontend uses `POST /api/auth/login` (JSON).
 - `get_current_user` rejects inactive users with 401; `login` returns 400 for inactive users after a correct password.
-- `frontend/app/auth/setup/page.tsx` does not call `setupApi`; it only writes `isAuthenticated`, `userEmail`, `setupCompleted` to `localStorage`. `setupApi` and `authApi.refresh` are not called anywhere (the client refreshes with its own `fetch` in `doRefresh`).
+- `frontend/app/auth/setup/page.tsx` redirects to `/auth/login` when `setupApi.getStatus` reports `initialized`; its last step calls `setupApi.initialize`, then `AuthContext.login`, then `librariesApi.create`, and does not re-initialize on retry after a failed library step. `authApi.refresh` is not called anywhere (the client refreshes with its own `fetch` in `doRefresh`).
 - `POST /api/setup/initialize` returns 409 once any user exists; it seeds the 7 permissions and 4 roles (`RoleName`) and makes the user a superuser with the Administrator role.
 - `useRequireAdmin` checks `user.is_superuser`, not permissions.

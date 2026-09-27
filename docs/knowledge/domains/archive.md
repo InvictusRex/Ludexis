@@ -66,7 +66,7 @@
 - New manual-override field: `ArchiveMetadataUpdate` + `ArchiveEntryService.update_metadata`, frontend `ArchiveMetadataUpdate` type, caller `frontend/app/admin/metadata/page.tsx`.
 
 ## Notes
-- `ArchiveEntryService.update` dumps `ArchiveEntryUpdate` with `exclude_none=False` and no `exclude_unset`, so every field omitted from a `PATCH /api/archive-entries/{archive_entry_id}` body is written as `None` (omitting the NOT NULL `file_path` fails the commit). Send full objects, or use `PATCH .../metadata` for title/description/release date.
+- `PATCH /api/archive-entries/{archive_entry_id}` is a partial update: `ArchiveEntryService.update` dumps with `exclude_unset=True`, and `_assign_relations` only replaces a relation list (`tag_ids`, `developer_ids`, ...) when it is present in `data.model_fields_set`. Sending `null` explicitly still writes `None`.
 - `ArchiveEntryService.update_metadata` sets `metadata_override` from the payload and forces `metadata_status = MANUAL`; `MetadataService.refresh_archive`/`auto_match_archive` skip entries with `metadata_override`.
 - `GET /api/archive-entries/duplicates` groups by `file_hash` via `ScannerService.find_duplicates` (scan domain); the duplicates page deletes entries one by one with `archiveApi.delete`.
 - `ArchiveEntryRead` exposes computed `tag_ids`, `developer_ids`, `publisher_ids`, `collection_ids`; genres are not exposed in the schema.

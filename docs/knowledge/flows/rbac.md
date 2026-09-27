@@ -63,7 +63,7 @@ usersApi.update(id, data)  PATCH /api/users/{user_id}   (MANAGE_USERS)
 usersApi.activate / deactivate  POST /api/users/{user_id}/activate | /deactivate
   -> UserRepository.activate / deactivate   (400 when targeting yourself; no audit)
 usersApi.resetPassword  POST /api/users/{user_id}/reset-password  -> hash_password ; commit (no audit)
-                              (frontend sends new_password, backend expects password -> 422)
+                              (body {password})
 usersApi.remove  DELETE /api/users/{user_id}  -> UserRepository.delete (soft, deleted_at) ; AuditLogService.log(DELETE_USER)
 ```
 

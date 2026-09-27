@@ -89,6 +89,6 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 - `POST /api/users/` is open while the `users` table is empty (first user becomes active superuser); afterwards it requires `MANAGE_USERS`.
 - User delete is soft (`users.deleted_at`, `BaseRepository.delete`); role delete is hard (no `deleted_at` column).
 - `activate_user`, `deactivate_user`, `reset_password` and all `/permissions` writes do not write audit logs. Users/roles writes log via `AuditLogService.log`.
-- Bug: `usersApi.resetPassword` posts `{new_password}` (frontend `PasswordResetRequest`), but the backend `PasswordResetRequest` (`backend/app/schemas/auth.py`) requires `password`, so `POST /api/users/{user_id}/reset-password` from the UI returns 422.
+- `usersApi.resetPassword` posts `{password}`, matching the backend `PasswordResetRequest` (`backend/app/schemas/auth.py`) and the frontend `PasswordResetRequest` type.
 - `GET /api/users/` paginates with `skip`/`limit` (not `offset`); `usersApi.getAll(skip, limit)` matches.
 - `PermissionName`/`RoleName` are not database enums: `permissions.name` and `roles.name` are plain strings.

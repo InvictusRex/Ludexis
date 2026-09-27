@@ -53,9 +53,9 @@ Walks every enabled library on disk, parses archive names, deduplicates by path 
 
 ## Notes
 - `_discover_items` uses `rglob("*")`: files with an extension in `{.zip, .rar, .7z, .iso, .exe}` become file items, and every sub-directory becomes a `folder` item.
-- Folder items have `file_hash=None`; `_process_items` calls `_ensure_file_hash` for each new item, and `_compute_file_hash` does `open(path, "rb")`, which fails on a directory. Libraries containing sub-directories can therefore fail the scan task (which then autoretries).
+- Folder items have `file_hash=None`: `_compute_file_hash` returns `None` for a directory, so folders are never hash-deduplicated and `_verify_archive` reports an existing folder as `VERIFIED`. Nested directories inside a game folder (for example `Game/bin`) also become their own `folder` entries.
 - Dedup order in `_process_items`: same `file_path` (backfill size/mtime/hash, skip) -> same `file_hash` (treat as moved file, update path) -> same title+version (count as `matched`, skip) -> create.
 - Because exact title+version matches are skipped first, `MatchingService.match_title` never returns `exact` for new items: scanner-created entries are `PARTIAL` (fuzzy >= 0.70 against existing titles) or `UNMATCHED`. The scanner does not call `MetadataService`.
 - Incremental scan only processes items whose path is new or whose `file_size`/`modified_time` changed (`_needs_processing`).
-- `ScannerService.verify_archives` has no callers.
+- `ScannerService.verify_archives` runs from `verify_integrity_task` (`INTEGRITY_VERIFICATION` job); `find_duplicates` runs from `detect_duplicates_task` and `GET /api/archive-entries/duplicates`.
 - `GET /api/scan/status` counts `job_history` rows of type `LIBRARY_SCAN` + `INCREMENTAL_SCAN` grouped by status.

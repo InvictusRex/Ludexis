@@ -65,7 +65,7 @@ refresh_metadata_task(job_history_id)
           description, release_date, last_metadata_refresh ; commit
   -> status SUCCESS / CANCELED ; result "Metadata refresh completed: {stats}"
 ```
-`POST /api/jobs/start {"job_type": "METADATA_REFRESH"}` (admin dashboard button) does NOT run this: `JobService._select_task` maps it to the `run_job` stub.
+`POST /api/jobs/start {"job_type": "METADATA_REFRESH"}` (admin dashboard button) dispatches the same `refresh_metadata_task` through `JobService._select_task`.
 
 ## 4. Auto-match (not wired)
 `MetadataService.auto_match_archive(db, archive)` sets `metadata_status` (>= 0.85 MATCHED, >= 0.70 PARTIAL, else UNMATCHED), `metadata_source`, `metadata_source_code`, `metadata_confidence`, description and release date. It is only called from `backend/tests/test_screenshots_api.py`; neither the scanner nor any task or route calls it.

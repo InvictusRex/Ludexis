@@ -60,7 +60,6 @@ External metadata lookup (IGDB, Steam; GOG and Manual are stubs), merged-detail 
 - New provider: subclass `MetadataProvider` in `backend/app/providers/` (set `name`, `priority`), export it from `backend/app/providers/__init__.py`, add it to the default list in `MetadataService.__init__`.
 - New synced field: add it to `MetadataDetails` (`backend/app/schemas/metadata.py`), fill it in the provider `get_details`, merge it in `MetadataConflictResolver.resolve`, write it in `MetadataService.refresh_archive`; mirror in `frontend/lib/types/metadata.ts`.
 - Change refresh scope: `MetadataService.refresh_all` (currently only `metadata_status == MATCHED`); schedule in `celery_app.conf.beat_schedule` (`backend/app/tasks/celery_app.py`).
-- Run refresh on demand: map `JobType.METADATA_REFRESH` to `refresh_metadata_task` in `JobService._select_task` (today it maps to the `run_job` stub).
 
 ## Notes
 - `MetadataService.search` tries providers in priority order (or `preferred_providers` first) and returns the first provider's non-empty results; provider exceptions are logged and skipped.

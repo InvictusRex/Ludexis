@@ -51,7 +51,7 @@ for item in items:
   _job_cancelled -> stats["cancelled"] = True ; return
   1. ArchiveEntryRepository.get_by_file_path(db, item.file_path)
        found -> if size/mtime/hash missing: _ensure_file_hash(item) ; ArchiveEntryRepository.update(...) ; continue
-  2. _ensure_file_hash(item) -> _compute_file_hash(path)   SHA-256, 1 MiB chunks
+  2. _ensure_file_hash(item) -> _compute_file_hash(path)   SHA-256, 1 MiB chunks; None for a directory
      ArchiveEntryRepository.get_by_hash(db, file_hash)
        found -> treat as moved: update file_path/file_size/modified_time ; continue
   3. ArchiveEntryRepository.get_by_title_and_version(db, title, version)
@@ -62,7 +62,7 @@ for item in items:
      MatchingService.metadata_status_for_match -> PARTIAL (fuzzy/developer) | UNMATCHED (manual)
   5. ArchiveEntryRepository.create(db, {... metadata_status, verification_status: UNKNOWN, library_id, file_size, modified_time, file_hash ...})
 ```
-Gotcha: directory items carry `file_hash=None`, so step 2 calls `_compute_file_hash` on a directory, which raises; the task then records `FAILED` and Celery autoretries.
+Directory items keep `file_hash=None`, so step 2 skips the hash lookup for them and they dedupe only by path and title+version.
 
 ## 5. Watching progress (frontend)
 ```

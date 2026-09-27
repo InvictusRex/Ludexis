@@ -6,7 +6,7 @@ Local filesystem storage for artwork, rooted at `settings.ARTWORK_STORAGE_PATH` 
 | File | Role | Key symbols |
 |---|---|---|
 | `backend/app/services/storage.py` | Service | `StorageService.save`, `delete`, `exists`, `absolute_path`, `base_dir` |
-| `backend/main.py` | `/media` route (`media_router`) | `read_media`, `media_dir` |
+| `backend/main.py` | `/media` route (`media_router`) | `read_media`, `get_media_user`, `media_dir` |
 | `backend/app/core/config.py` | Settings | `ARTWORK_STORAGE_PATH` |
 | `backend/app/services/artwork.py` | Main consumer | `ArtworkService` (`self.storage`) |
 | `backend/scripts/seed_demo.py` | Demo seeding writes artwork files | `write_artwork`, `make_png` |
@@ -24,7 +24,7 @@ Local filesystem storage for artwork, rooted at `settings.ARTWORK_STORAGE_PATH` 
 ## API Endpoints
 | Method | Full path | Handler | Permission | Frontend caller |
 |---|---|---|---|---|
-| GET | `/media/{path:path}` | `read_media` (`backend/main.py`) | authenticated | none |
+| GET | `/media/{path:path}` | `read_media` (`backend/main.py`) | authenticated (Bearer or `?access_token=`) | `<img>` URLs from `mediaUrl()` |
 
 ## Tables
 None. Paths stored in `archive_entries.cover_path`/`banner_path`/`logo_path` and `screenshots.file_path` are relative to `ARTWORK_STORAGE_PATH`.
@@ -36,5 +36,5 @@ None. Paths stored in `archive_entries.cover_path`/`banner_path`/`logo_path` and
 ## Notes
 - `StorageService.__init__` creates `base_dir` if missing; `backend/main.py` also creates it at import time.
 - `read_media` resolves the requested path and returns 404 if it escapes `media_dir` or is not a file (path traversal guard).
-- `/media/{path:path}` requires a Bearer token (`get_current_active_user`), but the frontend renders artwork with `<img src={mediaUrl(...)}>`, which sends no `Authorization` header.
+- `/media/{path:path}` requires an active user via `get_media_user` (`backend/main.py`): a Bearer header, or the access token as `?access_token=` because `<img>` cannot send headers. `mediaUrl()` in `frontend/lib/media.ts` appends the current token from `lib/auth/token-store`. The token therefore appears in access logs; rendered URLs stop working once the 15 min token expires until the component re-renders.
 - `/media` is mounted outside `settings.API_PREFIX`, so the full URL has no `/api` prefix.

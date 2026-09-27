@@ -24,8 +24,10 @@ frontend/app/admin/page.tsx       (quick actions: jobsApi.start("METADATA_REFRES
            -> JobService._select_task(job_type)
                 LIBRARY_SCAN      -> scan_full_task
                 INCREMENTAL_SCAN  -> scan_incremental_task
-                ARTWORK_REFRESH   -> validate_artwork_task
-                anything else     -> run_job   (METADATA_REFRESH, DUPLICATE_DETECTION, INTEGRITY_VERIFICATION)
+                METADATA_REFRESH        -> refresh_metadata_task
+                ARTWORK_REFRESH         -> validate_artwork_task
+                DUPLICATE_DETECTION     -> detect_duplicates_task
+                INTEGRITY_VERIFICATION  -> verify_integrity_task
            -> task.apply_async(args=[job.id])
            -> JobHistoryRepository.update(db, job, {task_id, details: "Queued task <id>"})
      <- 201 JobHistoryRead
@@ -44,13 +46,15 @@ Every real task follows the same pattern; there is no service method for status 
      scan_incremental_task  -> ScannerService().scan_incremental(db, job_id=job.id)
      validate_artwork_task  -> ArtworkService().validate_all_artwork(db)
      refresh_metadata_task  -> MetadataService().refresh_all(db, job.id)
+     verify_integrity_task  -> ScannerService().verify_archives(db)      via _run_scanner_job
+     detect_duplicates_task -> len(ScannerService().find_duplicates(db))  via _run_scanner_job
   stats["cancelled"] -> status CANCELED, else SUCCESS ; progress = 100 ; result/details ; completed_at
   except Exception -> status FAILED, details/result = str(exc), completed_at ; re-raise (autoretry)
   finally db.close()
 ```
 - Real tasks: `autoretry_for=(Exception,)`, `retry_backoff=True`, `retry_backoff_max=settings.JOB_RETRY_BACKOFF_MAX` (300), `max_retries=settings.JOB_MAX_RETRIES` (5).
 - `validate_artwork_task` has no cancellation check and always ends `SUCCESS` unless it raises.
-- `run_job` (stub): sets RUNNING, then 5 iterations of `progress = step/5*100`, `time.sleep(1)`, then SUCCESS with `"<job_type> completed successfully"`. No retry policy.
+- `verify_integrity_task` and `detect_duplicates_task` share `_run_scanner_job` in `backend/app/tasks/scan_tasks.py`; neither checks for cancellation.
 
 ## 3. Cancel
 ```
@@ -97,4 +101,4 @@ jobMonitorApi.getWorkers() GET /api/job-monitor/workers (ACCESS_ADMIN) -> JobMon
 ```
 
 ## Entities
-`router:app.api.jobs`, `router:app.api.job_monitor`, `service:app.services.job.JobService`, `service:app.services.job_monitor.JobMonitorService`, `repo:app.repositories.job_history.JobHistoryRepository`, `model:app.models.job_history.JobHistory`, `task:app.tasks.celery_app.run_job`, `task:app.tasks.scan_tasks.scan_full_task`, `task:app.tasks.scan_tasks.scan_incremental_task`, `task:app.tasks.artwork_tasks.validate_artwork_task`, `task:app.tasks.artwork_tasks.scheduled_artwork_validation_task`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `task:app.tasks.metadata_tasks.scheduled_metadata_refresh_task`, `table:job_history`, `extprov:Celery`, `page:/admin/jobs`, `apimod:lib/api/jobs`, `apimod:lib/api/job-monitor`.
+`router:app.api.jobs`, `router:app.api.job_monitor`, `service:app.services.job.JobService`, `service:app.services.job_monitor.JobMonitorService`, `repo:app.repositories.job_history.JobHistoryRepository`, `model:app.models.job_history.JobHistory`, `task:app.tasks.scan_tasks.scan_full_task`, `task:app.tasks.scan_tasks.scan_incremental_task`, `task:app.tasks.scan_tasks.verify_integrity_task`, `task:app.tasks.scan_tasks.detect_duplicates_task`, `task:app.tasks.artwork_tasks.validate_artwork_task`, `task:app.tasks.artwork_tasks.scheduled_artwork_validation_task`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `task:app.tasks.metadata_tasks.scheduled_metadata_refresh_task`, `table:job_history`, `extprov:Celery`, `page:/admin/jobs`, `apimod:lib/api/jobs`, `apimod:lib/api/job-monitor`.

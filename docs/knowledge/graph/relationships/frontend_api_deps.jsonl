@@ -510,6 +510,7 @@
 {"source_id": "lib:lib/errors", "target_id": "layer:frontend-lib", "type": "BELONGS_TO", "source_file": "frontend/lib/errors.ts", "source_line": 1, "confidence": 1.0, "inferred": false}
 {"source_id": "lib:lib/media", "target_id": "domain:storage", "type": "BELONGS_TO", "source_file": "frontend/lib/media.ts", "source_line": 1, "confidence": 1.0, "inferred": false}
 {"source_id": "lib:lib/media", "target_id": "layer:frontend-lib", "type": "BELONGS_TO", "source_file": "frontend/lib/media.ts", "source_line": 1, "confidence": 1.0, "inferred": false}
+{"source_id": "lib:lib/media", "target_id": "lib:lib/auth/token-store", "type": "IMPORTS", "source_file": "frontend/lib/media.ts", "source_line": 1, "confidence": 1.0, "inferred": false, "last_verified_at": "2026-10-06T12:00:00Z", "description": "imports getAccessToken"}
 {"source_id": "lib:lib/media", "target_id": "lib:lib/config", "type": "IMPORTS", "source_file": "frontend/lib/media.ts", "source_line": 1, "confidence": 1.0, "inferred": false, "description": "imports config"}
 {"source_id": "lib:lib/pagination", "target_id": "domain:core", "type": "BELONGS_TO", "source_file": "frontend/lib/pagination.ts", "source_line": 1, "confidence": 1.0, "inferred": false}
 {"source_id": "lib:lib/pagination", "target_id": "layer:frontend-lib", "type": "BELONGS_TO", "source_file": "frontend/lib/pagination.ts", "source_line": 1, "confidence": 1.0, "inferred": false}

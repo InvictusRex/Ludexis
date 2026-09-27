@@ -5,10 +5,10 @@ Status, coverage, known gaps, and findings. Update at the end of every change to
 | | |
 |-|-|
 | Graph version | v2 (schema in `_schema.md`) |
-| Verified at commit | `633a512` |
+| Verified at commit | `633a512` (records touched by the 2026-10-06 bug fixes: `6a79f12`) |
 | Last verified | 2026-10-06 |
 | Validator | `python docs/knowledge/queries/validate.py`, must exit 0 |
-| Size | 727 entities, 3,425 relationships |
+| Size | 729 entities, 3,443 relationships |
 
 ---
 
@@ -39,7 +39,7 @@ Recent work (from git history): frontend-to-backend integration (real API client
 | Frontend pages, layout, components, hooks, context | Yes | Auth guard per page, render tree, API calls |
 | Frontend API client layer | Yes | Every API function mapped to its backend route |
 | Frontend types | Yes | `MIRRORS` edges to backend schemas with field mismatches |
-| Tests | Yes, file level | 20 backend, 43 frontend test files with `TESTS` edges |
+| Tests | Yes, file level | 20 backend, 44 frontend test files with `TESTS` edges |
 | Docker, Compose, monitoring, CI config | No | See `docs/deployment/Deployment.md` |
 | Individual settings fields usage | No | Fields listed on `module:app.core.config`; use grep for usage (ADR-013) |
 | CSS, static assets, `components.json` | No | Not useful for navigation |
@@ -48,19 +48,15 @@ Recent work (from git history): frontend-to-backend integration (real API client
 
 ## Findings in the Code
 
-These surfaced while the graph was built. They are recorded here, not fixed (ADR-017).
+These surfaced while the graph was built. They are recorded here, not fixed (ADR-017). Fixed findings move to the change log.
 
 ### Bugs
 
 | Finding | Where |
 |---------|-------|
-| `usersApi.resetPassword` sends `{new_password}`, but the backend `PasswordResetRequest` requires `password`, so a password reset fails with 422. | `frontend/lib/api/users.ts:34`, `backend/app/schemas/auth.py:59` |
-| The `/auth/setup` page never calls the backend: it simulates setup with timeouts and writes `isAuthenticated`, `userEmail`, `setupCompleted` to localStorage. `setupApi` and `POST /api/setup/initialize` exist but are unused by the UI. | `frontend/app/auth/setup/page.tsx:45-75` |
-| A scan fails on any library containing a subdirectory: `_scan_folder` builds an item without a hash, then `_ensure_file_hash` calls `_compute_file_hash`, which does `open()` on the directory. | `backend/app/services/scanner.py:49-56, 322, 446` |
-| Starting a `METADATA_REFRESH`, `DUPLICATE_DETECTION`, or `INTEGRITY_VERIFICATION` job (including the admin dashboard buttons) runs the demo task `run_job`, which only advances progress. Real metadata refresh runs only from the 03:00 UTC beat schedule. | `backend/app/services/job.py:42-49` |
-| `PATCH /api/archive-entries/{archive_entry_id}` dumps the update schema with `exclude_none=False` and no `exclude_unset`, so every omitted field is written as `None`. | `backend/app/services/archive_entry.py:34-38` |
-| `/media/{path:path}` requires a Bearer token, but the frontend renders artwork with plain `<img src>` from `mediaUrl()`, which cannot send the header, so images fail to load. | `backend/main.py`, `frontend/lib/media.ts` |
 | Scanner-created entries are never `MATCHED` and `auto_match_archive` is only called from tests, so the scheduled metadata refresh only touches entries whose status and source were set through the archive-entries API. | `backend/app/services/metadata.py`, `backend/app/services/scanner.py` |
+| Every nested directory under a library becomes its own `folder` entry (`_discover_items` uses `rglob("*")`), so a game folder with a `bin/` subfolder yields two folder entries. | `backend/app/services/scanner.py` |
+| Media URLs carry the access token as `?access_token=`, so it is written to server access logs (uvicorn logs query strings). | `frontend/lib/media.ts`, `backend/main.py` |
 | Artwork `upload` and `replace` use a raw multipart `fetch` instead of `apiClient`, so they do not refresh an expired token on 401 and throw a plain `Error` instead of `ApiError`. | `frontend/lib/api/artwork.ts` |
 
 ### Integration gaps
@@ -80,7 +76,6 @@ These surfaced while the graph was built. They are recorded here, not fixed (ADR
 ### Stubs
 
 - `GOGProvider` and `ManualProvider` return empty results; only IGDB and Steam provide metadata.
-- `run_job` in `tasks/celery_app.py` is a demo task that simulates progress.
 
 ### Repository hygiene
 
@@ -110,3 +105,4 @@ These surfaced while the graph was built. They are recorded here, not fixed (ADR
 |------|--------|
 | 2026-09-07 | v1: backend-only graph (332 entities, 861 relationships) |
 | 2026-10-06 | v2: audit against code. Fixed wrong and missing backend edges (task consumers, route-to-service calls, provider dependency), merged duplicate association tables, corrected domain membership, added route `full_path`, request/response schema edges, core/utils modules, migration. Added the full frontend graph (pages, components, hooks, context, API client mapped to backend routes, types mirrored to schemas, tests). Rewrote domain and flow docs from code (removed non-existent method names and wrong storage and hashing claims). Added `validate.py` and `kg.py`. Removed em dashes and mojibake. |
+| 2026-10-06 | Bug fixes `3910274`..`6a79f12`: password reset field, folder hashing in scans, real tasks for `METADATA_REFRESH`/`DUPLICATE_DETECTION`/`INTEGRITY_VERIFICATION` (`run_job` removed; `verify_integrity_task`, `detect_duplicates_task` added), partial `PATCH` for archive entries, `/media` token via query parameter, setup page wired to `setupApi`. Graph and docs patched. |

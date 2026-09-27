@@ -71,7 +71,7 @@ Ludexis/
 │   ├── app/repositories/        15 repositories + BaseRepository
 │   ├── app/models/              18 models + association_tables.py (27 tables)
 │   ├── app/schemas/             20 modules, 67 Pydantic schemas
-│   ├── app/tasks/               celery_app + scan/metadata/artwork tasks (7 tasks)
+│   ├── app/tasks/               celery_app + scan/metadata/artwork tasks (8 tasks)
 │   ├── app/providers/           MetadataProvider base, IGDB (+client), Steam, GOG, Manual
 │   ├── app/core/ app/utils/ app/db/   config, auth/permissions, security, logging, metrics, enums, helpers
 │   ├── alembic/versions/        1 baseline migration (ecabaf1d5dab)
@@ -82,7 +82,7 @@ Ludexis/
 │   ├── hooks/ contexts/         hooks (incl. use-protected-route), auth-context
 │   ├── lib/api/                 21 API modules, 88 API functions (+ client.ts)
 │   ├── lib/types/               20 type modules, 58 exported types
-│   └── e2e/                     Playwright specs (+ 38 vitest files beside the code)
+│   └── e2e/                     Playwright specs (+ 39 vitest files beside the code)
 └── docs/knowledge/              this graph
 ```
 
@@ -130,18 +130,18 @@ Load only the file you need.
 
 ## Graph Statistics
 
-Verified at commit `633a512` on 2026-10-06. Regenerate with `validate.py --stats-json`.
+Verified at commit `633a512` on 2026-10-06; records touched by the bug fixes are verified at `6a79f12`. Regenerate with `validate.py --stats-json`.
 
 | | Count |
 |-|-------|
-| Entities | 727 |
-| Relationships | 3,425 |
+| Entities | 729 |
+| Relationships | 3,443 |
 
 | Entity type | Count | Entity type | Count |
 |-------------|-------|-------------|-------|
 | APIRoute | 90 | Component | 89 |
 | Schema | 67 | ApiFunction | 88 |
-| DBTable | 27 | TestFile | 63 (20 backend, 43 frontend) |
+| DBTable | 27 | TestFile | 64 (20 backend, 44 frontend) |
 | Router | 21 | Type | 58 |
 | Service | 20 | Page | 32 |
 | Domain | 19 | ApiModule | 21 |
@@ -150,28 +150,28 @@ Verified at commit `633a512` on 2026-10-06. Regenerate with `validate.py --stats
 | Repository | 16 | Hook | 5 |
 | Layer | 16 | Context | 1 |
 | DBEnum | 7 | Layout | 1 |
-| Task | 7 | Class | 1 |
+| Task | 8 | Class | 1 |
 | Provider | 6 | Migration | 1 |
 | ExternalProvider | 4 | | |
 
 | Relationship type | Count | Relationship type | Count |
 |-------------------|-------|-------------------|-------|
-| BELONGS_TO | 1250 | DEPENDS_ON | 35 |
-| IMPORTS | 436 | ACCEPTS | 27 |
+| BELONGS_TO | 1252 | DEPENDS_ON | 35 |
+| IMPORTS | 439 | ACCEPTS | 27 |
 | RENDERS | 285 | ACCESSES | 27 |
-| TESTS | 162 | CREATES | 27 |
+| TESTS | 166 | CREATES | 27 |
 | CONTAINS | 146 | MAPS_TO | 25 |
 | CALLS | 127 | USES_CLIENT | 19 |
-| CALLS_API | 126 | DEFINES | 18 |
+| CALLS_API | 129 | DEFINES | 18 |
 | FLOWS_TO | 107 | MANY_TO_MANY | 15 |
 | CALLS_ENDPOINT | 93 | ASSOCIATED_THROUGH | 13 |
 | EXPOSES | 90 | MANY_TO_ONE | 12 |
 | RETURNS | 68 | ONE_TO_MANY | 11 |
 | READS | 64 | USES_PROVIDER | 10 |
-| WRITES | 49 | CONSUMES | 9 |
+| WRITES | 49 | CONSUMES | 12 |
 | EXTENDS | 45 | NESTS | 9 |
-| MIRRORS | 40 | DISPATCHES | 6 |
-| USES_CONTEXT | 34 | USES_ENUM | 5 |
+| MIRRORS | 40 | DISPATCHES | 8 |
+| USES_CONTEXT | 35 | USES_ENUM | 5 |
 | USES_HOOK | 32 | PROVIDES | 3 |
 
 ---
