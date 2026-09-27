@@ -1,32 +1,47 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
+import { librariesApi } from '@/lib/api/libraries'
+import { setupApi } from '@/lib/api/setup'
 
 export default function SetupPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
 
+  const [adminUsername, setAdminUsername] = useState('')
   const [adminEmail, setAdminEmail] = useState('')
   const [adminPassword, setAdminPassword] = useState('')
   const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('')
 
+  const [libraryName, setLibraryName] = useState('Main Library')
   const [libraryPath, setLibraryPath] = useState('/archive')
-  const [metadataProvider, setMetadataProvider] = useState('IGDB')
 
   const [error, setError] = useState('')
+  const [adminCreated, setAdminCreated] = useState(false)
   const [completed, setCompleted] = useState(false)
 
-  const handleCreateAdmin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    setupApi
+      .getStatus()
+      .then((status) => {
+        if (status.initialized) router.replace('/auth/login')
+      })
+      .catch(() => setError('Could not reach the server'))
+  }, [router])
+
+  const handleCreateAdmin = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!adminEmail || !adminPassword) {
+    if (!adminUsername || !adminEmail || !adminPassword) {
       setError('Please fill in all fields')
       return
     }
@@ -41,40 +56,45 @@ export default function SetupPage() {
       return
     }
 
-    setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
     setStep(2)
-    setLoading(false)
   }
 
-  const handleConfigureLibrary = async (e: React.FormEvent) => {
+  const handleConfigureLibrary = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!libraryPath) {
-      setError('Please enter a library path')
+    if (!libraryName || !libraryPath) {
+      setError('Please enter a library name and path')
       return
     }
 
-    setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
     setStep(3)
-    setLoading(false)
   }
 
   const handleCompleteSetup = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    localStorage.setItem('isAuthenticated', 'true')
-    localStorage.setItem('userEmail', adminEmail)
-    localStorage.setItem('setupCompleted', 'true')
-    setCompleted(true)
-
-    setTimeout(() => {
+    try {
+      // A retry after a failed library step must not re-initialize (the backend returns 409).
+      if (!adminCreated) {
+        await setupApi.initialize({
+          username: adminUsername,
+          email: adminEmail,
+          password: adminPassword,
+        })
+        setAdminCreated(true)
+      }
+      await login(adminUsername, adminPassword)
+      await librariesApi.create({ name: libraryName, path: libraryPath })
+      setCompleted(true)
       router.push('/')
-    }, 2000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Setup failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -145,6 +165,19 @@ export default function SetupPage() {
                   )}
 
                   <div className="space-y-2">
+                    <label htmlFor="username" className="text-sm font-medium">
+                      Admin Username
+                    </label>
+                    <Input
+                      id="username"
+                      placeholder="admin"
+                      value={adminUsername}
+                      onChange={(e) => setAdminUsername(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <label htmlFor="email" className="text-sm font-medium">
                       Admin Email
                     </label>
@@ -191,7 +224,7 @@ export default function SetupPage() {
                     className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                     disabled={loading}
                   >
-                    {loading ? 'Creating...' : 'Continue'}
+                    Continue
                   </Button>
                 </form>
               )}
@@ -202,7 +235,7 @@ export default function SetupPage() {
                   <div>
                     <CardTitle className="text-lg mb-2">Configure Library</CardTitle>
                     <CardDescription>
-                      Set up your archive storage location and metadata providers
+                      Set up your archive storage location
                     </CardDescription>
                   </div>
 
@@ -212,6 +245,18 @@ export default function SetupPage() {
                       {error}
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <label htmlFor="library-name" className="text-sm font-medium">
+                      Library Name
+                    </label>
+                    <Input
+                      id="library-name"
+                      value={libraryName}
+                      onChange={(e) => setLibraryName(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
 
                   <div className="space-y-2">
                     <label htmlFor="library-path" className="text-sm font-medium">
@@ -229,31 +274,13 @@ export default function SetupPage() {
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="metadata" className="text-sm font-medium">
-                      Primary Metadata Provider
-                    </label>
-                    <select
-                      id="metadata"
-                      value={metadataProvider}
-                      onChange={(e) => setMetadataProvider(e.target.value)}
-                      disabled={loading}
-                      className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground"
-                    >
-                      <option value="IGDB">IGDB</option>
-                      <option value="Steam">Steam</option>
-                      <option value="GOG">GOG</option>
-                      <option value="Manual">Manual</option>
-                    </select>
-                  </div>
-
                   <div className="flex gap-3">
                     <Button
                       type="button"
                       variant="outline"
                       className="flex-1"
                       onClick={() => setStep(1)}
-                      disabled={loading}
+                      disabled={loading || adminCreated}
                     >
                       Back
                     </Button>
@@ -262,7 +289,7 @@ export default function SetupPage() {
                       className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
                       disabled={loading}
                     >
-                      {loading ? 'Saving...' : 'Continue'}
+                      Continue
                     </Button>
                   </div>
                 </form>
@@ -280,18 +307,21 @@ export default function SetupPage() {
 
                   <div className="space-y-4 bg-card p-4 rounded-lg border border-border">
                     <div>
-                      <p className="text-sm text-muted-foreground">Admin Email</p>
-                      <p className="font-medium text-foreground">{adminEmail}</p>
+                      <p className="text-sm text-muted-foreground">Admin Account</p>
+                      <p className="font-medium text-foreground">{adminUsername} ({adminEmail})</p>
                     </div>
                     <div className="border-t border-border pt-4">
-                      <p className="text-sm text-muted-foreground">Library Location</p>
-                      <p className="font-medium text-foreground">{libraryPath}</p>
-                    </div>
-                    <div className="border-t border-border pt-4">
-                      <p className="text-sm text-muted-foreground">Metadata Provider</p>
-                      <p className="font-medium text-foreground">{metadataProvider}</p>
+                      <p className="text-sm text-muted-foreground">Library</p>
+                      <p className="font-medium text-foreground">{libraryName}: {libraryPath}</p>
                     </div>
                   </div>
+
+                  {error && (
+                    <div className="p-3 bg-destructive/20 text-destructive text-sm rounded-lg flex gap-2">
+                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      {error}
+                    </div>
+                  )}
 
                   <div className="flex gap-3">
                     <Button
