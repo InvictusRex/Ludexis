@@ -1,5 +1,6 @@
 const ACCESS_TOKEN_KEY = "ludexis_access_token";
 const REFRESH_TOKEN_KEY = "ludexis_refresh_token";
+const MEDIA_TOKEN_KEY = "ludexis_media_token";
 
 type TokensClearedListener = () => void;
 
@@ -37,10 +38,26 @@ export function setTokens(
   }
 }
 
+// Media tokens only authorize GET /media; they go into image URLs instead of the access token.
+export function getMediaToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(MEDIA_TOKEN_KEY);
+}
+
+export function setMediaToken(token: string | null): void {
+  if (typeof window === "undefined") return;
+  if (token === null) {
+    window.localStorage.removeItem(MEDIA_TOKEN_KEY);
+  } else {
+    window.localStorage.setItem(MEDIA_TOKEN_KEY, token);
+  }
+}
+
 export function clearTokens(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  window.localStorage.removeItem(MEDIA_TOKEN_KEY);
   tokensClearedListeners.forEach((listener) => listener());
 }
 

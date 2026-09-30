@@ -12,7 +12,9 @@ import {
   setAccessToken,
   setTokens,
   clearTokens,
+  getMediaToken,
   onTokensCleared,
+  setMediaToken,
 } from "./token-store";
 
 describe("token-store", () => {
@@ -49,11 +51,13 @@ describe("token-store", () => {
     expect(getRefreshToken()).toBeNull();
   });
 
-  it("clearTokens removes both tokens", () => {
+  it("clearTokens removes both tokens and the media token", () => {
     setTokens("access-123", "refresh-456");
+    setMediaToken("media-789");
     clearTokens();
     expect(getAccessToken()).toBeNull();
     expect(getRefreshToken()).toBeNull();
+    expect(getMediaToken()).toBeNull();
   });
 
   it("notifies listeners on clearTokens and unsubscribe stops future notifications", () => {

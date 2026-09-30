@@ -3,6 +3,7 @@ import { apiClient } from "./client";
 import type {
   LoginRequest,
   LogoutRequest,
+  MediaTokenResponse,
   RefreshRequest,
   TokenResponse,
 } from "@/lib/types/auth";
@@ -24,5 +25,9 @@ export const authApi = {
 
   getCurrentUser: async (): Promise<User> => {
     return apiClient.get<User>("/auth/me");
+  },
+
+  getMediaToken: async (): Promise<MediaTokenResponse> => {
+    return apiClient.get<MediaTokenResponse>("/auth/media-token");
   },
 };

@@ -9,6 +9,11 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export interface MediaTokenResponse {
+  media_token: string;
+  expires_in: number;
+}
+
 export interface RefreshRequest {
   refresh_token: string;
 }

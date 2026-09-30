@@ -16,6 +16,7 @@ import {
   getRefreshToken,
   onTokensCleared,
   setAccessToken,
+  setMediaToken,
   setTokens,
   clearTokens,
 } from "@/lib/auth/token-store";
@@ -42,6 +43,8 @@ const SESSION_CHECK_INTERVAL_MS = 30_000;
 
 const SESSION_WARNING_WINDOW_MS = 5 * 60 * 1000;
 
+const MEDIA_TOKEN_RENEW_WINDOW_MS = 5 * 60 * 1000;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
@@ -55,6 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const warningShownRef = useRef(false);
 
+  const mediaExpiryRef = useRef<number | null>(null);
+
   const logoutRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRefreshToken(null);
       accessExpiryRef.current = null;
       refreshExpiryRef.current = null;
+      mediaExpiryRef.current = null;
       warningShownRef.current = false;
     });
 
@@ -80,6 +86,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) return;
 
       const now = Date.now();
+
+      if (
+        mediaExpiryRef.current !== null &&
+        msUntilExpiry(mediaExpiryRef.current, now) <= MEDIA_TOKEN_RENEW_WINDOW_MS
+      ) {
+        renewMediaToken();
+      }
 
       const accessExpiry = accessExpiryRef.current;
       const refreshExpiry = refreshExpiryRef.current;
@@ -117,6 +130,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [user]);
 
+  async function renewMediaToken() {
+    try {
+      const { media_token, expires_in } = await authApi.getMediaToken();
+      setMediaToken(media_token);
+      mediaExpiryRef.current = Date.now() + expires_in * 1000;
+    } catch {
+      // Without a media token images fail to load, but the rest of the app keeps working.
+      mediaExpiryRef.current = null;
+    }
+  }
+
   async function initializeAuth() {
     try {
       const storedAccessToken = getAccessToken();
@@ -136,6 +160,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       warningShownRef.current = false;
 
       const currentUser = await authApi.getCurrentUser();
+
+      await renewMediaToken();
 
       setUser(currentUser);
     } catch {
@@ -164,6 +190,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const currentUser = await authApi.getCurrentUser();
 
+    await renewMediaToken();
+
     setUser(currentUser);
   }
 
@@ -184,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRefreshToken(null);
     accessExpiryRef.current = null;
     refreshExpiryRef.current = null;
+    mediaExpiryRef.current = null;
     warningShownRef.current = false;
   }
 
