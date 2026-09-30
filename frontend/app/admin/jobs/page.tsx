@@ -404,6 +404,11 @@ export default function AdminJobs() {
                       >
                         {job.status ?? "UNKNOWN"}
                       </Badge>
+                      {(job.retry_count ?? 0) > 0 && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          retry {job.retry_count}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 w-36">

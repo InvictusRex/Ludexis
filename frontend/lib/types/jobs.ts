@@ -18,6 +18,7 @@ export interface JobHistory {
   job_type: JobType;
   status?: JobStatus;
   progress?: number;
+  retry_count?: number;
   details?: string;
   result?: string;
   task_id?: string;
