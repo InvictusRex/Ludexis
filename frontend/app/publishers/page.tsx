@@ -6,14 +6,22 @@ import { Publisher } from "@/lib/types";
 import { publishersApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
+import {
+  TAXONOMY_FIELDS,
+  TaxonomyFormDialog,
+} from "@/components/common/taxonomy-form-dialog";
+import { Button } from "@/components/ui/button";
+import { toastSuccess } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
-import { Search, Building2 } from "lucide-react";
+import { Search, Building2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function PublishersPage() {
   const [publishers, setPublishers] = useState<Publisher[]>([]);
   const [filteredPublishers, setFilteredPublishers] = useState<Publisher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
   const { user, loading: authLoading } = useAuth();
@@ -42,7 +50,7 @@ export default function PublishersPage() {
     };
 
     loadPublishers();
-  }, [authLoading, user]);
+  }, [authLoading, user, refreshKey]);
 
   // Filter publishers
   useEffect(() => {
@@ -85,12 +93,33 @@ export default function PublishersPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Publishers</h1>
-        <p className="text-muted-foreground">
-          {filteredPublishers.length} of {publishers.length} publishers
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Publishers</h1>
+          <p className="text-muted-foreground">
+            {filteredPublishers.length} of {publishers.length} publishers
+          </p>
+        </div>
+        {user?.is_superuser && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Publisher
+          </Button>
+        )}
       </div>
+
+      <TaxonomyFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="New Publisher"
+        description="Create a new publisher."
+        fields={TAXONOMY_FIELDS.publishers}
+        onSubmit={async (values) => {
+          await publishersApi.create(values);
+          toastSuccess("Publisher created");
+          setRefreshKey((key) => key + 1);
+        }}
+      />
 
       {/* Search */}
       <div className="bg-card rounded-lg border border-border p-6">

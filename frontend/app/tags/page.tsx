@@ -5,14 +5,22 @@ import { Tag } from "@/lib/types";
 import { tagsApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
+import {
+  TAXONOMY_FIELDS,
+  TaxonomyFormDialog,
+} from "@/components/common/taxonomy-form-dialog";
+import { Button } from "@/components/ui/button";
+import { toastSuccess } from "@/lib/toast";
 import { TagCard } from "@/components/common/tag-card";
 import { Input } from "@/components/ui/input";
-import { Search, Tag as TagIcon } from "lucide-react";
+import { Search, Tag as TagIcon, Plus } from "lucide-react";
 
 export default function TagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [filteredTags, setFilteredTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
 
@@ -42,7 +50,7 @@ export default function TagsPage() {
     };
 
     loadTags();
-  }, [authLoading, user]);
+  }, [authLoading, user, refreshKey]);
 
   // Filter tags
   useEffect(() => {
@@ -87,12 +95,33 @@ export default function TagsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Tags</h1>
-        <p className="text-muted-foreground">
-          {filteredTags.length} of {tags.length} tags
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Tags</h1>
+          <p className="text-muted-foreground">
+            {filteredTags.length} of {tags.length} tags
+          </p>
+        </div>
+        {user?.is_superuser && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Tag
+          </Button>
+        )}
       </div>
+
+      <TaxonomyFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="New Tag"
+        description="Create a new tag."
+        fields={TAXONOMY_FIELDS.tags}
+        onSubmit={async (values) => {
+          await tagsApi.create(values);
+          toastSuccess("Tag created");
+          setRefreshKey((key) => key + 1);
+        }}
+      />
 
       {/* Filters */}
       <div className="bg-card rounded-lg border border-border p-6 space-y-4">

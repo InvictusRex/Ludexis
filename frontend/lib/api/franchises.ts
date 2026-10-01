@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 import { archiveApi } from "./archives";
-import type { Franchise } from "@/lib/types";
+import type { Franchise, FranchiseCreate, FranchiseUpdate } from "@/lib/types";
 
 export const franchisesApi = {
   async getAll(
@@ -20,6 +20,18 @@ export const franchisesApi = {
 
   async getById(id: string): Promise<Franchise> {
     return apiClient.get<Franchise>(`/franchises/${id}`);
+  },
+
+  async create(data: FranchiseCreate): Promise<Franchise> {
+    return apiClient.post<Franchise>("/franchises/", data);
+  },
+
+  async update(id: string, data: FranchiseUpdate): Promise<Franchise> {
+    return apiClient.patch<Franchise>(`/franchises/${id}`, data);
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/franchises/${id}`);
   },
 
   async getEntries(id: string) {

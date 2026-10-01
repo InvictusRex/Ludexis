@@ -5,14 +5,22 @@ import { Developer } from "@/lib/types";
 import { developersApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
+import {
+  TAXONOMY_FIELDS,
+  TaxonomyFormDialog,
+} from "@/components/common/taxonomy-form-dialog";
+import { Button } from "@/components/ui/button";
+import { toastSuccess } from "@/lib/toast";
 import { DeveloperCard } from "@/components/common/developer-card";
 import { Input } from "@/components/ui/input";
-import { Search, Users } from "lucide-react";
+import { Search, Users, Plus } from "lucide-react";
 
 export default function DevelopersPage() {
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [filteredDevelopers, setFilteredDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
   const { user, loading: authLoading } = useAuth();
@@ -41,7 +49,7 @@ export default function DevelopersPage() {
     };
 
     loadDevelopers();
-  }, [authLoading, user]);
+  }, [authLoading, user, refreshKey]);
 
   // Filter developers
   useEffect(() => {
@@ -84,12 +92,33 @@ export default function DevelopersPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Developers</h1>
-        <p className="text-muted-foreground">
-          {filteredDevelopers.length} of {developers.length} developers
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Developers</h1>
+          <p className="text-muted-foreground">
+            {filteredDevelopers.length} of {developers.length} developers
+          </p>
+        </div>
+        {user?.is_superuser && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Developer
+          </Button>
+        )}
       </div>
+
+      <TaxonomyFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="New Developer"
+        description="Create a new developer."
+        fields={TAXONOMY_FIELDS.developers}
+        onSubmit={async (values) => {
+          await developersApi.create(values);
+          toastSuccess("Developer created");
+          setRefreshKey((key) => key + 1);
+        }}
+      />
 
       {/* Search */}
       <div className="bg-card rounded-lg border border-border p-6">

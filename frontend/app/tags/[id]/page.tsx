@@ -1,23 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Tag, ArchiveEntry } from "@/lib/types";
 import { tagsApi, archiveApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
+import {
+  TAXONOMY_FIELDS,
+  TaxonomyFormDialog,
+} from "@/components/common/taxonomy-form-dialog";
+import { toastError, toastSuccess } from "@/lib/toast";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function TagDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const router = useRouter();
   const [tag, setTag] = useState<Tag | null>(null);
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [relatedTags, setRelatedTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
 
@@ -76,16 +83,64 @@ export default function TagDetailPage() {
     );
   }
 
+  const handleDelete = async () => {
+    if (!window.confirm(`Delete tag "${tag.name}"?`)) {
+      return;
+    }
+    try {
+      await tagsApi.delete(id);
+      toastSuccess("Tag deleted");
+      router.push("/tags");
+    } catch (error) {
+      toastError(error, "Failed to delete tag");
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
-      <Link
-        href="/tags"
-        className="inline-flex items-center gap-2 text-accent hover:underline"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Tags
-      </Link>
+      <div className="flex items-center justify-between gap-4">
+        <Link
+          href="/tags"
+          className="inline-flex items-center gap-2 text-accent hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Tags
+        </Link>
+        {user?.is_superuser && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditOpen(true)}
+              className="gap-2"
+            >
+              <Pencil className="w-4 h-4" />
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              className="gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <TaxonomyFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="Edit Tag"
+        description={`Update details for ${tag.name}`}
+        fields={TAXONOMY_FIELDS.tags}
+        initial={tag}
+        onSubmit={async (values) => {
+          setTag(await tagsApi.update(id, values));
+          toastSuccess("Tag updated");
+        }}
+      />
 
       {/* Tag Header */}
       <div className="bg-card border border-border rounded-lg p-8">

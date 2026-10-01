@@ -6,9 +6,15 @@ import { Franchise, ArchiveEntry } from "@/lib/types";
 import { franchisesApi, archiveApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
+import {
+  TAXONOMY_FIELDS,
+  TaxonomyFormDialog,
+} from "@/components/common/taxonomy-form-dialog";
+import { Button } from "@/components/ui/button";
+import { toastSuccess } from "@/lib/toast";
 import { ArchiveEntryCard } from "@/components/common/archive-entry-card";
 import { Input } from "@/components/ui/input";
-import { Search, Film } from "lucide-react";
+import { Search, Film, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { mediaUrl } from "@/lib/media";
 
@@ -16,6 +22,8 @@ export default function FranchisesPage() {
   const [franchises, setFranchises] = useState<Franchise[]>([]);
   const [filteredFranchises, setFilteredFranchises] = useState<Franchise[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFranchise, setSelectedFranchise] = useState<Franchise | null>(
     null,
@@ -51,7 +59,7 @@ export default function FranchisesPage() {
     };
 
     loadFranchises();
-  }, [authLoading, user]);
+  }, [authLoading, user, refreshKey]);
 
   // Filter franchises
   useEffect(() => {
@@ -100,12 +108,33 @@ export default function FranchisesPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Franchises</h1>
-        <p className="text-muted-foreground">
-          {filteredFranchises.length} of {franchises.length} franchises
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Franchises</h1>
+          <p className="text-muted-foreground">
+            {filteredFranchises.length} of {franchises.length} franchises
+          </p>
+        </div>
+        {user?.is_superuser && (
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Franchise
+          </Button>
+        )}
       </div>
+
+      <TaxonomyFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="New Franchise"
+        description="Create a new franchise."
+        fields={TAXONOMY_FIELDS.franchises}
+        onSubmit={async (values) => {
+          await franchisesApi.create(values);
+          toastSuccess("Franchise created");
+          setRefreshKey((key) => key + 1);
+        }}
+      />
 
       {/* Search */}
       <div className="bg-card rounded-lg border border-border p-6">
@@ -174,6 +203,12 @@ export default function FranchisesPage() {
                       {selectedFranchise.description}
                     </p>
                   )}
+                  <Link
+                    href={`/franchises/${selectedFranchise.id}`}
+                    className="inline-block mt-2 text-sm text-accent hover:underline"
+                  >
+                    View details
+                  </Link>
                 </div>
 
                 {/* Entries */}

@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 import { archiveApi } from "./archives";
-import type { Publisher } from "@/lib/types";
+import type { Publisher, PublisherCreate, PublisherUpdate } from "@/lib/types";
 
 export const publishersApi = {
   async getAll(
@@ -20,6 +20,18 @@ export const publishersApi = {
 
   async getById(id: string): Promise<Publisher> {
     return apiClient.get<Publisher>(`/publishers/${id}`);
+  },
+
+  async create(data: PublisherCreate): Promise<Publisher> {
+    return apiClient.post<Publisher>("/publishers/", data);
+  },
+
+  async update(id: string, data: PublisherUpdate): Promise<Publisher> {
+    return apiClient.patch<Publisher>(`/publishers/${id}`, data);
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/publishers/${id}`);
   },
 
   async getEntries(id: string) {

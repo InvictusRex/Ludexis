@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 import { archiveApi } from "./archives";
-import type { Developer } from "@/lib/types";
+import type { Developer, DeveloperCreate, DeveloperUpdate } from "@/lib/types";
 
 export const developersApi = {
   async getAll(
@@ -20,6 +20,18 @@ export const developersApi = {
 
   async getById(id: string): Promise<Developer> {
     return apiClient.get<Developer>(`/developers/${id}`);
+  },
+
+  async create(data: DeveloperCreate): Promise<Developer> {
+    return apiClient.post<Developer>("/developers/", data);
+  },
+
+  async update(id: string, data: DeveloperUpdate): Promise<Developer> {
+    return apiClient.patch<Developer>(`/developers/${id}`, data);
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/developers/${id}`);
   },
 
   async getEntries(id: string) {

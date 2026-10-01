@@ -7,3 +7,12 @@ export interface Franchise {
   child_ids?: string[];
   entry_count: number;
 }
+
+export interface FranchiseCreate {
+  name: string;
+  description?: string | null;
+  banner_path?: string | null;
+  parent_id?: string | null;
+}
+
+export type FranchiseUpdate = Partial<FranchiseCreate>;

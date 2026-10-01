@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 import { archiveApi } from "./archives";
-import type { Tag } from "@/lib/types";
+import type { Tag, TagCreate, TagUpdate } from "@/lib/types";
 
 export const tagsApi = {
   async getAll(
@@ -20,6 +20,18 @@ export const tagsApi = {
 
   async getById(id: string): Promise<Tag> {
     return apiClient.get<Tag>(`/tags/${id}`);
+  },
+
+  async create(data: TagCreate): Promise<Tag> {
+    return apiClient.post<Tag>("/tags/", data);
+  },
+
+  async update(id: string, data: TagUpdate): Promise<Tag> {
+    return apiClient.patch<Tag>(`/tags/${id}`, data);
+  },
+
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(`/tags/${id}`);
   },
 
   async getEntries(id: string) {
