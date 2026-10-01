@@ -26,6 +26,31 @@ function debugLog(
   }
 }
 
+// GETs are idempotent, so they are retried when the backend or proxy is briefly unavailable.
+const TRANSIENT_STATUSES = new Set([502, 503, 504]);
+const TRANSIENT_RETRIES = 2;
+const RETRY_DELAY_MS = 300;
+
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const canRetry = init.method === "GET" && attempt < TRANSIENT_RETRIES;
+
+    try {
+      const response = await fetch(url, init);
+
+      if (!canRetry || !TRANSIENT_STATUSES.has(response.status)) {
+        return response;
+      }
+    } catch (error) {
+      if (!canRetry) {
+        throw error;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * 2 ** attempt));
+  }
+}
+
 let refreshPromise: Promise<boolean> | null = null;
 
 async function doRefresh(): Promise<boolean> {
@@ -92,7 +117,7 @@ async function fetchWithAuth(
   let response: Response;
 
   try {
-    response = await fetch(url, {
+    response = await fetchWithRetry(url, {
       method,
       headers,
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,

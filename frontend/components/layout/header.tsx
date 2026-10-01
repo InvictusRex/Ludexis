@@ -108,7 +108,7 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link href="/admin/settings">
                     <Settings size={18} />
-                    My account
+                    Settings
                   </Link>
                 </DropdownMenuItem>
               ) : (

@@ -136,9 +136,11 @@ export default function CollectionDetailPage() {
                   )}
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Edit2 className="w-4 h-4" />
-                Edit
+              <Button variant="outline" size="sm" className="gap-2" asChild>
+                <Link href={`/collections/${collection.id}/edit`}>
+                  <Edit2 className="w-4 h-4" />
+                  Edit
+                </Link>
               </Button>
             </div>
           </div>

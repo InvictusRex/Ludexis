@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import { AppWrapper } from "@/components/layout/app-wrapper";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 

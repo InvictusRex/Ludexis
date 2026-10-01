@@ -220,4 +220,21 @@ describe("apiClient", () => {
     expect(refreshCalls).toHaveLength(2);
     expect(tokenStore.setTokens).toHaveBeenCalledTimes(2);
   });
+
+  it("13. GET retries transient failures and then succeeds", async () => {
+    fetchMock
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(jsonResponse(503, {}))
+      .mockResolvedValueOnce(jsonResponse(200, { id: 1 }));
+
+    await expect(apiClient.get("/users")).resolves.toEqual({ id: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("14. POST is not retried on a transient failure", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(503, { detail: "unavailable" }));
+
+    await expect(apiClient.post("/jobs/start", {})).rejects.toThrow("unavailable");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

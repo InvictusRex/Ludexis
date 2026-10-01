@@ -112,9 +112,11 @@ export default function CollectionsPage() {
             {filteredCollections.length} of {collections.length} collections
           </p>
         </div>
-        <Button>
-          <Plus size={18} />
-          New Collection
+        <Button asChild>
+          <Link href="/collections/new">
+            <Plus size={18} />
+            New Collection
+          </Link>
         </Button>
       </div>
 
@@ -170,9 +172,11 @@ export default function CollectionsPage() {
           <p className="text-muted-foreground mb-4">
             Create a new collection to organize your archive entries
           </p>
-          <Button>
-            <Plus size={18} />
-            Create Collection
+          <Button asChild>
+            <Link href="/collections/new">
+              <Plus size={18} />
+              Create Collection
+            </Link>
           </Button>
         </div>
       )}
