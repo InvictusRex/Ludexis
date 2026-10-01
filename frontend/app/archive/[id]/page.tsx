@@ -17,14 +17,13 @@ import { MetadataAuditTrail } from "@/components/common/metadata-audit-trail";
 import { ArtworkQualityIndicators } from "@/components/common/artwork-quality-indicators";
 import { ArtworkComparisonDialog } from "@/components/common/artwork-comparison-dialog";
 import { ArtworkVersionHistory } from "@/components/common/artwork-version-history";
+import { ArchiveEditDialog } from "@/components/common/archive-edit-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mediaUrl } from "@/lib/media";
 import { toastError, toastSuccess } from "@/lib/toast";
 import {
   Edit,
   Share2,
-  Heart,
-  Download,
   FolderOpen,
   Calendar,
   Zap,
@@ -41,7 +40,7 @@ export default function ArchiveDetailsPage() {
   const [publishers, setPublishers] = useState<Publisher[]>([]);
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
 
@@ -57,6 +56,15 @@ export default function ArchiveDetailsPage() {
       router.push("/library");
     } catch (error) {
       toastError(error, "Failed to delete entry");
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toastSuccess("Link copied to clipboard");
+    } catch (error) {
+      toastError(error, "Failed to copy link");
     }
   };
 
@@ -183,17 +191,13 @@ export default function ArchiveDetailsPage() {
           <div className="space-y-2">
             <Button
               className="w-full"
-              variant="default"
-              onClick={() => setIsFavorited(!isFavorited)}
+              variant="outline"
+              onClick={() => setEditOpen(true)}
             >
-              <Heart size={18} className={isFavorited ? "fill-current" : ""} />
-              {isFavorited ? "Favorited" : "Add to Favorites"}
-            </Button>
-            <Button className="w-full" variant="outline">
               <Edit size={18} />
               Edit Entry
             </Button>
-            <Button className="w-full" variant="outline">
+            <Button className="w-full" variant="outline" onClick={handleShare}>
               <Share2 size={18} />
               Share
             </Button>
@@ -426,6 +430,13 @@ export default function ArchiveDetailsPage() {
           <MetadataHistoryCard entryId={entry.id} />
         </TabsContent>
       </Tabs>
+
+      <ArchiveEditDialog
+        entry={entry}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSaved={setEntry}
+      />
     </div>
   );
 }

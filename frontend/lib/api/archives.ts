@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { ArchiveEntry, SearchFilters } from "@/lib/types";
+import type { ArchiveEntry, ArchiveEntryUpdate, SearchFilters } from "@/lib/types";
 
 export const archiveApi = {
   async getAll(offset = 0, limit = 100): Promise<ArchiveEntry[]> {
@@ -82,7 +82,7 @@ export const archiveApi = {
 
   async update(
     id: string,
-    data: Partial<ArchiveEntry>,
+    data: ArchiveEntryUpdate,
   ): Promise<ArchiveEntry> {
     return apiClient.patch<ArchiveEntry>(`/archive-entries/${id}`, data);
   },

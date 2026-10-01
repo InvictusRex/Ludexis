@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, Save } from "lucide-react";
 import { archiveApi } from "@/lib/api";
-import type { ArchiveEntry } from "@/lib/types";
+import type { ArchiveEntry, ArchiveEntryUpdate } from "@/lib/types";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,35 +54,14 @@ function toForm(entry: ArchiveEntry): ArchiveEditForm {
   };
 }
 
-function buildPayload(
-  entry: ArchiveEntry,
-  form: ArchiveEditForm,
-): Partial<ArchiveEntry> {
+function buildPayload(form: ArchiveEditForm): ArchiveEntryUpdate {
   return {
     title: form.title.trim(),
-    description: form.description || undefined,
-    version: form.version || undefined,
-    engine: form.engine || undefined,
-    release_date: form.release_date || undefined,
-    archive_type: entry.archive_type ?? undefined,
-    file_path: entry.file_path,
-    storage_device: form.storage_device || undefined,
-    cover_path: entry.cover_path ?? undefined,
-    banner_path: entry.banner_path ?? undefined,
-    logo_path: entry.logo_path ?? undefined,
-    metadata_status: entry.metadata_status,
-    metadata_source: entry.metadata_source ?? undefined,
-    metadata_source_code: entry.metadata_source_code ?? undefined,
-    last_metadata_refresh: entry.last_metadata_refresh ?? undefined,
-    last_verified: entry.last_verified ?? undefined,
-    verification_status: entry.verification_status,
-    parent_series_id: entry.parent_series_id ?? undefined,
-    franchise_id: entry.franchise_id ?? undefined,
-    tag_ids: entry.tag_ids ?? [],
-    developer_ids: entry.developer_ids ?? [],
-    publisher_ids: entry.publisher_ids ?? [],
-    collection_ids: entry.collection_ids ?? [],
-    related_entry_ids: entry.related_entry_ids ?? [],
+    description: form.description || null,
+    version: form.version || null,
+    engine: form.engine || null,
+    release_date: form.release_date || null,
+    storage_device: form.storage_device || null,
   };
 }
 
@@ -120,10 +99,7 @@ export function ArchiveEditDialog({
     setSaving(true);
     setSaveError(null);
     try {
-      const updated = await archiveApi.update(
-        entry.id,
-        buildPayload(entry, form),
-      );
+      const updated = await archiveApi.update(entry.id, buildPayload(form));
       toastSuccess("Archive entry updated");
       onSaved(updated);
       onOpenChange(false);

@@ -95,16 +95,10 @@ describe("ArchiveEditDialog", () => {
       "entry-1",
       expect.objectContaining({
         title: "Updated Title",
-        description: undefined,
-        file_path: "/path/one",
-        metadata_status: "MATCHED",
-        verification_status: "VERIFIED",
-        tag_ids: [],
-        developer_ids: [],
-        publisher_ids: [],
-        collection_ids: [],
+        description: null,
       }),
     );
+    expect(vi.mocked(archiveApi.update).mock.calls[0][1]).not.toHaveProperty("tag_ids");
     await waitFor(() =>
       expect(onSaved).toHaveBeenCalledWith(
         expect.objectContaining({ title: "Updated Title" }),

@@ -48,6 +48,16 @@ export interface ArchiveMetadataUpdate {
   metadata_override?: boolean;
 }
 
+// Fields sent by a partial PATCH; null clears a field, omitted fields are kept.
+export interface ArchiveEntryUpdate {
+  title?: string;
+  description?: string | null;
+  version?: string | null;
+  engine?: string | null;
+  release_date?: string | null;
+  storage_device?: string | null;
+}
+
 export interface ArchiveEntry {
   id: string;
   title: string;
