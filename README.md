@@ -534,7 +534,7 @@ REDIS_URL=
 CELERY_BROKER_URL=
 CELERY_RESULT_BACKEND=
 
-JWT_SECRET_KEY=
+JWT_SECRET_KEY=   # at least 32 characters: openssl rand -hex 32
 
 TWITCH_CLIENT_ID=
 TWITCH_CLIENT_SECRET=
@@ -578,6 +578,16 @@ Open a second terminal and run:
 
 ```bash
 celery -A app.tasks.celery_app worker --loglevel=info
+```
+
+On Windows add `--pool=solo`.
+
+### Start Celery Beat
+
+The daily metadata refresh (03:00 UTC) and artwork validation (04:00 UTC) jobs need the beat scheduler in a third terminal:
+
+```bash
+celery -A app.tasks.celery_app beat --loglevel=info
 ```
 
 ### Run Tests

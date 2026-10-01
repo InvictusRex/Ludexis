@@ -6,7 +6,7 @@
 
 - ✅~~Fix Swagger OAuth2 integration mismatch (Swagger expects OAuth2 Password Flow form data while backend login endpoint currently accepts JSON payloads).~~
 - ✅~~Replace development JWT secret with a generated production-grade secret.~~
-- Replace all development credentials and example secrets before public releases.
+- ✅~~Replace all development credentials and example secrets before public releases.~~ (compose stacks read `JWT_SECRET_KEY` and database/Grafana/demo-admin passwords from the environment; the backend refuses JWT secrets shorter than 32 characters; tracked env files hold no secrets)
 - ✅~~Review and stabilize bcrypt/passlib dependency versions to prevent compatibility regressions.~~
   - ~~passlib==1.7.4~~
   - ~~bcrypt==4.0.1~~
@@ -43,8 +43,8 @@
 
 - ✅~~Implement IGDB provider integration.~~
 - ✅~~Implement Steam metadata provider.~~
-- ❌~~Implement GOG metadata provider (deferred, not as complete as Steam or IGDB, and changing endpoints).~~
-- ✅~~Implement automatic metadata matching workflow.~~
+- ❌~~Implement GOG metadata provider (not planned: its API is less complete than Steam or IGDB and its endpoints keep changing).~~
+- ✅~~Implement automatic metadata matching workflow.~~ (runs automatically for new scan entries and nightly for never-attempted entries; IGDB then Steam, title similarity thresholds 0.85/0.70)
 - ✅~~Implement metadata refresh jobs.~~
 - ✅~~Implement Genre/Developer/Publisher Synchronization.~~
 
@@ -68,7 +68,7 @@
 
 - ✅~~Implement artwork download pipeline.~~
 - ✅~~Implement artwork validation jobs.~~
-- ✅~~Self-healing artwork refresh.~~
+- ✅~~Self-healing artwork refresh.~~ (the 04:00 ARTWORK_REFRESH job re-downloads missing or corrupt artwork for provider-matched entries)
 - ✅~~Automatic cover selection.~~
 
 ### ✅~~Medium Priority~~
@@ -111,7 +111,11 @@
 - ✅~~Archive hash generation.~~
 - ✅~~Incremental scan optimization.~~
 - ✅~~Archive integrity verification.~~
-- ✅~~File move/rename detection.~~
+- ✅~~File move/rename detection.~~ (hash match with the old path gone; a second copy gets its own entry)
+- ✅~~Scan to metadata to artwork pipeline.~~ (a scan queues an enrichment job for the entries it created)
+- ✅~~One entry per game folder.~~ (folders with non-archive files are one entry; organizing folders are descended)
+- ✅~~Per-file error isolation and changed-file updates during scans.~~
+- ✅~~Filename normalization for real-world release names.~~ (platform/packaging tags, CamelCase, letter-suffixed versions)
 
 ### ✅~~Low Priority~~
 
@@ -131,6 +135,8 @@
 - ✅~~Celery Beat for scheduling.~~
 - ✅~~Job queue monitoring endpoints.~~
 - ✅~~Job cancellation improvements.~~
+- ✅~~Live job progress and retry tracking.~~ (shared `run_job` helper; `retry_count` recorded)
+- ✅~~Celery beat service in the Docker stacks.~~
 
 ---
 
@@ -177,7 +183,9 @@
 - ✅~~Metadata provider tests.~~
 - ✅~~Background job tests.~~
 - ✅~~End-to-end API test suite.~~
-- ✅~~Screenshots listing endpoint & metadata_confidence persistence tests.~~ (`backend/tests/test_screenshots_api.py`, 7 tests; full suite 140 passed)
+- ✅~~Screenshots listing endpoint & metadata_confidence persistence tests.~~ (`backend/tests/test_screenshots_api.py`, 7 tests)
+- ✅~~Scanner, enrichment, normalization and job-runner tests; tests never dispatch to the real Celery broker.~~ (full suite 165 passed)
+- ✅~~Opt-in tests against a real archive folder.~~ (`tests/test_sample_library.py`, set `LUDEXIS_SAMPLE_LIBRARY`)
 
 ---
 
@@ -185,14 +193,12 @@
 
 - ✅~~`GET /api/archive-entries/{id}/screenshots` endpoint with `ScreenshotRead` schema.~~
 - ✅~~`metadata_confidence` field on archive entries, persisted by `auto_match_archive` (`round(score, 3)`, incl. `0.0` on UNMATCHED).~~
-- ✅~~Alembic migration `4c81f2a9b6d7_add_metadata_confidence` (applied to dev DB).~~
-- ✅~~Static `/media` mount serving the artwork storage dir (fixes frontend cover/banner/logo/screenshot URL resolution).~~
+- ✅~~`metadata_confidence` column.~~ (part of the single baseline migration `ecabaf1d5dab`; the earlier `4c81f2a9b6d7` revision was folded into it)
+- ✅~~Authenticated `/media` route serving the artwork storage dir.~~ (Bearer access token or a media-only token from `GET /api/auth/media-token`)
 
 ---
 
 ## Known Issues
 
-### Low Priority
-
-- [ ] ~~Fix `ArchiveEntryService.update` PATCH semantics.~~ The service uses `model_dump(exclude_none=False)` (`app/services/archive_entry.py`), so a partial `PATCH /api/archive-entries/{id}` nulls NOT-NULL columns (`file_path`, `metadata_status`, `verification_status`) and returns a 500. Current design is intentional: callers must send a full merged (old + new) payload, which the frontend does. Future improvement: switch to `exclude_none=True` for true PATCH semantics.
-- [ ] `frontend/lib/api/archives.ts` `archiveApi.update` accepts `Partial<ArchiveEntry>` and has no callers today; if ever called with a partial payload it will hit the 500 above. Revisit when the backend fix above lands.
+- ✅~~Fix `ArchiveEntryService.update` PATCH semantics.~~ (`PATCH /api/archive-entries/{id}` only changes the fields sent)
+- ✅~~`archiveApi.update` partial payloads.~~ (typed `ArchiveEntryUpdate`, used by the Edit Entry dialog)

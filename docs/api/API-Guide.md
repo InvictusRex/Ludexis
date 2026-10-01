@@ -123,6 +123,27 @@ GET /api/auth/me
 
 ---
 
+## Media Token
+
+Issue a short-lived token for loading stored artwork in the browser.
+
+```http
+GET /api/auth/media-token
+```
+
+**Response**
+
+```json
+{
+  "media_token": "<jwt>",
+  "expires_in": 3600
+}
+```
+
+The token is only accepted by `/media/{path}` and is rejected by every other endpoint.
+
+---
+
 # Authorization
 
 Protected endpoints require:
@@ -130,6 +151,16 @@ Protected endpoints require:
 ```http
 Authorization: Bearer <access_token>
 ```
+
+Access tokens are never accepted as URL parameters.
+
+## Stored Artwork
+
+```http
+GET /media/{path}
+```
+
+Serves files from the artwork storage directory. Send either the `Authorization` header or a media token as `?media_token=<token>` (for `<img>` tags, which cannot send headers).
 
 ---
 
@@ -778,8 +809,10 @@ Artwork endpoints manage locally stored images.
 ## Upload Artwork
 
 ```http
-POST /api/artwork
+POST /api/artwork/upload
 ```
+
+Multipart form data.
 
 Permission:
 
@@ -792,7 +825,7 @@ EDIT_METADATA
 ## Replace Artwork
 
 ```http
-PATCH /api/artwork/{artwork_id}
+PATCH /api/artwork/replace
 ```
 
 ---
@@ -812,6 +845,16 @@ GET /api/artwork/missing
 ```
 
 Returns entries missing artwork assets.
+
+---
+
+## Auto-Download Missing Artwork
+
+```http
+POST /api/artwork/auto-download
+```
+
+Downloads missing artwork for all active entries. Runs synchronously in the API process.
 
 ---
 
@@ -843,7 +886,7 @@ Permission:
 RUN_SCANS
 ```
 
-Starts a complete library scan.
+Starts a complete library scan as a LIBRARY_SCAN job. If the scan creates entries, a METADATA_REFRESH job is queued for them and its id is returned as `enrichment_job_id` in the scan job's result.
 
 ---
 
@@ -880,7 +923,7 @@ Jobs represent asynchronous background tasks.
 ## Start Job
 
 ```http
-POST /api/jobs
+POST /api/jobs/start
 ```
 
 Example:
@@ -890,6 +933,10 @@ Example:
   "job_type": "INCREMENTAL_SCAN"
 }
 ```
+
+Job types: `LIBRARY_SCAN`, `INCREMENTAL_SCAN`, `METADATA_REFRESH`, `ARTWORK_REFRESH`, `INTEGRITY_VERIFICATION`, `DUPLICATE_DETECTION`.
+
+Job responses include `status` (`PENDING`, `RUNNING`, `SUCCESS`, `FAILED`, `CANCELED`), `progress` (0-100) and `retry_count`.
 
 ---
 

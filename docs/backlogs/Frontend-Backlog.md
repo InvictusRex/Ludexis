@@ -44,7 +44,7 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 
 ### Medium Priority
 
-- ✅~~Add request retry handling for transient failures.~~
+- ✅~~Add request retry handling for transient failures.~~ (GET requests retried twice on network errors and 502/503/504, `lib/api/client.ts`)
 - ✅~~Add toast notifications for API success and error events.~~
 - ✅~~Add standardized API response handling utilities.~~
 
@@ -96,7 +96,7 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 - ✅~~Implement pagination support.~~
 - ✅~~Implement archive search integration.~~
 - ✅~~Implement metadata status filtering.~~
-- ✅~~Implement archive update workflows.~~
+- ✅~~Implement archive update workflows.~~ (Edit Entry dialog on the archive detail page, partial PATCH)
 - ✅~~Implement archive detail retrieval.~~
 
 ### Medium Priority
@@ -153,7 +153,7 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 ### Medium Priority
 
 - ✅~~Screenshot gallery viewer.~~
-- ✅~~Serve stored artwork via /media (cover/banner/logo/screenshot URLs resolve).~~
+- ✅~~Serve stored artwork via /media (cover/banner/logo/screenshot URLs resolve).~~ (image URLs carry a short-lived media-only token, never the access token)
 - ✅~~Drag-and-drop artwork uploads.~~
 - ✅~~Artwork preview dialogs.~~
 - ✅~~Artwork management modal.~~ (ArtworkManagementDialog on admin/artwork)
@@ -183,6 +183,7 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 - ✅~~Collection editing workflows.~~
 - ✅~~Collection membership management.~~
 - ✅~~Taxonomy relationship visualization.~~ (RelationshipVisualizer on franchise/collection detail)
+- ✅~~Tag, developer, publisher and franchise create/edit/delete.~~ (`TaxonomyFormDialog` on the list and detail pages, superusers only)
 
 ### Low Priority
 
@@ -221,7 +222,7 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 - ✅~~Integrate job creation.~~
 - ✅~~Integrate job status monitoring.~~
 - ✅~~Integrate job cancellation.~~
-- ✅~~Real-time job progress visualization.~~
+- ✅~~Real-time job progress visualization.~~ (progress is reported by the worker as items are processed; retry attempts shown)
 - ✅~~Job status notifications.~~
 
 ### Medium Priority
@@ -267,12 +268,12 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 ### High Priority
 
 - ✅~~Replace all remaining mock data.~~
-- ✅~~Remove development placeholders.~~
+- ✅~~Remove development placeholders.~~ (local-only favorites button removed; Share copies the entry link; collection create/edit buttons linked)
 - ✅~~Remove mock authentication flows.~~
 - ✅~~Remove simulated API delays.~~
 - ✅~~Add comprehensive loading skeletons.~~
 - ✅~~Add empty states.~~
-- ✅~~Add error boundaries.~~
+- ✅~~Add error boundaries.~~ (`ErrorBoundary` wraps page content in `AppWrapper`, keyed by route so it resets on navigation)
 - ✅~~Responsive layout validation.~~
 - ✅~~Accessibility validation.~~ (skip link, aria-labels, focus handling)
 
@@ -320,29 +321,29 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 ### High Priority
 
 - ✅~~Remove all remaining mock infrastructure.~~
-- ✅~~Production build validation.~~ (next build clean, 31 routes)
+- ✅~~Production build validation.~~ (next build clean, 33 routes)
 - ✅~~Docker deployment validation.~~ (docker-compose.demo.yml config validated; frontend standalone image build)
 - ✅~~Cross-browser testing.~~ (Chromium E2E suite green; Firefox/WebKit projects configured, browsers not installed)
 - ✅~~Frontend documentation update.~~ (frontend/README.md)
 - ✅~~Screenshot generation for README.~~ (e2e/__screenshots__/visual.spec.ts)
-- ✅~~Release candidate testing.~~ (frontend 210 unit tests + 9 E2E, backend 140 tests)
+- ✅~~Release candidate testing.~~ (frontend 229 unit tests + 9 E2E, backend 165 tests + 3 opt-in sample-library tests)
 
 ### Medium Priority
 
 - ✅~~Demo dataset creation.~~ (backend/scripts/seed_demo.py, idempotent)
-- ✅~~Demo environment configuration.~~ (docker-compose.demo.yml + frontend/.env.example)
+- ✅~~Demo environment configuration.~~ (docker-compose.demo.yml with worker and beat, secrets from the environment, frontend/.env.example)
 - ✅~~Release notes preparation.~~ (docs/release/RELEASE_NOTES.md)
 
 ### Low Priority
 
-- Public demo deployment.
-- Hosted showcase environment.
+- Public demo deployment. (needs a hosting target)
+- Hosted showcase environment. (needs a hosting target)
 
 ---
 
 # Frontend Milestones
 
-## ✅~~Milestone 1 — Real Authentication~~
+## ✅~~Milestone 1 - Real Authentication~~
 
 - API Client
 - Auth Provider
@@ -351,21 +352,23 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 - Protected Routes
 - Session Persistence
 
-## ✅~~Milestone 2 — Archive Integration~~
+## ✅~~Milestone 2 - Archive Integration~~
 
 - Archive Library
 - Metadata Workflows
 - Artwork Management
 - Search
 
-## ✅~~Milestone 3 — Administrative Workflows~~
+## ✅~~Milestone 3 - Administrative Workflows~~
 
 - Users
 - Audit Logs
 - Jobs
 - Monitoring
 
-## Milestone 4 — Production Readiness
+## Milestone 4 - Production Readiness
+
+Everything except the public demo and hosted showcase is complete.
 
 - Testing
 - Documentation

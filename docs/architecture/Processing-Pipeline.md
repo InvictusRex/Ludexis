@@ -133,7 +133,7 @@ Each stage performs a specific responsibility within the discovery pipeline.
 
 ### Library Enumeration
 
-The scanner begins by retrieving all configured libraries from the database.
+The scanner begins by retrieving all enabled, non-deleted libraries from the database.
 
 ```mermaid
 flowchart LR
@@ -145,32 +145,22 @@ flowchart LR
     --> C[Filesystem Paths]
 ```
 
-Each configured library contributes one or more root paths that become traversal starting points.
+Each library has one root `path`, which becomes a traversal starting point. Multiple libraries allow several storage devices and archive collections to be managed side by side.
 
-This design allows multiple storage devices and archive collections to be managed simultaneously.
+Scans start on demand (`/api/scan/full`, `/api/scan/incremental` or `/api/jobs/start`); there are no scheduled scans.
 
 ---
 
 ### Directory Traversal
 
-The scanner recursively traverses each configured path.
+The scanner walks each library path and classifies what it finds:
 
-During traversal, the scanner examines:
+- Archive files (`.zip`, `.rar`, `.7z`, `.iso`, `.exe`) become one entry each.
+- A directory containing any non-archive file (ignoring dotfiles, `desktop.ini` and `thumbs.db`) is an installed game folder. It becomes one entry and is not descended into, so its subfolders never appear as separate games.
+- A directory holding only archives and subfolders is an organizing folder and is descended.
+- Unreadable directories are logged and skipped.
 
-- Files
-- Directories
-- Nested folder structures
-
-Only supported archive formats are considered valid scan targets.
-
-Typical examples include:
-
-- ZIP
-- RAR
-- 7Z
-- ISO
-
-Additional formats may be supported in future releases.
+Every item is discovered before processing starts, so progress is reported against a known total.
 
 ---
 
@@ -178,12 +168,13 @@ Additional formats may be supported in future releases.
 
 When a valid archive is encountered, the scanner extracts basic filesystem information.
 
-Typical attributes include:
+Recorded attributes:
 
 - File path
 - File size
 - Last modified timestamp
-- Storage location
+- SHA-256 hash (archive files only; folders are not hashed)
+- Owning library
 
 ```mermaid
 flowchart TD
@@ -196,8 +187,10 @@ flowchart TD
 
     --> D[Modified Time]
 
-    --> E[Storage Device]
+    --> E[SHA-256 Hash]
 ```
+
+The scanner does not populate `storage_device`.
 
 These values form the initial foundation of the archive record.
 
@@ -212,16 +205,24 @@ flowchart TD
 
     A[Discovered Archive]
 
-    --> B[Duplicate Check]
+    --> B{Path known?}
 
-    --> C{Exists?}
+    B -->|Yes, unchanged| C[Skip]
 
-    C -->|Yes| D[Skip]
+    B -->|Yes, size or mtime changed| D[Update hash, reset verification]
 
-    C -->|No| E[Create Entry]
+    B -->|No| E{Hash matches an entry whose file is gone?}
+
+    E -->|Yes| F[Move: update path]
+
+    E -->|No| G[Create Entry]
 ```
 
-Duplicate detection prevents repeated scans from creating redundant records.
+- An existing path whose size or modification time changed is re-hashed and its `verification_status` reset to UNKNOWN.
+- A new path whose hash matches an entry whose old file no longer exists is treated as a move.
+- If the old file still exists, the new file is a copy and gets its own entry; the DUPLICATE_DETECTION job groups identical hashes later.
+
+Path checks prevent repeated scans from creating redundant records.
 
 This capability is essential for maintaining database integrity during recurring scans.
 
@@ -231,7 +232,7 @@ This capability is essential for maintaining database integrity during recurring
 
 If the archive is not already present, an Archive Entry record is created.
 
-Initially, the entry contains only filesystem-derived information.
+Initially, the entry contains only filesystem-derived information, a title and version parsed from the file name (`app/utils/normalization.py` strips extensions, bracketed text, versions, platform and packaging tags, release groups and flags, and splits CamelCase), `metadata_status=UNMATCHED` and `verification_status=UNKNOWN`.
 
 Metadata enrichment occurs later through a separate pipeline.
 
@@ -241,15 +242,9 @@ This separation improves reliability and reduces coupling between discovery and 
 
 ### Progress Tracking
 
-Throughout execution, the scanner updates the associated job record.
+Throughout execution, the scanner reports items processed out of items discovered, and the shared job runner (`app/tasks/job_runner.py`) writes the percentage to the job's `progress`. The final result records `created`, `updated`, `moved` and `errors` counts.
 
-Tracked information may include:
-
-- Archives processed
-- Archives discovered
-- Current directory
-- Completion percentage
-- Status information
+Each item is processed independently: an error on one file is rolled back, logged and counted, and the scan continues.
 
 ```mermaid
 flowchart LR
@@ -270,11 +265,11 @@ This enables real-time monitoring through the job subsystem.
 
 When traversal completes successfully:
 
-- Job status becomes Completed
+- Job status becomes SUCCESS
 - Progress reaches 100%
-- Results are stored in Job History
+- The summary is stored in the job's `result` and `details`
 
-The catalog is then ready for metadata enrichment and artwork acquisition.
+If the scan created entries, it queues a METADATA_REFRESH job ("Enrich N new entries") for exactly those entries and records its id as `enrichment_job_id` in the scan result.
 
 ---
 
@@ -367,7 +362,7 @@ This ensures consistency between full and incremental processing modes.
 
 ### Existing Archive Handling
 
-Archives that have not changed are skipped.
+Archives whose size and modification time are unchanged are skipped. Changed archives are re-hashed and their verification status reset.
 
 This dramatically reduces processing overhead and allows incremental scans to complete much faster than full scans.
 
@@ -483,7 +478,9 @@ flowchart TD
     --> F[Enriched Entry]
 ```
 
-The process may occur automatically or be initiated manually through administrative interfaces.
+Enrichment runs automatically for the entries a scan created, nightly at 03:00 UTC for entries that have a provider source (refresh) or were never attempted (match), and on demand through `/api/jobs/start` or the metadata endpoints. Entries with `metadata_override=true` are skipped. Entries that were attempted and stayed UNMATCHED are left for manual review rather than re-searched every night.
+
+`EnrichmentService.enrich` (`app/services/enrichment.py`) processes each candidate independently: errors are rolled back and counted, and the job can be cancelled between entries.
 
 ---
 
@@ -507,6 +504,8 @@ flowchart TD
     B --> F[Manual]
 ```
 
+Providers are tried in priority order: IGDB, Steam, GOG, Manual. GOG and Manual are stubs that return no results.
+
 This architecture allows the enrichment pipeline to remain independent of any individual metadata source.
 
 New providers can be introduced without modifying the enrichment workflow itself.
@@ -517,12 +516,7 @@ New providers can be introduced without modifying the enrichment workflow itself
 
 The first stage of enrichment involves searching external providers.
 
-Typical search inputs include:
-
-- Archive title
-- Filename
-- Alternate names
-- Existing metadata
+The search input is the entry title parsed from the file name. Entries that already have a provider source are refreshed from that source without a new title search.
 
 ```mermaid
 flowchart LR
@@ -545,20 +539,21 @@ Additional processing is required before a final candidate can be selected.
 
 Provider search results are evaluated and ranked.
 
-The matching subsystem attempts to determine which candidate most closely represents the archive.
+`MetadataService.auto_match` scores each provider's candidates with `title_similarity`: 1.0 when the titles are identical ignoring case, spaces and punctuation, otherwise the average of character similarity and shared-word overlap. It stops at the first provider with a confident match and otherwise keeps the best candidate across providers.
 
-Evaluation criteria may include:
+| Score | Result |
+| --- | --- |
+| >= 0.85 | MATCHED |
+| >= 0.70 | PARTIAL |
+| < 0.70 | UNMATCHED, no provider source recorded |
 
-- Title similarity
-- Release information
-- Platform information
-- Provider confidence
+`metadata_confidence` and `last_metadata_refresh` are always stored.
 
 ```mermaid
 flowchart TD
 
     A[Search Results]
-    --> B[Matching Service]
+    --> B[MetadataService.auto_match]
 
     B --> C[Ranking]
 
@@ -573,15 +568,14 @@ This stage reduces the likelihood of incorrect metadata assignments.
 
 Once a candidate has been selected, information is transferred into the archive record.
 
-Typical updates include:
+Matched and partial entries receive:
 
-- Title
 - Description
 - Release date
-- Engine information
 - Genres
 - Developers
 - Publishers
+- Metadata source and provider id
 
 ```mermaid
 flowchart TD
@@ -622,23 +616,27 @@ This information becomes especially valuable when multiple providers support the
 
 ---
 
-### Verification Status
+### Metadata Status
 
-Metadata quality is represented through verification states.
+Metadata quality is represented by `metadata_status`, separate from the file's `verification_status`.
 
 ```mermaid
 stateDiagram-v2
 
-    UNKNOWN --> MATCHED
+    UNMATCHED --> MATCHED
 
-    UNKNOWN --> UNMATCHED
+    UNMATCHED --> PARTIAL
 
-    MATCHED --> VERIFIED
+    PARTIAL --> MATCHED
 
-    MATCHED --> CONFLICTED
+    MATCHED --> MANUAL
+
+    PARTIAL --> MANUAL
+
+    UNMATCHED --> MANUAL
 ```
 
-These states help users understand the confidence level associated with enriched metadata.
+MANUAL is set by `PATCH /api/archive-entries/{id}/metadata`, which also sets `metadata_override` so automatic enrichment leaves the entry alone. `verification_status` (VERIFIED, MISSING, MOVED, CORRUPTED, UNKNOWN) describes the archive file and is set by scans and INTEGRITY_VERIFICATION.
 
 ---
 
@@ -675,7 +673,7 @@ Examples include:
 - Alternate descriptions
 - Different genre classifications
 
-The conflict resolution subsystem determines how competing values should be handled.
+`MetadataConflictResolver` merges the primary provider's details with a Steam record, but only when the Steam title is itself a confident match (>= 0.85).
 
 ```mermaid
 flowchart TD
@@ -745,7 +743,7 @@ This architecture allows artwork processing to evolve independently from metadat
 
 ### Artwork Acquisition Workflow
 
-Artwork acquisition begins once metadata has been successfully identified.
+Artwork acquisition begins once metadata has been identified. After matching, enrichment calls `ArtworkService.fill_missing_artwork`, which downloads any missing cover, banner, logo and screenshots using the stored match, fetching provider details once per entry.
 
 ```mermaid
 flowchart TD
@@ -768,15 +766,10 @@ The workflow ensures that only valid assets are persisted.
 
 ### Artwork Discovery
 
-Metadata providers may expose artwork URLs associated with an archive.
+Metadata providers expose artwork URLs associated with a match:
 
-Typical asset categories include:
-
-- Box art
-- Cover art
-- Promotional banners
-- Screenshots
-- Logos
+- IGDB: cover, artworks and screenshots.
+- Steam: header image (banner), capsule images (logo), the `library_600x900.jpg` portrait (cover, when the app has one) and store screenshots.
 
 ```mermaid
 flowchart LR
@@ -795,12 +788,7 @@ These references become candidates for download and storage.
 
 Before storage, artwork assets are validated.
 
-Validation may include:
-
-- File existence checks
-- Image format checks
-- Corruption detection
-- Resolution verification
+Validation checks that the file exists and that PIL can open and verify it.
 
 ```mermaid
 flowchart TD
@@ -883,7 +871,9 @@ This one-to-many relationship provides richer visual representation within the c
 
 ### Artwork Refresh
 
-Artwork may be refreshed independently from metadata.
+Artwork may be refreshed independently from metadata. The daily ARTWORK_REFRESH job (04:00 UTC) validates every entry's cover, banner and logo and re-downloads missing or corrupt assets, plus screenshots when none exist, for provider-matched entries. Artwork validation never changes `verification_status`.
+
+`POST /api/artwork/auto-download` still runs synchronously in the API process for all active entries.
 
 ```mermaid
 flowchart TD
@@ -997,7 +987,7 @@ Responsible for:
 - Task delivery
 - Worker communication
 
-Redis acts only as a message broker and is not used as a source of truth.
+Redis is the Celery broker and result backend. It is not the source of truth for job state; `job_history` in PostgreSQL is.
 
 #### Celery Workers
 
@@ -1111,16 +1101,18 @@ This approach prevents duplication and ensures that business rules remain centra
 
 The system supports multiple categories of background work.
 
-Examples include:
+| Job type | Task | Work |
+| --- | --- | --- |
+| LIBRARY_SCAN | `scan_full_task` | Full scan of every enabled library |
+| INCREMENTAL_SCAN | `scan_incremental_task` | Only new and changed files |
+| METADATA_REFRESH | `refresh_metadata_task` | Match or refresh entries, then fill missing artwork |
+| ARTWORK_REFRESH | `validate_artwork_task` | Validate and repair artwork for matched entries |
+| INTEGRITY_VERIFICATION | `verify_integrity_task` | Re-hash archives: VERIFIED, MISSING or CORRUPTED |
+| DUPLICATE_DETECTION | `detect_duplicates_task` | Group active entries by identical SHA-256 |
 
-- Full library scans
-- Incremental scans
-- Metadata refresh operations
-- Artwork refresh operations
-- Future bulk-import operations
-- Future maintenance jobs
+Celery beat (a separate process; a `beat` service in both Compose stacks) fires METADATA_REFRESH at 03:00 and ARTWORK_REFRESH at 04:00 UTC. Each scheduled task skips if a job of the same type is already PENDING or RUNNING.
 
-All job categories follow the same execution model.
+All job types follow the same execution model.
 
 ---
 
@@ -1150,10 +1142,11 @@ Progress updates provide visibility into active operations without requiring dir
 
 Job monitoring endpoints expose execution state to clients.
 
-Information typically includes:
+Information includes:
 
 - Current status
 - Completion percentage
+- Retry count
 - Start time
 - Completion time
 - Result information
@@ -1164,14 +1157,14 @@ flowchart TD
 
     A[Job History]
 
-    --> B[Job Monitor Service]
+    --> B[Job Service]
 
     B --> C[API]
 
     C --> D[Client]
 ```
 
-This architecture separates execution concerns from monitoring concerns.
+`JobMonitorService` only wraps Celery `inspect()` (workers, active and reserved tasks, stats).
 
 ---
 
@@ -1262,18 +1255,22 @@ stateDiagram-v2
 
     PENDING --> RUNNING
 
-    RUNNING --> COMPLETED
+    RUNNING --> SUCCESS
 
     RUNNING --> FAILED
 
-    RUNNING --> CANCELLED
+    RUNNING --> CANCELED
 
-    COMPLETED --> [*]
+    FAILED --> RUNNING: Celery retry
+
+    SUCCESS --> [*]
 
     FAILED --> [*]
 
-    CANCELLED --> [*]
+    CANCELED --> [*]
 ```
+
+`app/tasks/job_runner.py::run_job` performs these transitions for every task.
 
 These states provide a complete representation of execution status.
 
@@ -1327,16 +1324,16 @@ The Running state typically occupies the majority of the job lifecycle.
 
 ---
 
-### Completed State
+### Success State
 
-Successful execution results in a Completed state.
+Successful execution results in the SUCCESS state.
 
 ```mermaid
 flowchart LR
 
     A[Running]
 
-    --> B[Completed]
+    --> B[Success]
 ```
 
 Characteristics include:
@@ -1346,7 +1343,7 @@ Characteristics include:
 - Results recorded
 - Completion timestamp assigned
 
-Completed jobs remain available for historical inspection.
+Successful jobs remain available for historical inspection.
 
 ---
 
@@ -1376,9 +1373,9 @@ Failure information is stored for diagnostic purposes.
 
 ---
 
-### Cancelled State
+### Canceled State
 
-Certain jobs may be terminated before completion.
+`POST /api/jobs/{id}/cancel` marks a job CANCELED. Scan and enrichment loops check for cancellation between items and stop early.
 
 ```mermaid
 flowchart LR
@@ -1387,7 +1384,7 @@ flowchart LR
 
     --> B[Cancel Request]
 
-    B --> C[Cancelled]
+    B --> C[Canceled]
 ```
 
 Cancellation provides operational flexibility when long-running jobs are no longer required.
@@ -1412,7 +1409,7 @@ flowchart TD
     --> 100%
 ```
 
-Progress information is exposed through monitoring endpoints and allows users to estimate remaining execution time.
+Scans and enrichment report progress as each item finishes. Progress is exposed through the jobs API and shown live on the admin jobs page.
 
 ---
 
@@ -1429,7 +1426,7 @@ flowchart TD
 
     Running
 
-    --> Completed
+    --> Success
 
     Running
 
@@ -1437,7 +1434,7 @@ flowchart TD
 
     Running
 
-    --> Cancelled
+    --> Canceled
 ```
 
 Restricting transitions simplifies monitoring and prevents inconsistent execution states.
@@ -1451,13 +1448,13 @@ Job records remain available after execution completes.
 ```mermaid
 flowchart LR
 
-    A[Completed]
+    A[Success]
     --> D[Job History]
 
     B[Failed]
     --> D
 
-    C[Cancelled]
+    C[Canceled]
     --> D
 ```
 
@@ -1639,7 +1636,7 @@ flowchart TD
     C --> D[Recovery Process]
 ```
 
-Persistent job tracking ensures that incomplete execution can be identified and investigated.
+Persistent job tracking ensures that incomplete execution can be identified and investigated. There is no automatic stale-job recovery yet: a job left RUNNING by a killed worker stays RUNNING.
 
 ---
 
@@ -1653,7 +1650,7 @@ Examples include:
 - Network interruptions
 - Timeout conditions
 
-For these cases, retry mechanisms provide automatic recovery.
+For these cases, Celery autoretry re-runs the same job row (FAILED back to RUNNING) up to `JOB_MAX_RETRIES` (5) times with exponential backoff capped at `JOB_RETRY_BACKOFF_MAX` (300 s). The attempt number is stored in `retry_count` and shown on the jobs page.
 
 ```mermaid
 flowchart TD
@@ -1834,7 +1831,7 @@ Future matching systems may incorporate additional techniques.
 
 Examples include:
 
-- Fuzzy title matching
+- Release year and platform signals in matching
 - Machine learning assisted identification
 - Multi-provider confidence scoring
 - Cross-provider validation
@@ -1916,10 +1913,8 @@ Event-driven processing would further decouple subsystems while improving extens
 
 ### Advanced Monitoring
 
-Potential monitoring enhancements include:
+Prometheus metrics (`/api/metrics`) and a Prometheus, Grafana and node-exporter stack in `backend/docker-compose.yml` already exist. Potential enhancements include:
 
-- Prometheus metrics
-- Grafana dashboards
 - Distributed tracing
 - Structured observability pipelines
 

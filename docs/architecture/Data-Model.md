@@ -70,7 +70,7 @@ These relationships are implemented using dedicated association tables to preser
 
 ### Soft Deletion
 
-Several primary entities support soft deletion through a `deleted_at` timestamp.
+Libraries, collections, users and archive entries support soft deletion through a `deleted_at` timestamp.
 
 This approach allows:
 
@@ -207,7 +207,7 @@ These tables implement many-to-many relationships.
 | archive_entry_genres     | Genre mappings                   |
 | archive_entry_tags       | Tag mappings                     |
 | archive_entry_relations  | Archive-to-archive relationships |
-| franchise_entries        | Franchise mappings               |
+| franchise_entries        | Unused (franchise membership is `archive_entries.franchise_id`) |
 
 ---
 
@@ -296,6 +296,7 @@ The users table is responsible for:
 | is_superuser    | Administrative override flag     |
 | created_at      | Creation timestamp               |
 | updated_at      | Modification timestamp           |
+| deleted_at      | Soft deletion timestamp          |
 
 Passwords are never stored in plaintext. Instead, the system stores cryptographic password hashes generated through the configured password hashing provider.
 
@@ -315,15 +316,14 @@ The `roles` table defines collections of permissions.
 
 Roles act as reusable authorization profiles that can be assigned to one or more users.
 
-Examples include:
+The default roles are:
 
 - Administrator
 - Moderator
-- Librarian
-- Metadata Editor
-- Read-Only User
+- User
+- ReadOnly
 
-The exact set of roles may evolve over time, but the underlying authorization model remains unchanged.
+Role and permission names are stored as plain strings; the `RoleName` and `PermissionName` enums are not column types.
 
 ### Responsibilities
 
@@ -354,11 +354,11 @@ The `permissions` table defines individual actions that may be granted within th
 
 Permissions represent the smallest unit of authorization.
 
-Examples include:
+The defined permissions are:
 
+- VIEW_LIBRARY
 - RUN_SCANS
 - MANAGE_USERS
-- MANAGE_ROLES
 - VIEW_AUDIT_LOGS
 - EDIT_METADATA
 - MANAGE_COLLECTIONS
@@ -380,8 +380,10 @@ Permissions are responsible for:
 | Field       | Purpose                      |
 | ----------- | ---------------------------- |
 | id          | Unique permission identifier |
-| name        | Permission name              |
+| name        | Permission name (String(64)) |
 | description | Human-readable description   |
+| created_at  | Creation timestamp           |
+| updated_at  | Modification timestamp       |
 
 Permissions do not directly belong to users. They become effective only through role assignment.
 
@@ -494,10 +496,11 @@ flowchart LR
 | ---------- | ----------------------- |
 | id         | Unique token identifier |
 | user_id    | Owning user             |
-| token      | Stored refresh token    |
+| token      | Stored refresh token (unique) |
 | expires_at | Expiration timestamp    |
 | revoked    | Revocation state        |
 | created_at | Creation timestamp      |
+| updated_at | Modification timestamp  |
 
 ### Refresh Token Rotation
 
@@ -524,16 +527,14 @@ Rather than relying solely on application logs, important security and administr
 
 Audit logs record:
 
-- Login success
-- Login failure
-- Logout events
-- User creation
-- User deletion
-- Role changes
-- Permission changes
-- Metadata modifications
-- Administrative operations
-- Token refresh events
+- Login success and failure, logout and token refresh
+- User creation, updates, deletion, activation, deactivation, password resets and role assignment
+- Role changes and permission creation
+- Library changes and scans
+- Job start and cancel
+- Artwork and metadata modifications
+- Collection and taxonomy changes
+- System initialization
 
 ### Relationship Model
 
@@ -552,7 +553,7 @@ flowchart LR
 | Field      | Purpose                 |
 | ---------- | ----------------------- |
 | id         | Unique audit identifier |
-| user_id    | Initiating user         |
+| user_id    | Initiating user (nullable, SET NULL on user delete) |
 | action     | Performed action        |
 | entity     | Target entity           |
 | entity_id  | Target identifier       |
@@ -756,11 +757,11 @@ Examples include:
 | file_path      | Archive location                  |
 | file_size      | Archive size                      |
 | modified_time  | Filesystem modification timestamp |
-| file_hash      | Unique content hash               |
-| storage_device | Storage device identifier         |
+| file_hash      | SHA-256 content hash (String(64), not unique; null for folders) |
+| storage_device | Storage device identifier (not populated by the scanner yet) |
 | archive_type   | Archive format                    |
 
-These fields are primarily maintained by scanning operations.
+The scanner maintains path, size, modification time and hash. Neither `file_path` nor `file_hash` is unique at the database level: the scanner enforces one entry per path, and identical hashes are legitimate copies that DUPLICATE_DETECTION groups.
 
 ---
 
@@ -812,11 +813,15 @@ Examples include:
 
 | Field                 | Purpose                   |
 | --------------------- | ------------------------- |
-| metadata_status       | Metadata matching state   |
+| metadata_status       | MATCHED, PARTIAL, UNMATCHED or MANUAL |
+| metadata_source_id    | FK to `metadata_sources` (nullable, SET NULL) |
 | metadata_source       | Provider name             |
 | metadata_source_code  | Provider identifier       |
-| metadata_override     | Manual override flag      |
-| last_metadata_refresh | Last synchronization time |
+| metadata_override     | Manual override flag; automatic enrichment skips the entry |
+| metadata_confidence   | Title similarity score of the chosen match (float) |
+| last_metadata_refresh | Last enrichment attempt   |
+
+UNMATCHED entries never record a provider source.
 
 These fields enable controlled metadata enrichment while preserving user modifications.
 
@@ -824,16 +829,14 @@ These fields enable controlled metadata enrichment while preserving user modific
 
 ### Verification Tracking
 
-Verification fields track metadata confidence and review status.
-
-Examples include:
+Verification fields track the state of the archive file itself, not its metadata.
 
 | Field               | Purpose                |
 | ------------------- | ---------------------- |
-| verification_status | Verification state     |
+| verification_status | VERIFIED, MISSING, MOVED, CORRUPTED or UNKNOWN |
 | last_verified       | Verification timestamp |
 
-This information supports future workflows involving manual metadata validation.
+Scans reset the status to UNKNOWN when a file changes, and the INTEGRITY_VERIFICATION job re-hashes archives to set VERIFIED, MISSING or CORRUPTED. Artwork validation never touches this field.
 
 ---
 
@@ -873,7 +876,7 @@ Throughout its lifecycle an archive entry gradually accumulates metadata, artwor
 
 ## Library Relationship
 
-Each archive entry belongs to at most one library.
+Each archive entry belongs to at most one library (`library_id`, nullable, SET NULL).
 
 ```mermaid
 flowchart LR
@@ -986,16 +989,9 @@ This self-referencing relationship enables future series navigation and franchis
 
 ## Archive Relationships
 
-Archive entries may also maintain arbitrary relationships with other archive entries through the `archive_entry_relations` table.
+Archive entries may also maintain typed relationships with other archive entries through the `archive_entry_relations` table. The primary key is (source_entry_id, target_entry_id), so each ordered pair has one relation.
 
-Examples include:
-
-- Sequel
-- Prequel
-- Expansion
-- Remaster
-- Related release
-- Alternate edition
+Relationship types (`RelationshipType`): FRANCHISE, SEQUEL, PREQUEL, SPINOFF, COLLECTION, EPISODE, REMASTER, RELATED.
 
 ```mermaid
 flowchart LR
@@ -1021,7 +1017,7 @@ Several principles shaped the Archive Entry model.
 
 ### Single Source of Truth
 
-Every discovered archive is represented by exactly one archive entry record.
+Every discovered archive path is represented by exactly one archive entry record. An installed game folder is one entry, not one per subfolder.
 
 ### Metadata Independence
 
@@ -1134,11 +1130,13 @@ Developer records provide:
 | Field       | Purpose                     |
 | ----------- | --------------------------- |
 | id          | Unique developer identifier |
-| name        | Developer name              |
+| name        | Developer name (unique)     |
 | description | Optional description        |
+| website     | Optional website            |
 | created_at  | Creation timestamp          |
 | updated_at  | Modification timestamp      |
-| deleted_at  | Soft deletion timestamp     |
+
+Publishers have the same shape. Tags have a unique `name` and an optional `color`. Developers, publishers, genres, tags and franchises are hard-deleted; they have no `deleted_at`.
 
 ### Relationship Model
 
@@ -1356,7 +1354,7 @@ flowchart LR
     Franchise --> Archive
 ```
 
-Unlike genres and tags, franchises use a direct foreign key relationship rather than an association table.
+Unlike genres and tags, franchises use a direct foreign key relationship (`archive_entries.franchise_id`, SET NULL) rather than an association table. The `franchise_entries` table exists in the migration but no ORM relationship uses it. Franchises can nest through `parent_id` (self reference, SET NULL) and have a `banner_path`.
 
 ---
 
@@ -1369,9 +1367,9 @@ Examples include:
 ```text
 IGDB
 
-TheGamesDB
+Steam
 
-Custom Provider
+Manual
 ```
 
 The purpose of this table is to maintain a clear separation between local archive data and externally sourced metadata.
@@ -1441,11 +1439,7 @@ This approach avoids excessive database growth while preserving efficient retrie
 
 The `ratings` table stores evaluation information associated with archive entries.
 
-Ratings may originate from:
-
-- External metadata providers
-- Community sources
-- Future user-generated systems
+Ratings are per user: `user_id` (nullable, SET NULL), an integer `score` and an optional `review`. There is no provider column; provider ratings are not stored.
 
 ### Responsibilities
 
@@ -1468,7 +1462,7 @@ flowchart LR
     Archive --> Rating
 ```
 
-Multiple ratings may exist for a single archive entry if different rating providers are supported.
+Multiple ratings may exist for a single archive entry, one per user.
 
 ---
 
@@ -1511,7 +1505,7 @@ flowchart LR
     Archive --> Note
 ```
 
-Notes represent purely local information and are never overwritten by metadata synchronization processes.
+Notes represent purely local information and are never overwritten by metadata synchronization processes. Notes and ratings reference users with SET NULL in the database, while the ORM `User` relationship cascades "all, delete-orphan" to them.
 
 ---
 
@@ -1548,14 +1542,10 @@ flowchart LR
 
     Provider --> Genres
 
-    Provider --> Tags
-
-    Provider --> Franchise
-
     Provider --> Screenshots
-
-    Provider --> Ratings
 ```
+
+Enrichment writes developers, publishers, genres and screenshots (plus cover, banner and logo paths). Tags, franchises and ratings are curated by users and are not set by providers.
 
 The archive entry acts as the aggregation point for all enrichment data.
 
@@ -1666,6 +1656,9 @@ Collections provide:
 | id          | Unique collection identifier |
 | name        | Collection name              |
 | description | Collection description       |
+| cover_path  | Optional cover image         |
+| banner_path | Optional banner image        |
+| visibility  | String(32), default "public" |
 | created_at  | Creation timestamp           |
 | updated_at  | Modification timestamp       |
 | deleted_at  | Soft deletion timestamp      |
@@ -1760,11 +1753,12 @@ Job history provides:
 | id           | Unique job identifier    |
 | job_type     | Job category             |
 | status       | Current execution status |
-| progress     | Completion percentage    |
+| progress     | Completion percentage, updated as items are processed |
 | details      | Additional information   |
 | result       | Result summary           |
 | task_id      | Celery task identifier   |
-| user_id      | Initiating user          |
+| retry_count  | Celery retry attempt     |
+| user_id      | Initiating user (nullable, SET NULL) |
 | started_at   | Start timestamp          |
 | completed_at | Completion timestamp     |
 
@@ -1777,20 +1771,20 @@ Every job progresses through a series of states.
 ```mermaid
 stateDiagram-v2
 
-    [*] --> Pending
+    [*] --> PENDING
 
-    Pending --> Running
+    PENDING --> RUNNING
 
-    Running --> Completed
+    RUNNING --> SUCCESS
 
-    Running --> Failed
+    RUNNING --> FAILED
 
-    Running --> Cancelled
+    RUNNING --> CANCELED
 
-    Failed --> Retrying
-
-    Retrying --> Running
+    FAILED --> RUNNING: Celery retry
 ```
+
+`JobStatus` has exactly these five values; a retry re-runs the same row and increments `retry_count`.
 
 This lifecycle allows the system to track both successful and failed operations while maintaining complete historical records.
 
@@ -1844,7 +1838,7 @@ These constraints ensure that relationships remain valid and prevent orphaned re
 
 Examples include:
 
-- Archive entries must reference valid libraries.
+- Archive entries that reference a library must reference a valid one.
 - Ratings must reference valid archive entries.
 - Refresh tokens must reference valid users.
 - Collection memberships must reference valid collections and archive entries.
@@ -1916,15 +1910,14 @@ Several major entities support soft deletion.
 
 Rather than immediately removing records, a timestamp is stored within the `deleted_at` column.
 
-Examples include:
+Entities with `deleted_at`:
 
 - Libraries
 - Collections
-- Developers
-- Publishers
-- Genres
-- Tags
-- Franchises
+- Users
+- Archive entries
+
+There is no purge job yet; soft-deleted rows stay until removed manually.
 
 ---
 
@@ -1984,7 +1977,7 @@ Historical tracking of metadata changes.
 
 ### Multiple Metadata Providers
 
-Simultaneous enrichment from several external sources.
+Recording several provider sources per entry (today one source is stored, with a confident Steam record merged in at enrichment time).
 
 ### Recommendation Systems
 
@@ -1997,6 +1990,12 @@ Additional artwork categories and provider synchronization.
 ### Public API Integrations
 
 External access through API tokens and application credentials.
+
+---
+
+# Indexes and Migrations
+
+The schema is created by a single Alembic baseline migration, `backend/alembic/versions/ecabaf1d5dab_baseline_schema.py`. It enables the `pg_trgm` extension and adds trigram GIN indexes on titles, names and descriptions, plus unique constraints on developer, publisher and tag names.
 
 ---
 

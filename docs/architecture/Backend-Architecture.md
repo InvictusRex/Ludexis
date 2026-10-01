@@ -119,15 +119,17 @@ backend/
 │   ├── tasks/
 │   └── utils/
 │
+├── scripts/
 ├── tests/
 │
 ├── main.py
 ├── docker-compose.yml
 ├── Dockerfile
 ├── alembic.ini
-├── requirements.txt
 └── seed_rbac.py
 ```
+
+`requirements.txt` lives at the repository root, not under `backend/`.
 
 Each package fulfills a specific architectural role.
 
@@ -245,6 +247,8 @@ sequenceDiagram
 
 Services act as coordinators between repositories and higher-level workflows.
 
+The layering is not strict everywhere. Some routers (users, roles, permissions, setup, health) use repositories directly, and some services (metadata, scanner, artwork, admin, enrichment) query the session directly. Audit entries are recorded by routers, not services.
+
 ---
 
 # Major Services
@@ -288,18 +292,18 @@ Authentication rules remain centralized inside this service rather than being di
 
 ---
 
-## User Service
+## User Administration
 
-The User Service manages:
+There is no separate user service. The users router (`app/api/users.py`) handles:
 
 - User creation
 - User updates
 - User deletion
+- Activation and deactivation
+- Password resets
 - Role assignment
-- Permission management
-- Account lifecycle operations
 
-This service serves as the primary entry point for user administration functionality.
+It works directly with `UserRepository` and `RoleRepository`. Permissions are managed by the roles and permissions routers.
 
 ---
 
@@ -341,10 +345,12 @@ Most metadata operations ultimately interact with archive entries.
 The Metadata Service manages:
 
 - Metadata searching
-- Metadata matching
+- Automatic matching (`auto_match`, scored by `title_similarity`)
 - Metadata retrieval
 - Provider integration
-- Metadata refresh operations
+- Metadata refresh from a stored source
+
+`EnrichmentService` (`app/services/enrichment.py`) runs a batch through the Metadata Service and then fills missing artwork. It is used by `refresh_metadata_task`.
 
 ```mermaid
 flowchart LR
@@ -375,8 +381,11 @@ The Artwork Service manages:
 - Cover artwork
 - Banner artwork
 - Logo artwork
+- Screenshots
 - Artwork replacement
 - Artwork deletion
+- Filling missing artwork from the stored match (`fill_missing_artwork`)
+- Validation and repair of stored files
 - Storage path management
 
 This service abstracts storage concerns away from archive records.
@@ -385,18 +394,20 @@ Future migration to object storage systems can occur without affecting API contr
 
 ---
 
-## Scan Service
+## Scanner Service
 
-The Scan Service coordinates archive discovery.
+`ScannerService` (`app/services/scanner.py`) coordinates archive discovery.
 
 Responsibilities include:
 
 - Full library scans
 - Incremental scans
-- Duplicate detection
+- Move and copy detection by hash
 - File hashing
-- Archive record creation
-- Scan job scheduling
+- Archive record creation and changed-file updates
+- Integrity verification and duplicate grouping
+
+Jobs are created by the Job Service, not the scanner.
 
 Scanning operations can be computationally expensive and are therefore delegated to asynchronous workers.
 
@@ -409,8 +420,10 @@ The Job Service manages:
 - Job creation
 - Job status tracking
 - Job cancellation
-- Progress reporting
-- Retry management
+- Dispatching the Celery task for each job type
+- Finding an already active job of a type (`active_job`)
+
+Progress and retry counts are written by the shared task runner (`app/tasks/job_runner.py::run_job`).
 
 The service acts as the interface between FastAPI and Celery.
 
@@ -440,21 +453,22 @@ This abstraction prevents API code from becoming tightly coupled to Celery inter
 
 ---
 
-## Audit Log Service
+## Audit Service
 
-The Audit Log Service records significant system actions.
+`AuditService` (`app/services/audit.py`) records significant system actions. Routers call `record(db, user, action, entity, entity_id, details)`; `log(...)` takes a user id instead of a user.
 
 Examples include:
 
-- User login
-- User logout
-- User creation
-- User deletion
-- Metadata modifications
-- Permission changes
-- Administrative actions
+- Logins (successful and failed), logout and token refresh
+- User, role and permission administration
+- Library changes and scans
+- Job start and cancel
+- Artwork upload, replace, delete and auto-download
+- Archive entry and metadata changes
+- Collection and taxonomy changes
+- System initialization
 
-Maintaining a dedicated audit service ensures consistent logging across the platform.
+Action names are constants in `app/utils/audit_actions.py`; some older routers use lowercase strings such as "create".
 
 ---
 
@@ -568,7 +582,7 @@ Dependency injection reduces boilerplate and centralizes infrastructure concerns
 
 Database transactions are managed through SQLAlchemy sessions.
 
-Each request receives an isolated database session.
+Each request receives an isolated database session from `get_db`, which closes it afterwards. Services and repositories commit explicitly; there is no automatic commit at the end of a request.
 
 ```mermaid
 sequenceDiagram
@@ -629,13 +643,13 @@ flowchart TD
 
     B --> C[Provider Search]
 
-    C --> D[IGDB Search]
+    C --> D[IGDB, then Steam]
 
     D --> E[Best Match Selection]
 
     E --> F[Metadata Details Retrieval]
 
-    F --> G[Steam Enrichment]
+    F --> G[Steam Merge if confident]
 
     G --> H[Conflict Resolution]
 
@@ -697,7 +711,7 @@ The IGDB provider serves as the primary metadata source used by Ludexis.
 
 It is responsible for performing title searches, retrieving detailed metadata records, obtaining canonical game information, and providing the primary source of descriptive content. Most automated metadata workflows begin with IGDB because it offers broad coverage and structured game metadata.
 
-Within the current implementation, automatic matching is performed primarily through IGDB search results.
+Automatic matching tries IGDB first and falls back to Steam when IGDB has no confident match.
 
 ---
 
@@ -705,7 +719,7 @@ Within the current implementation, automatic matching is performed primarily thr
 
 The Steam provider functions as a secondary enrichment source.
 
-After a successful IGDB match is identified, Steam metadata may be retrieved and merged with the primary dataset. Steam is primarily used to supplement genres, developer information, publisher information, artwork, and additional descriptive content that may be missing from the primary provider.
+Steam is both a fallback match source and a secondary enrichment source. After a match, a Steam record is merged into the primary dataset only when its title is itself a confident match (>= 0.85). Steam supplies genres, developers, publishers, descriptions, a banner (header image), logos (capsule images), a portrait cover (`library_600x900.jpg`, when the app has one) and screenshots.
 
 The final metadata record is generated through a conflict resolution process that combines data from both providers.
 
@@ -715,7 +729,7 @@ The final metadata record is generated through a conflict resolution process tha
 
 The GOG provider implements the same abstraction interface and can participate in the metadata acquisition pipeline.
 
-Although the current implementation does not actively merge GOG data into the final metadata record, the provider exists as part of the extensible provider architecture and may be incorporated into future enrichment workflows.
+The GOG provider is a stub that returns no results; GOG integration is not planned.
 
 ---
 
@@ -723,7 +737,7 @@ Although the current implementation does not actively merge GOG data into the fi
 
 The Manual Provider acts as a fallback mechanism when automated matching is unsuccessful.
 
-This provider allows metadata to be supplied directly by administrators or users without relying on external services. The existence of the manual provider ensures that archive entries can always be cataloged even when automated enrichment fails.
+The Manual Provider is a stub that returns no results. Manual metadata is entered through `PATCH /api/archive-entries/{id}/metadata`, which sets the status to MANUAL and enables `metadata_override`.
 
 ---
 
@@ -767,7 +781,7 @@ The metadata workflow is intentionally separated from the scanning workflow to e
 
 When metadata enrichment is requested for an archive entry, the Metadata Service initiates an automated matching process.
 
-The current implementation uses IGDB as the primary matching source.
+Providers are searched in priority order (IGDB, then Steam). The search stops at the first confident match; otherwise the best candidate across providers is kept.
 
 ```mermaid
 flowchart TD
@@ -775,7 +789,7 @@ flowchart TD
     A[Archive Entry]
     --> B[Extract Title]
 
-    B --> C[IGDB Search]
+    B --> C[IGDB, then Steam Search]
 
     C --> D[Candidate Results]
 
@@ -798,7 +812,7 @@ The objective of the matching stage is not simply to locate metadata, but to det
 
 Metadata matching is inherently probabilistic. Multiple titles may have similar names, regional variants may exist, and archive filenames often contain additional information such as version numbers, release groups, or platform identifiers.
 
-To handle this uncertainty, Ludexis classifies metadata quality using dedicated status values.
+To handle this uncertainty, Ludexis scores candidates with `title_similarity` (1.0 for titles identical ignoring case, spaces and punctuation; otherwise the average of character similarity and shared-word overlap) and classifies the result. The score is stored in `metadata_confidence`.
 
 ```mermaid
 flowchart LR
@@ -811,39 +825,29 @@ flowchart LR
 
 #### UNMATCHED
 
-No reliable metadata candidate could be identified.
+No candidate scored at least 0.70. No provider source is recorded, so a weak candidate is never used for later refreshes.
 
 Archive entries in this state remain searchable and manageable but contain little or no external metadata.
 
 #### PARTIAL
 
-A potential metadata match exists, but confidence is insufficient for a fully verified assignment.
+The best candidate scored between 0.70 and 0.85. Its metadata is applied, but manual verification may be warranted.
 
 Additional manual verification may be required.
 
 #### MATCHED
 
-A sufficiently reliable metadata record has been identified and successfully applied to the archive entry.
+The best candidate scored at least 0.85 and its metadata was applied to the archive entry.
 
 The archive is considered enriched and ready for normal catalog operations.
 
 ---
 
-### Matching Service
+### Title Normalization and Scoring
 
-The Matching Service provides utility functions used during archive identification.
+File names are turned into search titles by `app/utils/normalization.py`, which strips archive extensions, bracketed text, versions, platform and packaging tags, release groups and flags, and splits CamelCase. Candidate scoring lives in `title_similarity` in `app/services/metadata.py`.
 
-Its responsibilities include:
-
-- Title normalization.
-- Similarity comparisons.
-- Candidate ranking.
-- Match score evaluation.
-- Duplicate detection support.
-
-By isolating matching logic into a dedicated service, Ludexis avoids embedding comparison algorithms directly within provider implementations.
-
-This separation improves maintainability and allows matching algorithms to evolve independently from metadata providers.
+Keeping this logic out of the providers lets matching evolve independently from provider implementations.
 
 ---
 
@@ -853,16 +857,16 @@ Once a successful match has been identified, detailed metadata retrieval begins.
 
 The Metadata Service gathers information from one or more providers and constructs a normalized metadata representation.
 
-Typical metadata fields include:
+Fields written to the archive entry:
 
-- Title
 - Description
 - Release date
 - Genres
 - Developers
 - Publishers
-- Artwork
-- External identifiers
+- Metadata source and provider id
+
+Artwork is downloaded afterwards by `ArtworkService.fill_missing_artwork`.
 
 Because different providers often expose overlapping information, a consolidation stage is required before persistence.
 
@@ -936,11 +940,7 @@ Automated enrichment is valuable, but user-provided information must always take
 
 For this reason, archive entries support manual metadata overrides.
 
-When manual override mode is enabled:
-
-- User modifications become authoritative.
-- Automated refresh operations cannot overwrite protected fields.
-- External provider updates are ignored for overridden values.
+When `metadata_override` is enabled, automatic matching and refresh skip the entry entirely, so user edits stay authoritative.
 
 ```mermaid
 flowchart TD
@@ -963,7 +963,7 @@ Metadata may become outdated over time as external providers update their databa
 
 Ludexis therefore supports metadata refresh operations.
 
-The refresh process follows the same matching and enrichment pipeline used during initial metadata acquisition.
+Entries with a provider source are refreshed from that source without a new title search. Entries never attempted are matched. Entries that were attempted and stayed UNMATCHED are left for manual review. The nightly METADATA_REFRESH job (03:00 UTC) applies these rules to all non-override entries.
 
 ```mermaid
 flowchart TD
@@ -984,7 +984,7 @@ Refresh operations maintain long-term metadata accuracy while respecting manual 
 
 ### Design Rationale
 
-The metadata subsystem is intentionally separated into providers, matching services, enrichment services, and conflict resolution components.
+The metadata subsystem is intentionally separated into providers, the metadata service, the enrichment service, and conflict resolution.
 
 This architecture provides several benefits:
 
@@ -1057,7 +1057,7 @@ Each configured library is stored within the Libraries table and contains:
 - Filesystem path
 - Enable/disable status
 
-During scan execution, only enabled libraries participate in the discovery process.
+During scan execution, only enabled, non-deleted libraries participate in the discovery process. Each library has one root path.
 
 ```mermaid
 flowchart LR
@@ -1080,13 +1080,14 @@ After a library is selected, the Scanner Service recursively traverses the files
 
 The discovery stage identifies archive candidates and collects basic filesystem information.
 
-Typical information gathered includes:
+Discovery rules:
 
-- Absolute file path
-- Filename
-- File size
-- Last modification timestamp
-- Storage location
+- Archive files (`.zip`, `.rar`, `.7z`, `.iso`, `.exe`) become one entry each.
+- A directory containing any non-archive file (ignoring dotfiles, `desktop.ini` and `thumbs.db`) is one game folder entry and is not descended.
+- Directories holding only archives and subfolders are organizing folders and are descended.
+- Unreadable directories are logged and skipped.
+
+Information gathered: absolute path, size and modification time. All items are discovered before processing, so progress is reported against a known total.
 
 ```mermaid
 flowchart TD
@@ -1116,12 +1117,13 @@ This information forms the initial Archive Entry record and provides the foundat
 
 Typical archive attributes include:
 
-- Title candidate
+- Title and version parsed from the file name
 - File path
 - File size
-- Archive type
 - Modification timestamp
-- Storage device information
+- SHA-256 hash (archive files only)
+
+The scanner does not populate `storage_device`.
 
 The objective of this stage is to establish a stable representation of the physical archive before any external metadata is introduced.
 
@@ -1138,12 +1140,20 @@ flowchart TD
 
     A[Discovered Archive]
 
-    --> B{Already Exists?}
+    --> B{Path known?}
 
-    B -->|Yes| C[Skip Creation]
+    B -->|Unchanged| C[Skip]
 
-    B -->|No| D[Create Entry]
+    B -->|Size or mtime changed| D[Re-hash, reset verification]
+
+    B -->|No| E{Hash of an entry whose file is gone?}
+
+    E -->|Yes| F[Update path: move]
+
+    E -->|No| G[Create Entry]
 ```
+
+A file whose hash matches an entry whose file still exists is a copy and gets its own entry; DUPLICATE_DETECTION groups identical hashes later. Each item is processed independently: a failure is rolled back, logged and counted, and the scan continues.
 
 Duplicate detection prevents:
 
@@ -1210,14 +1220,14 @@ Because library ownership is explicitly recorded, administrators can easily dete
 
 Archive discovery and metadata enrichment are intentionally separated.
 
-After a new archive entry is created, the scanner may initiate metadata enrichment workflows.
+When a scan creates entries, the scan task queues a separate METADATA_REFRESH job for exactly those entries and records its id as `enrichment_job_id` in the scan result.
 
 ```mermaid
 flowchart TD
 
     A[Archive Entry Created]
 
-    --> B[Metadata Service]
+    --> B[Enrichment Job]
 
     --> C[Provider Search]
 
@@ -1425,20 +1435,24 @@ stateDiagram-v2
 
     PENDING --> RUNNING
 
-    RUNNING --> COMPLETED
+    RUNNING --> SUCCESS
 
     RUNNING --> FAILED
 
-    RUNNING --> CANCELLED
+    RUNNING --> CANCELED
 
-    COMPLETED --> [*]
+    FAILED --> RUNNING: Celery retry
+
+    SUCCESS --> [*]
 
     FAILED --> [*]
 
-    CANCELLED --> [*]
+    CANCELED --> [*]
 ```
 
-This lifecycle provides a consistent execution model for all background operations.
+All tasks run through `app/tasks/job_runner.py::run_job`, which performs these transitions, writes progress and a result summary, and stores Celery's retry attempt in `retry_count`. Celery autoretry re-runs the same job row up to `JOB_MAX_RETRIES` (5) times with exponential backoff capped at `JOB_RETRY_BACKOFF_MAX` (300 s).
+
+There is no stale-job recovery: a job left RUNNING by a killed worker stays RUNNING.
 
 ---
 
@@ -1478,6 +1492,7 @@ Typical information stored includes:
 - Job type
 - Current status
 - Progress percentage
+- Retry count
 - Result information
 - User association
 - Start timestamp
@@ -1529,16 +1544,7 @@ Progress reporting is especially valuable during large library scans where execu
 
 ### Job Monitoring Service
 
-The Job Monitor Service acts as the abstraction layer between execution infrastructure and monitoring endpoints.
-
-Its responsibilities include:
-
-- Retrieving job status
-- Exposing progress information
-- Aggregating execution metrics
-- Supporting administrative monitoring views
-
-The service prevents monitoring logic from becoming coupled directly to Celery implementation details.
+`JobMonitorService` wraps Celery `inspect()`: workers, active and reserved tasks, and worker stats. Job status and progress come from `JobService` and the `job_history` table.
 
 ---
 
@@ -1624,7 +1630,7 @@ Separating scans from request processing ensures that large storage libraries do
 
 ### Metadata Processing Jobs
 
-Metadata enrichment may also be executed through the job subsystem.
+Metadata enrichment runs as METADATA_REFRESH jobs: queued automatically after scans, fired nightly by Celery beat, or started manually. ARTWORK_REFRESH (04:00 UTC) validates and repairs artwork for matched entries. Celery beat runs as its own process; both Compose stacks include a `beat` service.
 
 ```mermaid
 flowchart TD
@@ -1648,7 +1654,7 @@ Background execution prevents external provider latency from affecting the user 
 
 ### Redis Integration
 
-Redis serves exclusively as a messaging layer.
+Redis is the Celery broker and result backend.
 
 ```mermaid
 flowchart LR
@@ -1782,9 +1788,13 @@ flowchart TD
     API --> JOBS[Jobs Router]
     API --> MONITOR[Job Monitor Router]
 
+    API --> ARTWORK[Artwork Router]
+    API --> SETUP[Setup Router]
     API --> ADMIN[Admin Router]
     API --> HEALTH[Health Router]
 ```
+
+`main.py` also defines `/media/{path}` (stored artwork), `/healthz` and `/api/metrics` (Prometheus).
 
 Each router represents a bounded functional area within the system.
 
@@ -1950,12 +1960,7 @@ Because documentation is generated directly from source code, it remains synchro
 
 Dedicated monitoring endpoints expose platform health information.
 
-Current monitoring areas include:
-
-- API health
-- Database connectivity
-- Redis connectivity
-- Background job visibility
+The health router exposes `/api/health/`, `/api/health/db` and `/api/health/redis`. `/healthz` is a liveness probe, and `/api/metrics` serves Prometheus metrics. Celery worker state is available through the job monitor router.
 
 ```mermaid
 flowchart TD
@@ -2110,7 +2115,11 @@ flowchart TD
     --> D[JWT Identifier]
 ```
 
-Access tokens are intentionally short-lived to reduce risk if a token is compromised.
+Access tokens are intentionally short-lived (15 minutes by default) to reduce risk if a token is compromised. `JWT_SECRET_KEY` must be at least 32 characters; the backend refuses to start otherwise.
+
+### Media Tokens
+
+Browsers cannot send an `Authorization` header with `<img>` requests, so `/media/{path}` also accepts `?media_token=`. Media tokens come from `GET /api/auth/media-token`, carry type "media", last 60 minutes (`MEDIA_TOKEN_EXPIRE_MINUTES`) and are rejected by every other endpoint. Access tokens are never accepted in URLs. Path traversal returns 404.
 
 Because authentication information is embedded directly within the token, API requests can be validated without maintaining server-side session state.
 
@@ -2281,12 +2290,12 @@ Security-related operations generate audit records.
 
 Audit logs provide traceability for:
 
-- Login events
-- Logout events
-- Failed authentication attempts
-- User management actions
-- Permission changes
-- Administrative operations
+- Login events, failed attempts, logout and token refresh
+- User management actions, including activation, deactivation and password resets
+- Role and permission changes
+- Scans and job start or cancel
+- Artwork and metadata changes
+- System initialization
 
 ```mermaid
 flowchart TD
@@ -2649,8 +2658,12 @@ Typical validation areas include:
 
 - Empty library handling
 - Single archive detection
-- Duplicate prevention
+- Game folders as one entry, organizing folders descended
+- Changed, moved and copied archives
+- Per-file error isolation and progress reporting
 - Incremental scan behavior
+
+`tests/test_sample_library.py` runs discovery and matching against a real archive folder when `LUDEXIS_SAMPLE_LIBRARY` is set; it is skipped otherwise. An autouse fixture keeps tests from dispatching to the real Celery broker.
 
 ```mermaid
 flowchart TD
@@ -2675,9 +2688,10 @@ Metadata services are validated through dedicated test cases.
 Areas under test include:
 
 - Metadata search
-- Automatic matching
-- Metadata retrieval
-- Provider integration behavior
+- Automatic matching and title scoring
+- Enrichment of scanned entries, including artwork
+- File name normalization
+- Job runner progress and retry tracking
 
 ```mermaid
 flowchart TD
@@ -3081,7 +3095,8 @@ Examples include:
 
 - Single-node deployment assumptions
 - Limited caching strategy
-- Basic monitoring capabilities
+- No stale-job recovery for jobs left RUNNING by a killed worker
+- Search uses `ILIKE` matching; the trigram indexes are not yet used for ranking
 - No distributed worker orchestration
 - No dedicated object storage abstraction
 - Limited analytics infrastructure
@@ -3135,10 +3150,8 @@ without requiring significant changes to application logic.
 
 #### Observability Improvements
 
-Potential future monitoring enhancements include:
+Prometheus metrics and Grafana dashboards already exist (`backend/docker-compose.yml`). Potential future enhancements include:
 
-- Prometheus metrics
-- Grafana dashboards
 - Structured tracing
 - Centralized log aggregation
 

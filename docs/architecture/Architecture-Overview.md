@@ -20,7 +20,7 @@ The system architecture was designed around several core engineering objectives.
 
 The project follows a layered architecture that separates API endpoints, business logic, data access logic, and database models into distinct components. This approach reduces coupling between subsystems and allows developers to modify implementation details without impacting unrelated parts of the application.
 
-Business rules are implemented within dedicated service classes while repositories handle persistence concerns. API routers remain lightweight and primarily focus on request validation and response generation.
+Business rules are implemented within dedicated service classes while repositories handle persistence concerns. API routers remain lightweight and primarily focus on request validation and response generation. The layering is not strict: some routers (users, roles, permissions, setup, health) use repositories directly, and some services (metadata, scanner, artwork, admin, enrichment) query the session directly.
 
 ### Scalability
 
@@ -55,9 +55,7 @@ Examples include:
 - Additional metadata providers
 - Alternative artwork storage backends
 - Additional authentication mechanisms
-- Frontend applications
 - Public API integrations
-- Scheduled automation jobs
 
 Subsystem boundaries are intentionally defined to make future expansion predictable and manageable.
 
@@ -65,7 +63,7 @@ Subsystem boundaries are intentionally defined to make future expansion predicta
 
 The platform is designed to tolerate operational failures while preserving data integrity.
 
-Background tasks are tracked using job records and support retry mechanisms. Database transactions are used where appropriate to prevent partial updates. Long-running operations are isolated from request-response cycles to avoid blocking API responsiveness.
+Background tasks are tracked using job records with live progress, and Celery retries failed tasks with exponential backoff while recording the attempt count. Database transactions are used where appropriate to prevent partial updates. Long-running operations are isolated from request-response cycles to avoid blocking API responsiveness.
 
 These mechanisms improve overall system stability during both normal operation and failure scenarios.
 
@@ -157,7 +155,9 @@ Examples include:
 - Artwork management
 - Library scanning
 - Collection management
-- User administration
+- Metadata enrichment after scans
+
+User administration lives in the users router on top of `UserRepository` and `RoleRepository`; there is no separate user service.
 
 Services coordinate interactions between repositories, background workers, storage providers, and external integrations.
 
@@ -210,11 +210,9 @@ Redis functions as a lightweight infrastructure component supporting asynchronou
 Primary responsibilities include:
 
 - Celery message brokering
-- Task coordination
-- Background job dispatching
-- Future caching support
+- Celery result backend
 
-Redis is intentionally isolated from permanent data storage responsibilities.
+Redis is intentionally isolated from permanent data storage responsibilities; job state lives in the `job_history` table.
 
 ---
 
@@ -226,9 +224,11 @@ Examples include:
 
 - Full library scans
 - Incremental scans
-- Metadata enrichment
-- Artwork processing
-- Batch maintenance operations
+- Metadata enrichment (queued automatically for the entries a scan creates)
+- Artwork validation and repair
+- Integrity verification and duplicate detection
+
+Celery beat runs as its own process and fires the daily metadata refresh (03:00 UTC) and artwork validation (04:00 UTC) jobs.
 
 By moving these operations into background workers, API responsiveness remains unaffected during resource-intensive processing.
 
@@ -242,17 +242,20 @@ The database stores references and metadata describing artwork while the actual 
 
 This separation improves database efficiency and simplifies backup strategies.
 
+Stored files are served by the authenticated `/media/{path}` route. Browsers load images with a short-lived media-only token (`GET /api/auth/media-token`, passed as `?media_token=`); access tokens are never accepted in URLs.
+
 ---
 
 ### Metadata Provider Integration
 
 Metadata services provide enrichment information for archive entries.
 
-Examples of metadata sources include:
+Providers, in priority order:
 
 - IGDB
-- TheGamesDB
-- Custom metadata providers
+- Steam
+- GOG (stub, returns no results)
+- Manual (stub; manual edits go through the archive entry metadata endpoint)
 
 The architecture treats providers as interchangeable components, allowing additional sources to be integrated without major modifications to existing code.
 
@@ -350,6 +353,10 @@ sequenceDiagram
 
 The authentication subsystem is implemented using signed JWT tokens generated with a server-side secret key.
 
+A third token type, the media token, is issued by `GET /api/auth/media-token` (60 minutes). It is only valid for `/media` image requests.
+
+`JWT_SECRET_KEY` must be at least 32 characters; the backend refuses to start otherwise.
+
 Each access token contains:
 
 - Subject identifier
@@ -406,15 +413,17 @@ A role may contain multiple permissions.
 
 Permissions define the specific operations that users are allowed to perform within the platform.
 
-Examples include:
+The permissions are:
 
-- Run library scans
-- Manage users
-- Manage roles
-- Edit metadata
-- Access administrative functions
-- View audit logs
-- Manage collections
+- `RUN_SCANS`
+- `MANAGE_USERS`
+- `EDIT_METADATA`
+- `ACCESS_ADMIN`
+- `VIEW_AUDIT_LOGS`
+- `MANAGE_COLLECTIONS`
+- `VIEW_LIBRARY`
+
+The default roles are Administrator, Moderator, User and ReadOnly. Superusers bypass permission checks.
 
 Authorization checks occur before protected operations are executed.
 
@@ -444,18 +453,17 @@ Audit logging provides traceability and accountability throughout the platform.
 
 Important system actions are recorded in a dedicated audit log table.
 
-Examples include:
+Recorded actions include:
 
-- Successful logins
-- Failed logins
-- User creation
-- User deletion
-- Role assignment
-- Permission changes
-- Metadata modifications
-- Administrative actions
-- Token refresh operations
-- Logout events
+- Successful and failed logins, logout and token refresh
+- User create, update, delete, activate, deactivate, password reset and role assignment
+- Role CRUD and permission creation
+- Library CRUD and scans
+- Job start and cancel
+- Artwork upload, replace, delete and auto-download
+- Archive entry create, update, delete and metadata override
+- Collection and taxonomy (tags, developers, publishers, franchises) changes
+- System initialization
 
 ### Audit Log Flow
 
@@ -464,20 +472,20 @@ flowchart LR
 
     UserAction["User Action"]
 
-    Service["Service Layer"]
+    Router["API Router"]
 
-    AuditService["Audit Log Service"]
+    AuditService["AuditService"]
 
     AuditTable["Audit Logs Table"]
 
-    UserAction --> Service
+    UserAction --> Router
 
-    Service --> AuditService
+    Router --> AuditService
 
     AuditService --> AuditTable
 ```
 
-The audit subsystem operates independently of the primary business operation whenever possible.
+Routers record audit entries after the business operation succeeds, through the single `AuditService` (`app/services/audit.py`). Action names live in `app/utils/audit_actions.py`.
 
 This ensures that operational data and audit records remain logically separated while still providing complete visibility into system activity.
 
