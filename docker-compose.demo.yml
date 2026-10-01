@@ -1,11 +1,13 @@
 # Ludexis demo stack
 #
-# One-command evaluation environment: PostgreSQL, Redis, backend API,
-# Celery worker, and the Next.js frontend, pre-seeded with a demo dataset.
+# Evaluation environment: PostgreSQL, Redis, backend API, Celery worker and
+# beat scheduler, and the Next.js frontend, pre-seeded with a demo dataset.
 #
+#   export JWT_SECRET_KEY=$(openssl rand -hex 32)
 #   docker compose -f docker-compose.demo.yml up -d --build
 #
-# Then open http://localhost:3000 and log in with admin / Admin123!
+# Optional overrides: POSTGRES_PASSWORD, DEMO_ADMIN_PASSWORD (default Admin123!).
+# Then open http://localhost:3000 and log in as admin.
 
 services:
   db:
@@ -13,7 +15,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ludexis
-      POSTGRES_PASSWORD: ludexis
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ludexis}
       POSTGRES_DB: ludexis
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -41,9 +43,12 @@ services:
     restart: unless-stopped
     command: sh -c "alembic upgrade head && python -m scripts.seed_demo && uvicorn main:app --host 0.0.0.0 --port 8000"
     env_file: ./backend/.env.docker
-    environment:
+    environment: &backend-environment
       ARTWORK_STORAGE_PATH: /artwork
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      DATABASE_URL: postgresql+psycopg://ludexis:${POSTGRES_PASSWORD:-ludexis}@db:5432/ludexis
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY, e.g. export JWT_SECRET_KEY=$(openssl rand -hex 32)}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-Admin123!}
     volumes:
       - artwork_data:/artwork
     ports:
@@ -64,13 +69,23 @@ services:
     restart: unless-stopped
     command: celery -A app.tasks.celery_app worker --loglevel=info
     env_file: ./backend/.env.docker
-    environment:
-      ARTWORK_STORAGE_PATH: /artwork
+    environment: *backend-environment
     volumes:
       - artwork_data:/artwork
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build: ./backend
+    restart: unless-stopped
+    # Fires the daily metadata refresh and artwork validation jobs.
+    command: celery -A app.tasks.celery_app beat --loglevel=info --schedule /tmp/celerybeat-schedule
+    env_file: ./backend/.env.docker
+    environment: *backend-environment
+    depends_on:
       redis:
         condition: service_healthy
 

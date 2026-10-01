@@ -58,7 +58,7 @@ jobs:
 
       CELERY_RESULT_BACKEND: redis://localhost:6379/0
 
-      JWT_SECRET_KEY: github-actions-secret
+      JWT_SECRET_KEY: github-actions-test-secret-not-for-production-use
 
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       REFRESH_TOKEN_EXPIRE_DAYS: 60
