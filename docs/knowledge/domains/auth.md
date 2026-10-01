@@ -8,7 +8,7 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 | `backend/app/api/auth.py` | Router `/auth` | `login`, `refresh`, `logout`, `read_current_user`, `token_login` |
 | `backend/app/api/setup.py` | Router `/setup` (first run) | `setup_status`, `initialize_system`, `seed_permissions`, `seed_roles` |
 | `backend/app/services/auth.py` | Service | `AuthService.authenticate`, `create_tokens`, `refresh_tokens`, `logout` |
-| `backend/app/core/security.py` | JWT + bcrypt helpers | `create_access_token`, `create_refresh_token`, `verify_token`, `hash_password`, `verify_password` |
+| `backend/app/core/security.py` | JWT + bcrypt helpers | `create_access_token`, `create_refresh_token`, `create_media_token`, `verify_token`, `hash_password`, `verify_password` |
 | `backend/app/core/auth.py` | FastAPI auth dependencies | `oauth2_scheme`, `get_current_user`, `get_optional_current_user`, `get_current_active_user` |
 | `backend/app/repositories/refresh_token.py` | Repository | `RefreshTokenRepository.get_by_token` |
 | `backend/app/repositories/user.py` | Repository (shared with rbac) | `UserRepository.get_by_username`, `has_any`, `get_by_email` |

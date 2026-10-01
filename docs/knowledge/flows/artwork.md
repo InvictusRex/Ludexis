@@ -55,7 +55,7 @@ frontend/app/admin/artwork/page.tsx
            no screenshots -> ArtworkService.auto_download_screenshots(db, entry.id)
            (exceptions counted as failed, artwork_validation_failures_total.inc())
         each auto_download_<type>:
-           -> MetadataService.get_merged_details(entry.title)           provider lookup (see metadata flow)
+           -> details or ArtworkService._entry_details(entry)       stored match, else title search (see metadata flow)
            -> ArtworkService._select_best_url(details.<type>_urls)
                 _score_artwork_candidate(url) + _download_artwork_url(url) + _score_image(bytes)
            -> ArtworkService._download_artwork_url(best)   requests.get(timeout=30), MIME + size checks
@@ -65,34 +65,48 @@ frontend/app/admin/artwork/page.tsx
      <- {"downloaded": n, "failed": m}
 ```
 
-## 4. Validation (scheduled or job)
+## 4. Filling missing artwork (enrichment)
+```
+EnrichmentService.enrich -> ArtworkService.fill_missing_artwork(db, entry, repair=())
+  wanted = cover/banner/logo without a path (or in repair) + screenshots if none (or in repair)
+  details = ArtworkService._entry_details(entry)   fetched once
+  for kind in wanted: auto_download_<kind>(db, entry.id, force=True, details=details)
+     failure -> rollback ; artwork_validation_failures_total.inc() ; continue
+  <- number of assets downloaded
+```
+
+## 5. Validation and repair (scheduled or job)
 ```
 celery beat 04:00 UTC -> scheduled_artwork_validation_task()      backend/app/tasks/artwork_tasks.py
-  -> INSERT JobHistory(ARTWORK_REFRESH, PENDING) ; validate_artwork_task.delay(job.id)
+  -> JobService.active_job(db, ARTWORK_REFRESH) ? skip : JobService.start_job(db, None, ARTWORK_REFRESH, ...)
 POST /api/jobs/start {"job_type": "ARTWORK_REFRESH"} -> JobService._select_task -> validate_artwork_task
-validate_artwork_task(job_history_id)
-  -> status RUNNING
-  -> ArtworkService.validate_all_artwork(db)
-     for entry in ArchiveEntryRepository.list_active(db):
+validate_artwork_task -> run_job -> ArtworkService.validate_and_redownload_artwork(db)
+  validation = ArtworkService.validate_all_artwork(db)
+     for entry in ArchiveEntryRepository.list_active(db, limit=None):
         cover/banner/logo: missing if no path or not StorageService.exists ; corrupt if PIL Image.verify() fails
-        entry.verification_status = MISSING if any missing/corrupt else VERIFIED
-     commit
-  -> status SUCCESS, result "Artwork validation completed: N entries checked"
+        <- {archive_id, missing_types, corrupt_types, complete}   (verification_status is not touched)
+  for broken entries with metadata_source_code and status != UNMATCHED:
+     fill_missing_artwork(db, entry, repair=missing + corrupt)
+  <- {checked, incomplete, repaired, failed}
 ```
-Not wired to any route or task: `ArtworkService.validate_and_redownload_artwork`, `deduplicate_artwork` (SHA-256 via `_file_sha256`, canonical `dedup/{type}/{hash}.jpg`), `garbage_collect_artwork`.
+Not wired to any route or task: `deduplicate_artwork` (SHA-256 via `_file_sha256`, canonical `dedup/{type}/{hash}.jpg`), `garbage_collect_artwork`.
 
-## 5. Serving files
+## 6. Serving files
 ```
+AuthContext.renewMediaToken()  after login/init and within 5 min of expiry      frontend/contexts/auth-context.tsx
+  -> authApi.getMediaToken()  GET /api/auth/media-token -> issue_media_token -> create_media_token (type "media", 60 min)
+  -> setMediaToken(token)                                         frontend/lib/auth/token-store.ts
 <img src={mediaUrl(entry.cover_path)}>                            frontend/lib/media.ts
-  -> "{config.mediaBaseUrl}/{path}"   (default http://localhost:8000/media)
+  -> "{config.mediaBaseUrl}/{path}?media_token={token}"   (default http://localhost:8000/media)
   GET /media/{path:path}                                          backend/main.py
-  -> read_media(path, current_user=Depends(get_current_active_user))
+  -> read_media(path, current_user=Depends(get_media_user))
+       Bearer header -> get_current_user ; else verify_token(media_token, token_type="media") ; 401 otherwise
      resolve under media_dir (= StorageService().base_dir) ; 404 if outside or not a file
   <- FileResponse
 ```
-`<img>` requests carry no `Authorization` header, while `read_media` requires one.
+Access tokens are never accepted in the URL.
 
-## 6. Listing screenshots
+## 7. Listing screenshots
 ```
 ScreenshotGallery -> archiveApi.getScreenshots(entryId)
   GET /api/archive-entries/{archive_entry_id}/screenshots -> list_screenshots

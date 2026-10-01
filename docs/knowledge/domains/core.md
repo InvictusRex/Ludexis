@@ -24,7 +24,6 @@ Cross-cutting infrastructure: app factory and router registration, settings, DB 
 | `frontend/app/layout.tsx` | Root layout | wraps `AuthProvider`, `ErrorBoundary`, `AppWrapper`, `Toaster` |
 | `frontend/components/layout/app-wrapper.tsx`, `frontend/components/layout/header.tsx`, `frontend/components/layout/sidebar.tsx` | Shell | `AppWrapper`, `Header`, `Sidebar` |
 | `frontend/components/ErrorBoundary.tsx` | Error boundary | `ErrorBoundary` |
-| `frontend/components/theme-provider.tsx` | Theme | `ThemeProvider` |
 | `frontend/components/ui/` | UI primitives (shadcn) | `button`, `card`, `dialog`, `table`, ... |
 | `frontend/lib/api/client.ts` | HTTP client | `apiClient.get`, `getList`, `post`, `patch`, `put`, `delete` |
 | `frontend/lib/api.ts`, `frontend/lib/api/index.ts` | Re-export barrels | all `*Api` objects |
@@ -33,7 +32,6 @@ Cross-cutting infrastructure: app factory and router registration, settings, DB 
 | `frontend/lib/errors.ts` | Errors | `ApiError`, `getErrorMessage` |
 | `frontend/lib/pagination.ts` | Paging helpers | `DEFAULT_PAGE_SIZE`, `PAGE_SIZES`, `pageToOffset`, `buildPageQuery`, `hasMore` |
 | `frontend/lib/toast.ts`, `frontend/lib/utils.ts` | Toast helpers, class merge | `toastError`, `toastSuccess`, `toastInfo`; `cn` |
-| `frontend/hooks/use-toast.ts`, `frontend/hooks/use-mobile.ts` | Generic hooks | `useToast`, `toast`; `useIsMobile` |
 | `frontend/lib/types/shared.ts`, `frontend/lib/types/health.ts`, `frontend/lib/types/index.ts` | Types | `LoadingState`, `AsyncState`, `Paginated`, `HealthStatus` |
 | `backend/tests/test_health.py`, `backend/tests/test_smoke.py`, `backend/tests/test_db.py`, `backend/tests/test_ci_database.py` | Backend tests | |
 | `frontend/lib/api/client.test.ts`, `frontend/lib/errors.test.ts`, `frontend/lib/pagination.test.ts`, `frontend/components/ErrorBoundary.test.tsx`, `frontend/components/common/pagination-controls.test.tsx` | Frontend tests | |
@@ -48,8 +46,7 @@ Cross-cutting infrastructure: app factory and router registration, settings, DB 
 | Migration | `migration:ecabaf1d5dab` |
 | ExternalProvider | `extprov:Celery` |
 | Layout | `layout:/` |
-| Component | `comp:components/layout/app-wrapper`, `comp:components/layout/header`, `comp:components/layout/sidebar`, `comp:components/ErrorBoundary`, `comp:components/theme-provider`, `comp:components/common/pagination-controls`, `comp:components/ui/button` |
-| Hook | `hook:hooks/use-toast`, `hook:hooks/use-mobile` |
+| Component | `comp:components/layout/app-wrapper`, `comp:components/layout/header`, `comp:components/layout/sidebar`, `comp:components/ErrorBoundary`, `comp:components/common/pagination-controls`, `comp:components/ui/button` |
 | ApiModule | `apimod:lib/api/client`, `apimod:lib/api/health` |
 | LibUtil | `lib:lib/api`, `lib:lib/api/index`, `lib:lib/config`, `lib:lib/errors`, `lib:lib/pagination`, `lib:lib/toast`, `lib:lib/utils` |
 | TypeModule | `typemod:lib/types/shared`, `typemod:lib/types/health`, `typemod:lib/types/index` |

@@ -20,7 +20,7 @@ frontend/app/admin/page.tsx       (quick actions: jobsApi.start("METADATA_REFRES
      POST /api/jobs/start {job_type}                         RUN_SCANS
      -> start_job(data: JobHistoryCreate, current_user, db)  backend/app/api/jobs.py
         -> JobService.start_job(db, current_user, data.job_type)    backend/app/services/job.py
-           -> JobHistoryRepository.create(db, {job_type, status: PENDING, progress: 0, details: "Queued", user_id})
+           -> JobHistoryRepository.create(db, {job_type, status: PENDING, progress: 0, details: details or "Queued", user_id})
            -> JobService._select_task(job_type)
                 LIBRARY_SCAN      -> scan_full_task
                 INCREMENTAL_SCAN  -> scan_incremental_task
@@ -28,33 +28,34 @@ frontend/app/admin/page.tsx       (quick actions: jobsApi.start("METADATA_REFRES
                 ARTWORK_REFRESH         -> validate_artwork_task
                 DUPLICATE_DETECTION     -> detect_duplicates_task
                 INTEGRITY_VERIFICATION  -> verify_integrity_task
-           -> task.apply_async(args=[job.id])
+           -> task.apply_async(args=[job.id], kwargs=task_kwargs or {})
            -> JobHistoryRepository.update(db, job, {task_id, details: "Queued task <id>"})
+        -> AuditService.record(db, current_user, AuditAction.START_JOB, "JobHistory", job.id, ...)
      <- 201 JobHistoryRead
 ```
-`POST /api/scan/full` and `POST /api/scan/incremental` call the same `JobService.start_job` with `LIBRARY_SCAN` / `INCREMENTAL_SCAN` (see `docs/knowledge/flows/scan.md`). No job start writes an audit log except the two scan routes.
+`POST /api/scan/full` and `POST /api/scan/incremental` call the same `JobService.start_job` with `LIBRARY_SCAN` / `INCREMENTAL_SCAN` (see `docs/knowledge/flows/scan.md`). The scan routes record `RUN_FULL_SCAN` / `RUN_INCREMENTAL_SCAN`; `/api/jobs/start` records `START_JOB`. Jobs queued by the scheduler or by a scan (`_queue_enrichment`) are not audited.
 
 ## 2. Task execution (worker)
-Every real task follows the same pattern; there is no service method for status updates, tasks mutate the `JobHistory` row directly:
+Every job task is `@celery_app.task(**JOB_TASK_OPTIONS)` and delegates the lifecycle to `run_job` in `backend/app/tasks/job_runner.py`:
 ```
-<task>(self, job_history_id)
-  db = SessionLocal()
-  job = JobHistoryRepository().get(db, job_history_id)        "job not found" if None
-  job.status = RUNNING ; job.details = "... started" ; db.add(job) ; db.commit()
-  <business call>
-     scan_full_task         -> ScannerService().scan_full(db, job_id=job.id)
-     scan_incremental_task  -> ScannerService().scan_incremental(db, job_id=job.id)
-     validate_artwork_task  -> ArtworkService().validate_all_artwork(db)
-     refresh_metadata_task  -> MetadataService().refresh_all(db, job.id)
-     verify_integrity_task  -> ScannerService().verify_archives(db)      via _run_scanner_job
-     detect_duplicates_task -> len(ScannerService().find_duplicates(db))  via _run_scanner_job
-  stats["cancelled"] -> status CANCELED, else SUCCESS ; progress = 100 ; result/details ; completed_at
-  except Exception -> status FAILED, details/result = str(exc), completed_at ; re-raise (autoretry)
+<task>(self, job_history_id, **kwargs) -> run_job(self, job_history_id, label, work)
+  db = SessionLocal() ; job = JobHistoryRepository().get(db, id)         "job not found" if None
+  job.status = RUNNING ; details "<label> started" ; progress 0 ; retry_count = task.request.retries ; completed_at None ; commit
+  report(done, total) -> progress = int(done * 100 / total), committed when it changes
+  stats = work(db, report, job.id)
+     scan_full_task         -> ScannerService().scan_full(db, job_id, on_progress=report) + _queue_enrichment
+     scan_incremental_task  -> ScannerService().scan_incremental(db, job_id, on_progress=report) + _queue_enrichment
+     refresh_metadata_task  -> EnrichmentService().enrich(db, entry_ids, job_id, report)
+     validate_artwork_task  -> ArtworkService().validate_and_redownload_artwork(db)
+     verify_integrity_task  -> ScannerService().verify_archives(db)
+     detect_duplicates_task -> {"duplicate_groups": len(ScannerService().find_duplicates(db))}
+  stats["cancelled"] -> CANCELED, else SUCCESS ; progress 100 ; result/details = summarize(stats) ; completed_at
+  except Exception -> rollback ; FAILED ; details/result = str(exc) ; completed_at ; re-raise
   finally db.close()
 ```
-- Real tasks: `autoretry_for=(Exception,)`, `retry_backoff=True`, `retry_backoff_max=settings.JOB_RETRY_BACKOFF_MAX` (300), `max_retries=settings.JOB_MAX_RETRIES` (5).
-- `validate_artwork_task` has no cancellation check and always ends `SUCCESS` unless it raises.
-- `verify_integrity_task` and `detect_duplicates_task` share `_run_scanner_job` in `backend/app/tasks/scan_tasks.py`; neither checks for cancellation.
+- `JOB_TASK_OPTIONS`: `bind=True`, `autoretry_for=(Exception,)`, `retry_backoff=True`, `retry_backoff_max=settings.JOB_RETRY_BACKOFF_MAX` (300), `max_retries=settings.JOB_MAX_RETRIES` (5). A retry re-runs the same row (FAILED -> RUNNING) with a higher `retry_count`.
+- `validate_artwork_task`, `verify_integrity_task` and `detect_duplicates_task` have no cancellation check.
+- No stale-job recovery: a row left RUNNING by a killed worker stays RUNNING.
 
 ## 3. Cancel
 ```
@@ -67,21 +68,20 @@ frontend/app/admin/jobs/page.tsx -> jobsApi.cancel(jobId)
         -> JobHistoryRepository.update(db, job, {status: CANCELED, details: "Canceled", completed_at})
 Cooperative checks while running:
   ScannerService._job_cancelled(db, job_id)   (per library and per item)
-  MetadataService.refresh_all                 (per archive, queries JobHistory.status)
+  EnrichmentService._job_cancelled(db, job_id) (per entry)
 ```
 `JobService.is_cancelled` exists but nothing calls it.
 
 ## 4. Scheduled jobs (beat)
 ```
 03:00 UTC  scheduled_metadata_refresh_task()                  backend/app/tasks/metadata_tasks.py
-  -> query JobHistory for METADATA_REFRESH in (PENDING, RUNNING) -> return early if found
-  -> INSERT JobHistory(job_type=METADATA_REFRESH, status=PENDING, details="Scheduled metadata refresh")
-  -> refresh_metadata_task.delay(job.id) ; save task_id
+  -> JobService.active_job(db, METADATA_REFRESH) -> return early if PENDING/RUNNING
+  -> JobService.start_job(db, None, METADATA_REFRESH, details="Scheduled metadata refresh")
 04:00 UTC  scheduled_artwork_validation_task()                backend/app/tasks/artwork_tasks.py
-  -> INSERT JobHistory(job_type=ARTWORK_REFRESH, status=PENDING, details="Scheduled artwork validation")
-  -> validate_artwork_task.delay(job.id) ; save task_id       (no duplicate-run guard)
+  -> JobService.active_job(db, ARTWORK_REFRESH) -> return early if PENDING/RUNNING
+  -> JobService.start_job(db, None, ARTWORK_REFRESH, details="Scheduled artwork refresh")
 ```
-Scheduled jobs have `user_id = NULL`.
+Scheduled jobs have `user_id = NULL`. Beat runs as its own process (`celery -A app.tasks.celery_app beat`); both Compose stacks have a `beat` service.
 
 ## 5. List and monitor
 ```

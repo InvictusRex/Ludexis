@@ -1,12 +1,11 @@
 # Domain: Audit
 
-Append-only `audit_logs` rows written by routers through two parallel services, and read through the admin audit-log endpoint and several frontend history widgets.
+Append-only `audit_logs` rows written by routers through `AuditService`, and read through the admin audit-log endpoint and several frontend history widgets.
 
 ## Files
 | File | Role | Key symbols |
 |---|---|---|
-| `backend/app/services/audit.py` | Writer/reader (takes a `User`) | `AuditService.record`, `list_logs` |
-| `backend/app/services/audit_log.py` | Writer (takes a `user_id`) | `AuditLogService.log` |
+| `backend/app/services/audit.py` | Writer/reader | `AuditService.record` (takes a `User`), `AuditService.log` (takes a `user_id`), `list_logs` |
 | `backend/app/repositories/audit_log.py` | Repository | `AuditLogRepository.list_items` (+ `BaseRepository.create`) |
 | `backend/app/models/audit_log.py` | Model | `AuditLog` |
 | `backend/app/schemas/audit_log.py` | Schemas | `AuditLogRead`, `AuditLogBase` |
@@ -24,7 +23,7 @@ Append-only `audit_logs` rows written by routers through two parallel services, 
 ## Graph IDs
 | Type | ID |
 |---|---|
-| Service | `service:app.services.audit.AuditService`, `service:app.services.audit_log.AuditLogService` |
+| Service | `service:app.services.audit.AuditService` |
 | Repository | `repo:app.repositories.audit_log.AuditLogRepository` |
 | Model | `model:app.models.audit_log.AuditLog` |
 | Schema | `schema:app.schemas.audit_log.AuditLogRead` |
@@ -42,16 +41,17 @@ No router of its own. Read path: `GET /api/admin/audit-logs` (`read_audit_logs` 
 | Writer | Used by | `action` values |
 |---|---|---|
 | `AuditService.record(db, user, action, entity, ...)` | `archive_entries.py`, `collections.py`, `tags.py`, `developers.py`, `publishers.py`, `franchises.py` | plain strings: `create`, `update` (also used for collection add/remove entry), `delete`, `MANUAL_METADATA_OVERRIDE` |
-| `AuditLogService.log(db, action, entity, ...)` | `auth.py`, `users.py`, `roles.py`, `libraries.py`, `scan.py` | `AuditAction` constants (`LOGIN_SUCCESS`, `LOGIN_FAILURE`, `LOGOUT`, `TOKEN_REFRESH`, `CREATE_USER`, `UPDATE_USER`, `DELETE_USER`, `ASSIGN_ROLE`, `REMOVE_ROLE`, `CREATE_ROLE`, `UPDATE_ROLE`, `DELETE_ROLE`, `CREATE_LIBRARY`, `UPDATE_LIBRARY`, `DELETE_LIBRARY`, `RUN_FULL_SCAN`, `RUN_INCREMENTAL_SCAN`) |
+| `AuditService.record(db, user, action, entity, ...)` | `artwork.py`, `jobs.py`, `permissions.py`, `setup.py` | `UPLOAD_ARTWORK`, `REPLACE_ARTWORK`, `DELETE_ARTWORK`, `AUTO_DOWNLOAD_ARTWORK`, `START_JOB`, `CANCEL_JOB`, `CREATE_PERMISSION`, `INITIALIZE_SYSTEM` |
+| `AuditService.log(db, action, entity, ..., user_id)` | `auth.py`, `users.py`, `roles.py`, `libraries.py`, `scan.py` | `AuditAction` constants (`LOGIN_SUCCESS`, `LOGIN_FAILURE`, `LOGOUT`, `TOKEN_REFRESH`, `CREATE_USER`, `UPDATE_USER`, `DELETE_USER`, `ACTIVATE_USER`, `DEACTIVATE_USER`, `RESET_PASSWORD`, `ASSIGN_ROLE`, `REMOVE_ROLE`, `CREATE_ROLE`, `UPDATE_ROLE`, `DELETE_ROLE`, `CREATE_LIBRARY`, `UPDATE_LIBRARY`, `DELETE_LIBRARY`, `RUN_FULL_SCAN`, `RUN_INCREMENTAL_SCAN`) |
 
 ## Tables
 `audit_logs` (`user_id` FK to `users` with `ON DELETE SET NULL`).
 
 ## Change guide
-- Audit a new action: call `AuditLogService.log` with a new constant in `backend/app/utils/audit_actions.py` (preferred, typed) or `AuditService.record` with the current `User`.
+- Audit a new action: add a constant to `AuditAction` in `backend/app/utils/audit_actions.py` and call `AuditService.record` with the current `User` (or `AuditService.log` with a user id) from the router after the operation succeeds.
 - New filter on the log list: `AuditLogRepository.list_items`, `AuditService.list_logs`, `read_audit_logs` in `backend/app/api/admin.py`, then `AuditLogQuery` (`frontend/lib/types/admin.ts`) and `adminApi.getAuditLogs`.
 
 ## Notes
 - No update/delete endpoints exist for audit rows.
-- Not audited: artwork routes, metadata routes, `/permissions` writes, `jobs` start/cancel, user activate/deactivate/reset-password, `POST /api/setup/initialize`.
+- Not audited: metadata search/details routes (read-only), and jobs queued by the scheduler or by a scan (no user action).
 - `MetadataHistoryCard`, `MetadataAuditTrail` and `ArtworkVersionHistory` render on `frontend/app/archive/[id]/page.tsx` but call an endpoint that requires `VIEW_AUDIT_LOGS`, so users without it get 403 from those widgets.

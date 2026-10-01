@@ -48,7 +48,7 @@ frontend/app/admin/users/page.tsx -> usersApi.create(data)       frontend/lib/ap
      -> UserRepository.create(db, {...})                   first user forced active + superuser
      -> only if users already existed and data.role_ids:
         _load_roles(db, data.role_ids) -> RoleRepository.get per id (404 if missing); commit
-     -> AuditLogService.log(action=CREATE_USER) ; AuditLogService.log(action=ASSIGN_ROLE) per role
+     -> AuditService.log(action=CREATE_USER) ; AuditService.log(action=ASSIGN_ROLE) per role
   <- UserRead
 ```
 
@@ -59,12 +59,12 @@ usersApi.update(id, data)  PATCH /api/users/{user_id}   (MANAGE_USERS)
      -> _get_user_or_404 -> UserRepository.get_active(db, user_id)
      -> uniqueness checks via UserRepository.get_by_username / get_by_email
      -> data.role_ids is not None -> _load_roles ; diff old/new roles
-     -> commit ; AuditLogService.log(UPDATE_USER) + ASSIGN_ROLE / REMOVE_ROLE per changed role
+     -> commit ; AuditService.log(UPDATE_USER) + ASSIGN_ROLE / REMOVE_ROLE per changed role
 usersApi.activate / deactivate  POST /api/users/{user_id}/activate | /deactivate
   -> UserRepository.activate / deactivate   (400 when targeting yourself; no audit)
 usersApi.resetPassword  POST /api/users/{user_id}/reset-password  -> hash_password ; commit (no audit)
                               (body {password})
-usersApi.remove  DELETE /api/users/{user_id}  -> UserRepository.delete (soft, deleted_at) ; AuditLogService.log(DELETE_USER)
+usersApi.remove  DELETE /api/users/{user_id}  -> UserRepository.delete (soft, deleted_at) ; AuditService.log(DELETE_USER)
 ```
 
 ## 6. Roles and permissions
@@ -74,9 +74,9 @@ frontend/app/admin/permissions/page.tsx
   -> permissionsApi.getAll()  GET /api/permissions/      -> PermissionRepository.list_items(db)
   -> adminApi.getPermissionReport()  GET /api/admin/permission-report (ACCESS_ADMIN)
                               -> RoleRepository.list_items -> {role.name: [permission.name]}
-  -> rolesApi.create(data)    POST /api/roles/           -> RoleRepository.create ; _load_permissions ; AuditLogService.log(CREATE_ROLE)
-  -> rolesApi.remove(id)      DELETE /api/roles/{role_id} -> RoleRepository.delete (hard) ; AuditLogService.log(DELETE_ROLE)
-rolesApi.update(id, data)     PATCH /api/roles/{role_id}  -> set name/description/permissions ; AuditLogService.log(UPDATE_ROLE)
+  -> rolesApi.create(data)    POST /api/roles/           -> RoleRepository.create ; _load_permissions ; AuditService.log(CREATE_ROLE)
+  -> rolesApi.remove(id)      DELETE /api/roles/{role_id} -> RoleRepository.delete (hard) ; AuditService.log(DELETE_ROLE)
+rolesApi.update(id, data)     PATCH /api/roles/{role_id}  -> set name/description/permissions ; AuditService.log(UPDATE_ROLE)
                               (no frontend caller)
 permissionsApi.create         POST /api/permissions/     -> PermissionRepository.get_by_name (400 if exists) ; PermissionRepository.create
                               (no frontend caller; no audit)
@@ -88,4 +88,4 @@ All `/api/users/*` (except `POST /api/users/`), `/api/roles/*`, `/api/permission
 - `EffectivePermissionsPanel` (`frontend/components/common/effective-permissions-panel.tsx`) calls `adminApi.getPermissionReport`, which needs `ACCESS_ADMIN`; it renders on `frontend/app/account/page.tsx` for every user.
 
 ## Entities
-`module:app.core.auth`, `router:app.api.users`, `router:app.api.roles`, `router:app.api.permissions`, `router:app.api.admin`, `repo:app.repositories.user.UserRepository`, `repo:app.repositories.role.RoleRepository`, `repo:app.repositories.permission.PermissionRepository`, `service:app.services.audit_log.AuditLogService`, `table:users`, `table:roles`, `table:permissions`, `table:user_roles`, `table:role_permissions`, `page:/admin/users`, `page:/admin/permissions`, `apimod:lib/api/users`, `apimod:lib/api/roles`, `apimod:lib/api/permissions`.
+`module:app.core.auth`, `router:app.api.users`, `router:app.api.roles`, `router:app.api.permissions`, `router:app.api.admin`, `repo:app.repositories.user.UserRepository`, `repo:app.repositories.role.RoleRepository`, `repo:app.repositories.permission.PermissionRepository`, `service:app.services.audit.AuditService`, `table:users`, `table:roles`, `table:permissions`, `table:user_roles`, `table:role_permissions`, `page:/admin/users`, `page:/admin/permissions`, `apimod:lib/api/users`, `apimod:lib/api/roles`, `apimod:lib/api/permissions`.

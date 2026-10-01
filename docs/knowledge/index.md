@@ -130,24 +130,24 @@ Load only the file you need.
 
 ## Graph Statistics
 
-Verified at commit `633a512` on 2026-10-06; records touched by the bug fixes are verified at `6a79f12`. Regenerate with `validate.py --stats-json`.
+Verified at commit `e197525` on 2026-10-01. Regenerate with `validate.py --stats-json`.
 
 | | Count |
 |-|-------|
-| Entities | 729 |
-| Relationships | 3,443 |
+| Entities | 718 |
+| Relationships | 3,416 |
 
 | Entity type | Count | Entity type | Count |
 |-------------|-------|-------------|-------|
-| APIRoute | 90 | Component | 89 |
-| Schema | 67 | ApiFunction | 88 |
-| DBTable | 27 | TestFile | 64 (20 backend, 44 frontend) |
-| Router | 21 | Type | 58 |
-| Service | 20 | Page | 32 |
+| APIRoute | 91 | Component | 53 |
+| Schema | 68 | ApiFunction | 101 |
+| DBTable | 27 | TestFile | 69 (23 backend, 46 frontend) |
+| Router | 21 | Type | 68 |
+| Service | 19 | Page | 32 |
 | Domain | 19 | ApiModule | 21 |
 | Model | 18 | TypeModule | 20 |
 | Module | 18 | LibUtil | 11 |
-| Repository | 16 | Hook | 5 |
+| Repository | 16 | Hook | 1 |
 | Layer | 16 | Context | 1 |
 | DBEnum | 7 | Layout | 1 |
 | Task | 8 | Class | 1 |
@@ -156,23 +156,23 @@ Verified at commit `633a512` on 2026-10-06; records touched by the bug fixes are
 
 | Relationship type | Count | Relationship type | Count |
 |-------------------|-------|-------------------|-------|
-| BELONGS_TO | 1252 | DEPENDS_ON | 35 |
-| IMPORTS | 439 | ACCEPTS | 27 |
-| RENDERS | 285 | ACCESSES | 27 |
-| TESTS | 166 | CREATES | 27 |
-| CONTAINS | 146 | MAPS_TO | 25 |
-| CALLS | 127 | USES_CLIENT | 19 |
-| CALLS_API | 129 | DEFINES | 18 |
-| FLOWS_TO | 107 | MANY_TO_MANY | 15 |
-| CALLS_ENDPOINT | 93 | ASSOCIATED_THROUGH | 13 |
-| EXPOSES | 90 | MANY_TO_ONE | 12 |
-| RETURNS | 68 | ONE_TO_MANY | 11 |
-| READS | 64 | USES_PROVIDER | 10 |
-| WRITES | 49 | CONSUMES | 12 |
+| BELONGS_TO | 1220 | DEPENDS_ON | 34 |
+| IMPORTS | 406 | ACCEPTS | 27 |
+| RENDERS | 280 | ACCESSES | 27 |
+| TESTS | 173 | CREATES | 27 |
+| CONTAINS | 159 | MAPS_TO | 25 |
+| CALLS | 129 | USES_CLIENT | 19 |
+| CALLS_API | 129 | DEFINES | 28 |
+| FLOWS_TO | 106 | MANY_TO_MANY | 15 |
+| CALLS_ENDPOINT | 106 | ASSOCIATED_THROUGH | 13 |
+| EXPOSES | 91 | MANY_TO_ONE | 12 |
+| RETURNS | 69 | ONE_TO_MANY | 11 |
+| READS | 63 | USES_PROVIDER | 10 |
+| WRITES | 48 | CONSUMES | 12 |
 | EXTENDS | 45 | NESTS | 9 |
-| MIRRORS | 40 | DISPATCHES | 8 |
+| MIRRORS | 40 | DISPATCHES | 10 |
 | USES_CONTEXT | 35 | USES_ENUM | 5 |
-| USES_HOOK | 32 | PROVIDES | 3 |
+| USES_HOOK | 30 | PROVIDES | 3 |
 
 ---
 

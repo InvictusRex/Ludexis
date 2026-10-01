@@ -5,10 +5,10 @@ Status, coverage, known gaps, and findings. Update at the end of every change to
 | | |
 |-|-|
 | Graph version | v2 (schema in `_schema.md`) |
-| Verified at commit | `633a512` (records touched by the 2026-10-06 bug fixes: `6a79f12`) |
-| Last verified | 2026-10-06 |
+| Verified at commit | `e197525` |
+| Last verified | 2026-10-01 |
 | Validator | `python docs/knowledge/queries/validate.py`, must exit 0 |
-| Size | 729 entities, 3,443 relationships |
+| Size | 718 entities, 3,416 relationships |
 
 ---
 
@@ -54,28 +54,25 @@ These surfaced while the graph was built. They are recorded here, not fixed (ADR
 
 | Finding | Where |
 |---------|-------|
-| Scanner-created entries are never `MATCHED` and `auto_match_archive` is only called from tests, so the scheduled metadata refresh only touches entries whose status and source were set through the archive-entries API. | `backend/app/services/metadata.py`, `backend/app/services/scanner.py` |
-| Every nested directory under a library becomes its own `folder` entry (`_discover_items` uses `rglob("*")`), so a game folder with a `bin/` subfolder yields two folder entries. | `backend/app/services/scanner.py` |
-| Media URLs carry the access token as `?access_token=`, so it is written to server access logs (uvicorn logs query strings). | `frontend/lib/media.ts`, `backend/main.py` |
+| A job left RUNNING by a killed worker stays RUNNING; there is no stale-job recovery. | `backend/app/tasks/job_runner.py` |
+| `POST /api/artwork/auto-download` runs provider lookups and downloads for every active entry inside the HTTP request. | `backend/app/api/artwork.py` |
 | Artwork `upload` and `replace` use a raw multipart `fetch` instead of `apiClient`, so they do not refresh an expired token on 401 and throw a plain `Error` instead of `ApiError`. | `frontend/lib/api/artwork.ts` |
 
 ### Integration gaps
 
-- 14 of 87 `/api` routes have no frontend caller: `POST /auth/token` (OAuth2 form login for tooling), `POST /archive-entries/`, and create/update/delete for tags, developers, publishers, and franchises.
+- `/api` routes with no frontend caller: `POST /auth/token` (OAuth2 form login for tooling) and `POST /archive-entries/` (entries are created by scans).
 - The frontend `ArchiveEntry` type omits the backend's nested `tags`, `developers`, `publishers`, `collections` and uses only the `*_ids` fields.
 
 ### Dead code and duplication
 
-- Never rendered: `components/common/archive-edit-dialog.tsx` (only its test uses it), `components/theme-provider.tsx`, and 32 unused shadcn primitives under `components/ui/`. `ErrorBoundary` is imported in `app/layout.tsx` but not used in JSX.
-- `components/ui/use-toast.ts` and `components/ui/use-mobile.tsx` are byte-identical copies of the files in `hooks/` (modeled as `Hook` with `duplicate_of`).
-- Two parallel audit services exist: `AuditService` (`services/audit.py`, `record`/`list_logs`) and `AuditLogService` (`services/audit_log.py`, `log`). Routers use one or the other.
 - Unused backend schemas: `ArtworkValidationResult`, `TokenPayload`, `JobStartRequest`.
 - The `franchise_entries` table is created by the migration and imported in `models/archive_entry.py`, but no ORM relationship uses it.
 - `PermissionName` and `RoleName` enums are not used by any column (permission and role names are stored as strings).
 
 ### Stubs
 
-- `GOGProvider` and `ManualProvider` return empty results; only IGDB and Steam provide metadata.
+- `GOGProvider` and `ManualProvider` return empty results; only IGDB and Steam provide metadata. GOG integration is not planned.
+- `archive_entries.storage_device` is never written.
 
 ### Repository hygiene
 
@@ -104,5 +101,6 @@ These surfaced while the graph was built. They are recorded here, not fixed (ADR
 | Date | Change |
 |------|--------|
 | 2026-09-07 | v1: backend-only graph (332 entities, 861 relationships) |
-| 2026-10-06 | v2: audit against code. Fixed wrong and missing backend edges (task consumers, route-to-service calls, provider dependency), merged duplicate association tables, corrected domain membership, added route `full_path`, request/response schema edges, core/utils modules, migration. Added the full frontend graph (pages, components, hooks, context, API client mapped to backend routes, types mirrored to schemas, tests). Rewrote domain and flow docs from code (removed non-existent method names and wrong storage and hashing claims). Added `validate.py` and `kg.py`. Removed em dashes and mojibake. |
-| 2026-10-06 | Bug fixes `3910274`..`6a79f12`: password reset field, folder hashing in scans, real tasks for `METADATA_REFRESH`/`DUPLICATE_DETECTION`/`INTEGRITY_VERIFICATION` (`run_job` removed; `verify_integrity_task`, `detect_duplicates_task` added), partial `PATCH` for archive entries, `/media` token via query parameter, setup page wired to `setupApi`. Graph and docs patched. |
+| 2026-09-12 | v2: audit against code. Fixed wrong and missing backend edges (task consumers, route-to-service calls, provider dependency), merged duplicate association tables, corrected domain membership, added route `full_path`, request/response schema edges, core/utils modules, migration. Added the full frontend graph (pages, components, hooks, context, API client mapped to backend routes, types mirrored to schemas, tests). Rewrote domain and flow docs from code (removed non-existent method names and wrong storage and hashing claims). Added `validate.py` and `kg.py`. Removed em dashes and mojibake. |
+| 2026-09-27 | Bug fixes `741aaac`..`8220f90`: password reset field, folder hashing in scans, real tasks for `METADATA_REFRESH`/`DUPLICATE_DETECTION`/`INTEGRITY_VERIFICATION` (`run_job` removed; `verify_integrity_task`, `detect_duplicates_task` added), partial `PATCH` for archive entries, `/media` token via query parameter, setup page wired to `setupApi`. Graph and docs patched. |
+| 2026-10-01 | Pipeline and release work: one entry per game folder, per-file scan errors, changed-file updates, move/copy handling, real progress and `retry_count` through the shared `run_job` (`backend/app/tasks/job_runner.py`); scans queue an enrichment job (`EnrichmentService`) that auto-matches across IGDB and Steam (`title_similarity`, 0.85/0.70) and fills missing artwork; nightly refresh covers never-attempted entries; artwork job repairs instead of touching `verification_status`; scoped media tokens replace access tokens in `/media` URLs; `AuditLogService` and `MatchingService` removed and audit gaps filled; taxonomy CRUD UI (`TaxonomyFormDialog`); unused UI primitives and hooks removed; Celery beat in both Compose stacks. Fixed findings removed from this file. Graph and docs patched. |

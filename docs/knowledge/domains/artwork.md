@@ -1,12 +1,12 @@
 # Domain: Artwork
 
-Cover, banner, logo and screenshot files for archive entries: multipart upload/replace/delete, missing-artwork listing, synchronous auto-download from provider URLs, and scheduled validation. Files live under `settings.ARTWORK_STORAGE_PATH` (via `StorageService`) and are served by `GET /media/{path:path}`.
+Cover, banner, logo and screenshot files for archive entries: multipart upload/replace/delete, missing-artwork listing, synchronous auto-download from provider URLs, filling missing artwork after metadata matches, and scheduled validation with repair. Files live under `settings.ARTWORK_STORAGE_PATH` (via `StorageService`) and are served by `GET /media/{path:path}`.
 
 ## Files
 | File | Role | Key symbols |
 |---|---|---|
 | `backend/app/api/artwork.py` | Router `/artwork` | `upload_artwork`, `replace_artwork`, `delete_artwork`, `list_missing_artwork`, `auto_download_missing_artwork` |
-| `backend/app/services/artwork.py` | Service | `ArtworkService.upload_artwork`, `replace_artwork`, `delete_artwork`, `list_missing_artwork`, `auto_download_missing_artwork`, `auto_download_cover`, `auto_download_banner`, `auto_download_logo`, `auto_download_screenshots`, `validate_all_artwork`, `validate_and_redownload_artwork`, `find_duplicate_artwork`, `deduplicate_artwork`, `garbage_collect_artwork`, `_read_file`, `_download_artwork_url`, `_select_best_url`, `_score_artwork_candidate`, `_score_image`, `_file_sha256`, `_canonical_artwork_path`, `_download_screenshots` |
+| `backend/app/services/artwork.py` | Service | `ArtworkService.upload_artwork`, `replace_artwork`, `delete_artwork`, `list_missing_artwork`, `auto_download_missing_artwork`, `auto_download_cover`, `auto_download_banner`, `auto_download_logo`, `auto_download_screenshots`, `fill_missing_artwork`, `_entry_details`, `validate_all_artwork`, `validate_and_redownload_artwork`, `find_duplicate_artwork`, `deduplicate_artwork`, `garbage_collect_artwork`, `_read_file`, `_download_artwork_url`, `_select_best_url`, `_score_artwork_candidate`, `_score_image`, `_file_sha256`, `_canonical_artwork_path`, `_download_screenshots` |
 | `backend/app/utils/artwork.py` | Helpers | `ArtworkType`, `build_artwork_relative_path`, `is_allowed_artwork_mime_type` |
 | `backend/app/services/storage.py` | File I/O (storage domain) | `StorageService.save`, `delete`, `exists`, `absolute_path` |
 | `backend/app/repositories/screenshot.py` | Repository | `ScreenshotRepository.get`, `list_by_entry` |
@@ -59,7 +59,7 @@ Cover, banner, logo and screenshot files for archive entries: multipart upload/r
 Related: `GET /api/archive-entries/{archive_entry_id}/screenshots` (archive router) lists screenshots; `GET /media/{path:path}` (storage) serves the files.
 
 ## Tables
-`archive_entries` (`cover_path`, `banner_path`, `logo_path`, and `verification_status` written by validation), `screenshots`, `job_history` (validation job).
+`archive_entries` (`cover_path`, `banner_path`, `logo_path`), `screenshots`, `job_history` (ARTWORK_REFRESH job), `audit_logs` (artwork routes).
 
 ## Storage paths (relative to `ARTWORK_STORAGE_PATH`)
 | Origin | Path |
@@ -76,11 +76,11 @@ Related: `GET /api/archive-entries/{archive_entry_id}/screenshots` (archive rout
 - Move auto-download off the request thread: wrap `ArtworkService.auto_download_missing_artwork` in a task in `backend/app/tasks/artwork_tasks.py` and dispatch it from the route.
 
 ## Notes
-- `POST /api/artwork/auto-download` runs synchronously inside the HTTP request; for every active entry it may call providers (`MetadataService.get_merged_details`) and download images.
+- `POST /api/artwork/auto-download` runs synchronously inside the HTTP request; for every active entry it may call providers (`MetadataService.get_merged_details`) and download images. Enrichment and the ARTWORK_REFRESH job use `fill_missing_artwork` instead, in the worker.
 - Uploads are validated for non-empty content, MIME type in `ALLOWED_ARTWORK_MIME_TYPES`, and size <= `MAX_ARTWORK_SIZE_MB` (10). `ValueError` maps to 400 (upload/replace) or 404 (delete).
 - `DELETE /api/artwork/{artwork_id}`: with `artwork_type` cover/banner/logo, `artwork_id` is the archive entry id; without it (or with `screenshot`) it is a screenshot id.
-- Dedup uses exact SHA-256 file hashes (`_file_sha256`), not perceptual hashing. `find_duplicate_artwork`, `deduplicate_artwork`, `garbage_collect_artwork` and `validate_and_redownload_artwork` have no route or task callers.
+- Dedup uses exact SHA-256 file hashes (`_file_sha256`), not perceptual hashing. `find_duplicate_artwork`, `deduplicate_artwork` and `garbage_collect_artwork` have no route or task callers.
 - `garbage_collect_artwork` only scans `covers/`, `banners/`, `logos/`; uploaded files under `{entry_id}/...` are never collected.
-- `validate_all_artwork` (daily 04:00 UTC via `scheduled_artwork_validation_task`, or `JobType.ARTWORK_REFRESH`) opens cover/banner/logo with Pillow and sets the entry's `verification_status` to `MISSING` if any is missing or corrupt, otherwise `VERIFIED`; screenshots are not checked.
-- No artwork route writes audit logs, so `ArtworkVersionHistory` (which reads `GET /api/admin/audit-logs` for `entity="ArchiveEntry"`) shows archive edits, not artwork changes.
+- `validate_and_redownload_artwork` (daily 04:00 UTC via `scheduled_artwork_validation_task`, or `JobType.ARTWORK_REFRESH`) runs `validate_all_artwork` (Pillow check of cover/banner/logo; returns per-entry `missing_types`, `corrupt_types`, `complete`) and repairs broken assets for provider-matched entries. It never writes `verification_status`, which belongs to the archive file.
+- Upload, replace and delete record `UPLOAD_ARTWORK`, `REPLACE_ARTWORK`, `DELETE_ARTWORK` audit entries with `entity="ArchiveEntry"`, so `ArtworkVersionHistory` shows them; auto-download records `AUTO_DOWNLOAD_ARTWORK` with `entity="Artwork"`.
 - `artworkApi.upload`/`replace` bypass `apiClient` (multipart), so they get no 401 refresh retry and throw plain `Error` instead of `ApiError`.

@@ -24,7 +24,7 @@ Local filesystem storage for artwork, rooted at `settings.ARTWORK_STORAGE_PATH` 
 ## API Endpoints
 | Method | Full path | Handler | Permission | Frontend caller |
 |---|---|---|---|---|
-| GET | `/media/{path:path}` | `read_media` (`backend/main.py`) | authenticated (Bearer or `?access_token=`) | `<img>` URLs from `mediaUrl()` |
+| GET | `/media/{path:path}` | `read_media` (`backend/main.py`) | authenticated (Bearer or `?media_token=`) | `<img>` URLs from `mediaUrl()` |
 
 ## Tables
 None. Paths stored in `archive_entries.cover_path`/`banner_path`/`logo_path` and `screenshots.file_path` are relative to `ARTWORK_STORAGE_PATH`.
@@ -36,5 +36,5 @@ None. Paths stored in `archive_entries.cover_path`/`banner_path`/`logo_path` and
 ## Notes
 - `StorageService.__init__` creates `base_dir` if missing; `backend/main.py` also creates it at import time.
 - `read_media` resolves the requested path and returns 404 if it escapes `media_dir` or is not a file (path traversal guard).
-- `/media/{path:path}` requires an active user via `get_media_user` (`backend/main.py`): a Bearer header, or the access token as `?access_token=` because `<img>` cannot send headers. `mediaUrl()` in `frontend/lib/media.ts` appends the current token from `lib/auth/token-store`. The token therefore appears in access logs; rendered URLs stop working once the 15 min token expires until the component re-renders.
+- `/media/{path:path}` requires an active user via `get_media_user` (`backend/main.py`): a Bearer header, or a media token as `?media_token=` because `<img>` cannot send headers. Media tokens come from `GET /api/auth/media-token` (`create_media_token`, type "media", `MEDIA_TOKEN_EXPIRE_MINUTES` = 60) and are rejected by every API route; access tokens are rejected in URLs. `mediaUrl()` in `frontend/lib/media.ts` appends the token stored by `AuthContext.renewMediaToken` (renewed within 5 minutes of expiry).
 - `/media` is mounted outside `settings.API_PREFIX`, so the full URL has no `/api` prefix.

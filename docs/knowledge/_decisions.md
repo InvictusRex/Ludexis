@@ -30,7 +30,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: Renaming a file, class, or route changes its ID; that is intentional and caught by the validator. The v1 documentation described `class:` and `route:GET /api/...` prefixes that were never used in the data; v2 documents what is actually stored.
 
-**Status**: Accepted (revised 2026-10-06)
+**Status**: Accepted (revised 2026-09-12)
 
 ---
 
@@ -62,7 +62,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 - API routes take the domain of their router (`health` and `main.py` routes belong to `core`, except `/media` which belongs to `storage`).
 - UI primitives (`components/ui/*`) and generic libraries belong to `core`.
 
-**Status**: Accepted (revised 2026-10-06)
+**Status**: Accepted (revised 2026-09-12)
 
 ---
 
@@ -90,7 +90,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: Cross-file references are resolved by `queries/kg.py` and checked by `queries/validate.py`.
 
-**Status**: Accepted (revised 2026-10-06: v1 promised per-type index files that never existed)
+**Status**: Accepted (revised 2026-09-12: v1 promised per-type index files that never existed)
 
 ---
 
@@ -118,7 +118,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: `ApiFunction` is the bridge between stacks: `Page/Component -CALLS_API-> ApiFunction -CALLS_ENDPOINT-> APIRoute -CALLS-> Service`. `Type -MIRRORS-> Schema` records where frontend types track backend schemas, including field mismatches.
 
-**Status**: Accepted (implemented 2026-10-06)
+**Status**: Accepted (implemented 2026-09-12)
 
 ---
 
@@ -132,7 +132,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: `CONSUMES` edges must reflect what the task body actually instantiates (v1 had four incorrect edges to `JobService`; the tasks use `JobHistoryRepository` directly).
 
-**Status**: Accepted (revised 2026-10-06)
+**Status**: Accepted (revised 2026-09-12)
 
 ---
 
@@ -174,7 +174,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: The validator checks `test_count` against the source.
 
-**Status**: Accepted (revised 2026-10-06; supersedes the v1 per-case plan, which was never implemented)
+**Status**: Accepted (revised 2026-09-12; supersedes the v1 per-case plan, which was never implemented)
 
 ---
 
@@ -188,7 +188,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: "Who reads setting X" is answered with grep, not the graph.
 
-**Status**: Accepted (2026-10-06)
+**Status**: Accepted (2026-09-12)
 
 ---
 
@@ -202,7 +202,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: Adding a migration requires adding a `Migration` entity; the validator reports revisions missing from the graph.
 
-**Status**: Accepted (implemented 2026-10-06)
+**Status**: Accepted (implemented 2026-09-12)
 
 ---
 
@@ -216,7 +216,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: Deleted code means deleted records; there is no soft delete inside the graph. The validator warns when the newest commit touching `backend/` or `frontend/` differs from the recorded `commit_hash`.
 
-**Status**: Accepted (2026-10-06)
+**Status**: Accepted (2026-09-12)
 
 ---
 
@@ -230,7 +230,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: No third-party dependencies, so the scripts run anywhere Python 3.12+ runs.
 
-**Status**: Accepted (implemented 2026-10-06)
+**Status**: Accepted (implemented 2026-09-12)
 
 ---
 
@@ -258,7 +258,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: Models link to them with `ASSOCIATED_THROUGH`.
 
-**Status**: Accepted (2026-10-06)
+**Status**: Accepted (2026-09-12)
 
 ---
 
@@ -272,7 +272,7 @@ Statuses: `Accepted`, `Superseded by ADR-NNN`, `Proposed`.
 
 **Consequences**: `validate.py` reports any em dash, en dash, or mojibake as an error.
 
-**Status**: Accepted (2026-10-06)
+**Status**: Accepted (2026-09-12)
 
 ---
 

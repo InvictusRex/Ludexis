@@ -7,7 +7,8 @@ Background job records (`job_history`) and their Celery tasks: start, cancel, li
 |---|---|---|
 | `backend/app/api/jobs.py` | Router `/jobs` | `start_job`, `cancel_job`, `list_jobs`, `read_job` |
 | `backend/app/api/job_monitor.py` | Router `/job-monitor` | `list_workers`, `queue_stats` |
-| `backend/app/services/job.py` | Service | `JobService.list_jobs`, `get_job`, `start_job`, `_select_task`, `cancel_job`, `is_cancelled` |
+| `backend/app/services/job.py` | Service | `JobService.list_jobs`, `get_job`, `start_job`, `active_job`, `_select_task`, `cancel_job`, `is_cancelled` |
+| `backend/app/tasks/job_runner.py` | Shared task lifecycle | `run_job`, `summarize`, `JOB_TASK_OPTIONS` |
 | `backend/app/services/job_monitor.py` | Service (Celery inspect) | `JobMonitorService.workers`, `active`, `reserved`, `stats` |
 | `backend/app/repositories/job_history.py` | Repository | `JobHistoryRepository.list_items`, `count_by_status`, `list_by_status`, `get_by_task_id` |
 | `backend/app/models/job_history.py` | Model | `JobHistory` |
@@ -57,10 +58,10 @@ Background job records (`job_history`) and their Celery tasks: start, cancel, li
 | GET | `/api/job-monitor/stats` | `queue_stats` (`backend/app/api/job_monitor.py`) | ACCESS_ADMIN | `apifn:lib/api/job-monitor.jobMonitorApi.getStats` |
 
 ## Tables
-`job_history` (insert by `JobService.start_job` and the scheduled tasks; status/progress/result written by tasks directly on the ORM object).
+`job_history` (insert by `JobService.start_job`; status, progress, retry_count and result written by `run_job`), `audit_logs` (`START_JOB`, `CANCEL_JOB`).
 
 ## Change guide
-- Make a job type run real work: add a Celery task (pattern: `backend/app/tasks/scan_tasks.py`), import it in `backend/app/services/job.py` and add it to the `JobService._select_task` mapping; make sure `backend/app/tasks/celery_app.py` imports the task module.
+- Make a job type run real work: add a Celery task decorated with `@celery_app.task(**JOB_TASK_OPTIONS)` that returns `run_job(self, job_history_id, label, work)` (pattern: `backend/app/tasks/scan_tasks.py`), import it in `backend/app/services/job.py` and add it to the `JobService._select_task` mapping; make sure `backend/app/tasks/celery_app.py` imports the task module.
 - New job type: add to `JobType` in `backend/app/utils/enums.py`, a migration altering the `job_type` PostgreSQL enum in `backend/alembic/versions/`, `JobType` in `frontend/lib/types/jobs.ts`, and `JOB_TYPES` in `frontend/app/admin/jobs/page.tsx`.
 - New `JobHistory` field: `backend/app/models/job_history.py`, `JobHistoryBase` in `backend/app/schemas/job_history.py`, migration, `JobHistory` in `frontend/lib/types/jobs.ts`.
 - New monitor metric: `JobMonitorService` (`backend/app/services/job_monitor.py`), route in `backend/app/api/job_monitor.py`, `jobMonitorApi` + `JobMonitorStats`.
@@ -68,8 +69,10 @@ Background job records (`job_history`) and their Celery tasks: start, cancel, li
 ## Notes
 - `JobService._select_task`: `LIBRARY_SCAN` -> `scan_full_task`, `INCREMENTAL_SCAN` -> `scan_incremental_task`, `METADATA_REFRESH` -> `refresh_metadata_task`, `ARTWORK_REFRESH` -> `validate_artwork_task`, `DUPLICATE_DETECTION` -> `detect_duplicates_task`, `INTEGRITY_VERIFICATION` -> `verify_integrity_task` (a dict lookup; an unmapped type raises `KeyError`).
 - `JobService.cancel_job` revokes the Celery task (`terminate=True`) and sets `CANCELED`; jobs not `PENDING`/`RUNNING` are returned unchanged. Scans and metadata refresh also poll the row for `CANCELED` between items.
-- `JobService.is_cancelled`, `JobHistoryRepository.list_by_status` and `get_by_task_id` have no callers; `job_history.retry_count` is never written.
-- Real tasks use `autoretry_for=(Exception,)`, `retry_backoff=True`, `max_retries=JOB_MAX_RETRIES` (5), `retry_backoff_max=JOB_RETRY_BACKOFF_MAX` (300 s).
+- `JobService.is_cancelled`, `JobHistoryRepository.list_by_status` and `get_by_task_id` have no callers.
+- `JOB_TASK_OPTIONS`: `autoretry_for=(Exception,)`, `retry_backoff=True`, `max_retries=JOB_MAX_RETRIES` (5), `retry_backoff_max=JOB_RETRY_BACKOFF_MAX` (300 s). `run_job` stores `task.request.retries` in `retry_count`, which `frontend/app/admin/jobs/page.tsx` shows as "retry N".
+- `start_job(db, user, job_type, details=None, task_kwargs=None)` passes `task_kwargs` to the task (`entry_ids` for enrichment). `active_job` returns a PENDING/RUNNING job of a type; the scheduled tasks use it to avoid overlapping runs.
+- No stale-job recovery: a job left RUNNING by a killed worker stays RUNNING.
 - `GET /api/jobs/` is ordered by `started_at` desc and accepts `job_type`, `status`, `offset`, `limit`.
 - `frontend/app/admin/jobs/page.tsx` polls every 5 s while any job is active; `LiveOperationalDashboard` polls every 10 s.
 - `/api/job-monitor/*` return raw dicts (no `response_model`).

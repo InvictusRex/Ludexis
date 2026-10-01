@@ -18,7 +18,7 @@ A type, prefix, or relationship not listed here is invalid (ADR-001).
 {"id": "service:app.services.metadata.MetadataService", "type": "Service",
  "name": "MetadataService", "source_file": "backend/app/services/metadata.py",
  "source_line_start": 27, "source_line_end": 469,
- "discovered_at": "2026-09-07T12:00:00Z", "last_verified_at": "2026-10-06T00:00:00Z",
+ "discovered_at": "2026-09-07T12:00:00Z", "last_verified_at": "2026-09-12T00:00:00Z",
  "commit_hash": "633a512", "properties": {"public_methods": ["..."]}}
 ```
 

@@ -14,13 +14,13 @@ frontend/app/auth/login/page.tsx  (form submit)
                  -> UserRepository.get_by_username(db, username)    (filters deleted_at IS NULL)
                  -> verify_password(password, user.hashed_password) backend/app/core/security.py (bcrypt)
                  -> auth_login_success_total / auth_login_failure_total .inc()
-              -> fail: AuditLogService.log(db, action=LOGIN_FAILURE, entity="User") ; 401
+              -> fail: AuditService.log(db, action=LOGIN_FAILURE, entity="User") ; 401
               -> inactive: 400 "Inactive user"
               -> AuthService.create_tokens(db, user)
                  -> create_access_token(subject=user.id)      15 min, type="access"
                  -> create_refresh_token(subject=user.id)     30 days, type="refresh"
                  -> RefreshTokenRepository.create(db, {token, user_id, expires_at})   INSERT refresh_tokens
-              -> AuditLogService.log(db, action=LOGIN_SUCCESS, entity="User", user_id=...)
+              -> AuditService.log(db, action=LOGIN_SUCCESS, entity="User", user_id=...)
            <- Token {access_token, refresh_token, token_type: "bearer"}
      -> setTokens(access, refresh)                            frontend/lib/auth/token-store.ts (localStorage)
      -> getTokenExpiry(token) for both                         frontend/lib/auth/token-expiry.ts
@@ -71,7 +71,7 @@ fetchWithAuth sees 401 (auth !== false, not yet retried)
               -> UserRepository.get(db, subject)
               -> token_record.revoked = True; commit             (rotation)
               -> AuthService.create_tokens(db, user)             new pair, INSERT refresh_tokens
-           -> RefreshTokenRepository.get_by_token(...) -> AuditLogService.log(action=TOKEN_REFRESH)
+           -> RefreshTokenRepository.get_by_token(...) -> AuditService.log(action=TOKEN_REFRESH)
         <- Token
      -> ok: setTokens(new access, new refresh) ; retry original request once
      -> fail: clearTokens() -> onTokensCleared listeners -> AuthProvider sets user=null
@@ -84,7 +84,7 @@ frontend/components/layout/header.tsx -> useAuth().logout()
      -> logout(data: LogoutRequest, db)                         backend/app/api/auth.py
         -> RefreshTokenRepository.get_by_token(db, token)
         -> AuthService.logout(db, token)   sets revoked=True
-        -> AuditLogService.log(action=LOGOUT) only if the token existed and was not already revoked
+        -> AuditService.log(action=LOGOUT) only if the token existed and was not already revoked
      <- 204
   -> clearTokens(); user=null   (errors from the request are ignored)
 ```
@@ -102,4 +102,4 @@ POST /api/setup/initialize (UserCreate)
 The frontend setup page (`frontend/app/auth/setup/page.tsx`) does not call these endpoints; `setupApi` is unused.
 
 ## Entities
-`router:app.api.auth`, `router:app.api.setup`, `service:app.services.auth.AuthService`, `service:app.services.audit_log.AuditLogService`, `repo:app.repositories.user.UserRepository`, `repo:app.repositories.refresh_token.RefreshTokenRepository`, `module:app.core.security`, `module:app.core.auth`, `table:users`, `table:refresh_tokens`, `table:audit_logs`, `ctx:contexts/auth-context`, `hook:hooks/use-protected-route`, `apimod:lib/api/auth`, `apimod:lib/api/client`, `lib:lib/auth/token-store`, `lib:lib/auth/token-expiry`, `page:/auth/login`.
+`router:app.api.auth`, `router:app.api.setup`, `service:app.services.auth.AuthService`, `service:app.services.audit.AuditService`, `repo:app.repositories.user.UserRepository`, `repo:app.repositories.refresh_token.RefreshTokenRepository`, `module:app.core.security`, `module:app.core.auth`, `table:users`, `table:refresh_tokens`, `table:audit_logs`, `ctx:contexts/auth-context`, `hook:hooks/use-protected-route`, `apimod:lib/api/auth`, `apimod:lib/api/client`, `lib:lib/auth/token-store`, `lib:lib/auth/token-expiry`, `page:/auth/login`.

@@ -1,13 +1,14 @@
 # Domain: Metadata
 
-External metadata lookup (IGDB, Steam; GOG and Manual are stubs), merged-detail resolution, and the scheduled refresh that syncs description, release date, genres, developers and publishers onto matched archive entries.
+External metadata lookup (IGDB, Steam; GOG and Manual are stubs), automatic matching of scanned entries, merged-detail resolution, and the enrichment job that syncs description, release date, genres, developers and publishers onto matched entries and then fills missing artwork.
 
 ## Files
 | File | Role | Key symbols |
 |---|---|---|
 | `backend/app/api/metadata.py` | Router `/metadata` | `search_metadata`, `read_metadata_details`, `read_metadata_artwork` |
 | `backend/app/core/dependencies.py` | DI factory | `get_metadata_service` |
-| `backend/app/services/metadata.py` | Service | `MetadataService.search`, `get_details`, `download_artwork`, `auto_match`, `auto_match_archive`, `refresh_archive`, `refresh_all`, `get_merged_details`, `_sync_genres`, `_sync_developers`, `_sync_publishers`, `_get_provider`, `_get_providers` |
+| `backend/app/services/metadata.py` | Service | `MetadataService.search`, `get_details`, `download_artwork`, `auto_match`, `auto_match_archive`, `refresh_archive`, `enrich_archive`, `enrichment_candidates`, `get_merged_details`, `_sync_genres`, `_sync_developers`, `_sync_publishers`, `_get_provider`, `_get_providers` |
+| `backend/app/services/enrichment.py` | Batch enrichment (matching then artwork) | `EnrichmentService.enrich`, `_job_cancelled` |
 | `backend/app/services/metadata_conflict.py` | Merge two provider results | `MetadataConflictResolver.resolve`, `_pick_best_text`, `_merge_unique`, `_merge_companies`, `_normalize_company` |
 | `backend/app/providers/metadata_provider.py` | Provider base (ABC) | `MetadataProvider.search`, `get_details`, `download_artwork` |
 | `backend/app/providers/igdb.py` | IGDB provider (priority 10) | `IGDBProvider` |
@@ -59,14 +60,16 @@ External metadata lookup (IGDB, Steam; GOG and Manual are stubs), merged-detail 
 ## Change guide
 - New provider: subclass `MetadataProvider` in `backend/app/providers/` (set `name`, `priority`), export it from `backend/app/providers/__init__.py`, add it to the default list in `MetadataService.__init__`.
 - New synced field: add it to `MetadataDetails` (`backend/app/schemas/metadata.py`), fill it in the provider `get_details`, merge it in `MetadataConflictResolver.resolve`, write it in `MetadataService.refresh_archive`; mirror in `frontend/lib/types/metadata.ts`.
-- Change refresh scope: `MetadataService.refresh_all` (currently only `metadata_status == MATCHED`); schedule in `celery_app.conf.beat_schedule` (`backend/app/tasks/celery_app.py`).
+- Change refresh scope: `MetadataService.enrichment_candidates` (nightly: entries with a provider source, plus entries never attempted); schedule in `celery_app.conf.beat_schedule` (`backend/app/tasks/celery_app.py`).
+- Change match thresholds or scoring: `MATCHED_THRESHOLD`, `PARTIAL_THRESHOLD` and `title_similarity` in `backend/app/services/metadata.py`; cases in `backend/tests/test_enrichment.py`.
 
 ## Notes
 - `MetadataService.search` tries providers in priority order (or `preferred_providers` first) and returns the first provider's non-empty results; provider exceptions are logged and skipped.
 - All four providers' `download_artwork` return `None`, so `GET /api/metadata/artwork/...` always returns 404.
 - `metadataApi.search` sends `provider_priority` as one comma-joined value; the backend expects repeated params and matches names case-sensitively (`IGDB`, `Steam`, `GOG`, `Manual`), so the hint is ignored.
-- `refresh_archive` skips entries with `metadata_override` or without `metadata_source`/`metadata_source_code`, then calls `get_merged_details(archive.title)`, which re-matches by title (`auto_match` prefers IGDB) and merges with the top Steam search hit; the stored `metadata_source_code` is not used for the lookup.
-- `auto_match_archive` (the only automatic path that sets `metadata_source`/`metadata_confidence`) is called only from tests. The scanner stores `metadata_source=None` and never produces `MATCHED`, so the scheduled refresh only touches entries whose status and source were set through `POST`/`PATCH /api/archive-entries/...`.
+- `auto_match` searches providers in priority order (IGDB, Steam, ...), scores every candidate with `title_similarity`, stops at the first provider with a score >= 0.85 and otherwise keeps the best candidate across providers.
+- `auto_match_archive` always stores `metadata_confidence` and `last_metadata_refresh`; below 0.70 the entry stays UNMATCHED with no provider source, so weak candidates are never used for refreshes. Matched entries are refreshed immediately.
+- `refresh_archive` skips entries with `metadata_override` or without a provider source and looks up details by the stored `metadata_source`/`metadata_source_code`; a Steam record is merged only when its title scores >= 0.85.
+- New scan entries get a METADATA_REFRESH job for exactly their ids (`_queue_enrichment` in `backend/app/tasks/scan_tasks.py`). Entries attempted and left UNMATCHED are not re-searched nightly; they wait for manual review.
 - `scheduled_metadata_refresh_task` skips if a `METADATA_REFRESH` job is already `PENDING`/`RUNNING`.
-- In `refresh_metadata_task`, `job` is first assigned inside `try`; if `job_repo.get` raises, the `except` block references an unbound `job`.
 - `MetadataHistoryCard` / `MetadataAuditTrail` read `GET /api/admin/audit-logs` (requires `VIEW_AUDIT_LOGS`) filtered to `entity="ArchiveEntry"`.

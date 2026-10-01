@@ -18,6 +18,7 @@ frontend/components/common/metadata-comparison.tsx -> metadataApi.search(...)   
               SteamProvider.search -> requests.get(Steam store search)
               GOGProvider / ManualProvider -> []
            first provider with results wins (break); exceptions logged and skipped
+           (interactive search only; automatic matching uses MetadataService.auto_match, see 3)
   <- list[MetadataSearchResult]
 GET /api/metadata/details/{provider_name}/{provider_id} -> read_metadata_details -> MetadataService.get_details  (404 if None)
 GET /api/metadata/artwork/{provider_name}/{provider_id} -> read_metadata_artwork -> MetadataService.download_artwork
@@ -37,44 +38,57 @@ frontend/app/admin/metadata/page.tsx -> archiveApi.updateMetadata(id, ArchiveMet
   <- ArchiveEntryRead
 ```
 
-## 3. Scheduled refresh (the only path that runs real refresh)
+## 3. Enrichment job (after scans, nightly, or manual)
 ```
-celery beat 03:00 UTC -> scheduled_metadata_refresh_task()      backend/app/tasks/metadata_tasks.py
-  -> skip if a METADATA_REFRESH job is PENDING/RUNNING
-  -> INSERT JobHistory(METADATA_REFRESH, PENDING) ; refresh_metadata_task.delay(job.id)
-refresh_metadata_task(job_history_id)
-  -> JobHistoryRepository.get ; status RUNNING ; commit
-  -> MetadataService.refresh_all(db, job.id)
-     archives = ArchiveEntry rows with metadata_status == MATCHED
-     for archive:
-        JobHistory.status == CANCELED -> return {"refreshed", "failed", "cancelled": True}
-        skip metadata_override
-        MetadataService.refresh_archive(db, archive)
-          skip if metadata_override or no metadata_source / metadata_source_code -> False
-          details = MetadataService.get_merged_details(archive.title)
-             -> MetadataService.auto_match(title)
-                  -> MetadataService.search(title, preferred_providers=["IGDB"], limit=20)
-                  -> best SequenceMatcher ratio over result titles
-             -> MetadataService.get_details(match.provider, match.provider_id)
-             -> SteamProvider().search(title, limit=1) -> SteamProvider().get_details(...)
-             -> MetadataConflictResolver.resolve(igdb_details, steam_details)
-          MetadataService._sync_genres(db, archive, details.genres)
-          MetadataService._sync_developers(db, archive, details.developers)
-          MetadataService._sync_publishers(db, archive, details.publishers)
-             (each clears the relation, then get_by_name or creates Genre/Developer/Publisher)
-          description, release_date, last_metadata_refresh ; commit
-  -> status SUCCESS / CANCELED ; result "Metadata refresh completed: {stats}"
+Queued by:
+  scan tasks          -> _queue_enrichment -> JobService.start_job(..., METADATA_REFRESH, task_kwargs={"entry_ids": created_ids})
+  celery beat 03:00   -> scheduled_metadata_refresh_task() -> JobService.active_job(db, METADATA_REFRESH) ? skip
+                         : JobService.start_job(db, None, METADATA_REFRESH, details="Scheduled metadata refresh")
+  POST /api/jobs/start {"job_type": "METADATA_REFRESH"}
+refresh_metadata_task(self, job_history_id, entry_ids=None)          backend/app/tasks/metadata_tasks.py
+  -> run_job(...) -> EnrichmentService().enrich(db, entry_ids, job_id, report)   backend/app/services/enrichment.py
+     entries = MetadataService.enrichment_candidates(db, entry_ids)
+        not deleted, metadata_override False;
+        entry_ids given -> exactly those; otherwise metadata_source_code IS NOT NULL OR last_metadata_refresh IS NULL
+     for entry: job CANCELED -> stats["cancelled"] ; return
+        try MetadataService.enrich_archive(db, entry)
+               has metadata_source + metadata_source_code -> refresh_archive(db, entry)
+               else                                       -> auto_match_archive(db, entry)
+            matched/partial -> ArtworkService.fill_missing_artwork(db, entry)   (see artwork flow)
+        except -> db.rollback() ; stats["errors"] += 1 ; continue
+        report(index, len(entries))
+     <- {processed, matched, unmatched, artwork_downloaded, errors, cancelled}
 ```
-`POST /api/jobs/start {"job_type": "METADATA_REFRESH"}` (admin dashboard button) dispatches the same `refresh_metadata_task` through `JobService._select_task`.
 
-## 4. Auto-match (not wired)
-`MetadataService.auto_match_archive(db, archive)` sets `metadata_status` (>= 0.85 MATCHED, >= 0.70 PARTIAL, else UNMATCHED), `metadata_source`, `metadata_source_code`, `metadata_confidence`, description and release date. It is only called from `backend/tests/test_screenshots_api.py`; neither the scanner nor any task or route calls it.
+## 4. Matching and refresh (`backend/app/services/metadata.py`)
+```
+MetadataService.auto_match(title)
+  for provider in _get_providers(["IGDB"]):         IGDB, Steam, GOG, Manual
+     for result in _search_provider(provider, title, limit=20): score = title_similarity(title, result.title)
+     best_score >= MATCHED_THRESHOLD (0.85) -> stop
+  <- (best result across providers, best score)
+title_similarity(a, b): 1.0 if alphanumeric-only lowercase strings are equal,
+                        else mean(SequenceMatcher ratio, word Jaccard)
+MetadataService.auto_match_archive(db, archive)
+  skip metadata_override
+  last_metadata_refresh = now ; metadata_confidence = round(score, 3)
+  score < PARTIAL_THRESHOLD (0.70) -> UNMATCHED, no metadata_source recorded ; commit ; False
+  else MATCHED (>= 0.85) | PARTIAL ; metadata_source/metadata_source_code = match ; commit ; refresh_archive
+MetadataService.refresh_archive(db, archive)
+  skip metadata_override or missing metadata_source/metadata_source_code
+  details = get_merged_details(archive.title, archive.metadata_source, archive.metadata_source_code)
+     primary = get_details(stored provider, stored id)
+     Steam merged only if steam.search(title, limit=1)[0] has title_similarity >= 0.85
+     -> MetadataConflictResolver.resolve(primary, steam_details)
+  _sync_genres / _sync_developers / _sync_publishers (clear relation, get_by_name or create)
+  description, release_date, last_metadata_refresh ; commit
+```
 
 ## 5. Provider data used by artwork
-`ArtworkService.auto_download_cover/banner/logo/screenshots` call `MetadataService.get_merged_details(entry.title)` and use `cover_urls`, `banner_urls`, `logo_urls`, `artwork_urls` (see `docs/knowledge/flows/artwork.md`).
+`ArtworkService._entry_details(entry)` calls `MetadataService.get_merged_details(entry.title, entry.metadata_source, entry.metadata_source_code)`; the `auto_download_*` methods accept these `details` so enrichment fetches them once per entry. Steam supplies `cover_urls` (`library_600x900.jpg`), `banner_urls` (header), `logo_urls` (capsules) and `artwork_urls` (store screenshots). See `docs/knowledge/flows/artwork.md`.
 
 ## 6. History widgets (frontend)
 `MetadataHistoryCard` and `MetadataAuditTrail` on `frontend/app/archive/[id]/page.tsx` call `adminApi.getAuditLogs({entity: "ArchiveEntry"})` -> `GET /api/admin/audit-logs` (`VIEW_AUDIT_LOGS`) and filter by `entity_id` client side.
 
 ## Entities
-`router:app.api.metadata`, `module:app.core.dependencies`, `service:app.services.metadata.MetadataService`, `service:app.services.metadata_conflict.MetadataConflictResolver`, `provider:app.providers.igdb.IGDBProvider`, `provider:app.providers.igdb_client.IGDBClient`, `provider:app.providers.steam.SteamProvider`, `provider:app.providers.gog.GOGProvider`, `provider:app.providers.manual.ManualProvider`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `task:app.tasks.metadata_tasks.scheduled_metadata_refresh_task`, `repo:app.repositories.genre.GenreRepository`, `repo:app.repositories.developer.DeveloperRepository`, `repo:app.repositories.publisher.PublisherRepository`, `table:archive_entries`, `table:genres`, `table:archive_entry_genres`, `table:archive_entry_developers`, `table:archive_entry_publishers`, `page:/admin/metadata`, `apimod:lib/api/metadata`.
+`router:app.api.metadata`, `module:app.core.dependencies`, `service:app.services.metadata.MetadataService`, `service:app.services.metadata_conflict.MetadataConflictResolver`, `provider:app.providers.igdb.IGDBProvider`, `provider:app.providers.igdb_client.IGDBClient`, `provider:app.providers.steam.SteamProvider`, `provider:app.providers.gog.GOGProvider`, `provider:app.providers.manual.ManualProvider`, `service:app.services.enrichment.EnrichmentService`, `service:app.services.artwork.ArtworkService`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `task:app.tasks.metadata_tasks.scheduled_metadata_refresh_task`, `repo:app.repositories.genre.GenreRepository`, `repo:app.repositories.developer.DeveloperRepository`, `repo:app.repositories.publisher.PublisherRepository`, `table:archive_entries`, `table:genres`, `table:archive_entry_genres`, `table:archive_entry_developers`, `table:archive_entry_publishers`, `page:/admin/metadata`, `apimod:lib/api/metadata`.
