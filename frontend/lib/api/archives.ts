@@ -16,6 +16,7 @@ export const archiveApi = {
     filters?: SearchFilters,
     offset = 0,
     limit = 200,
+    groupVersions = false,
   ): Promise<ArchiveEntry[]> {
     const params = new URLSearchParams();
 
@@ -39,6 +40,9 @@ export const archiveApi = {
     setFilter("verification_status", filters?.verificationStatus);
     setFilter("storage_device", filters?.storageDevices);
 
+    if (groupVersions) {
+      params.set("group_versions", "true");
+    }
     params.set("offset", String(offset));
     params.set("limit", String(limit));
 
@@ -72,6 +76,10 @@ export const archiveApi = {
     return apiClient.get<import("@/lib/types").DuplicateGroup[]>(
       "/archive-entries/duplicates",
     );
+  },
+
+  async getVersions(id: string): Promise<ArchiveEntry[]> {
+    return apiClient.get<ArchiveEntry[]>(`/archive-entries/${id}/versions`);
   },
 
   async getScreenshots(id: string): Promise<import("@/lib/types").Screenshot[]> {

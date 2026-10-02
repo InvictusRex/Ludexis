@@ -36,6 +36,11 @@ export function CollectionCard({ collection }: CollectionCardProps) {
         <div className="p-4 flex flex-col flex-1">
           <h3 className="font-bold text-foreground line-clamp-2 mb-2">
             {collection.name}
+            {collection.auto_key && (
+              <Badge variant="outline" className="ml-2 text-xs align-middle">
+                Auto
+              </Badge>
+            )}
           </h3>
           <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
             {collection.description || "No description"}

@@ -97,4 +97,9 @@ export interface ArchiveEntry {
   };
   parent_series?: ArchiveEntryReference;
   related_entries?: ArchiveEntryReference[];
+  group_key?: string | null;
+  episode?: number | null;
+  season?: number | null;
+  is_primary_version?: boolean;
+  version_count?: number;
 }

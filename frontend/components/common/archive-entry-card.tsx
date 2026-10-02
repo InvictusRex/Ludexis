@@ -54,10 +54,15 @@ export function ArchiveEntryCard({ entry }: ArchiveEntryCardProps) {
           </h3>
 
           {/* Verification Badge */}
-          <div className="mb-2">
+          <div className="mb-2 flex flex-wrap gap-1">
             <Badge variant="secondary" className="text-xs">
               {entry.verification_status}
             </Badge>
+            {(entry.version_count ?? 1) > 1 && (
+              <Badge variant="outline" className="text-xs">
+                {entry.version_count} versions
+              </Badge>
+            )}
           </div>
 
           {/* Metadata */}

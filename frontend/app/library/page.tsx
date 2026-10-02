@@ -96,7 +96,7 @@ export default function LibraryPage() {
       setMaxLoadedPage(0);
       setHasMore(true);
       try {
-        const data = await archiveApi.search(searchQuery, filters, 0, PAGE_SIZE);
+        const data = await archiveApi.search(searchQuery, filters, 0, PAGE_SIZE, true);
         if (reqId !== requestRef.current) {
           return;
         }
@@ -267,7 +267,7 @@ export default function LibraryPage() {
     setPaginationLoading(true);
 
     try {
-      const data = await archiveApi.search(searchQuery, filters, offset, PAGE_SIZE);
+      const data = await archiveApi.search(searchQuery, filters, offset, PAGE_SIZE, true);
       if (reqId !== requestRef.current) {
         return;
       }

@@ -6,6 +6,8 @@ export interface Collection {
   banner_path?: string | null;
   visibility?: string;
   entry_ids: string[];
+  // Set when the scanner created the collection for a series of episodes.
+  auto_key?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }
