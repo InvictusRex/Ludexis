@@ -24,7 +24,6 @@ import {
   Cpu,
   HardDrive,
   Activity,
-  Settings2,
 } from 'lucide-react'
 import {
   Card,
@@ -34,8 +33,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ServerSettingsForm } from '@/components/common/server-settings-form'
 import {
   Table,
   TableBody,
@@ -405,42 +403,7 @@ export default function AdminSettings() {
         </CardContent>
       </Card>
 
-      {/* Environment Configuration */}
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings2 className="w-5 h-5 text-accent" />
-            Environment Configuration
-          </CardTitle>
-          <CardDescription>
-            These settings are managed via environment configuration and are not exposed by the
-            API. They cannot be changed from this page.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Archive Name</Label>
-            <Input
-              value="Managed via environment configuration — not exposed by the API"
-              disabled
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Input
-              value="Managed via environment configuration — not exposed by the API"
-              disabled
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Appearance</Label>
-            <Input
-              value="Managed via environment configuration — not exposed by the API"
-              disabled
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <ServerSettingsForm />
     </div>
   )
 }

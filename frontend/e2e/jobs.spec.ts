@@ -26,6 +26,7 @@ test("jobs page renders heading and filter/trigger UI", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
 
   await expect(
-    page.getByText(/Live|No jobs found\.|Failed to load jobs/).first(),
+    // Loaded with jobs (Last updated), with active jobs (Live), empty, or failed.
+    page.getByText(/Last updated|Live|No jobs found\.|Failed to load jobs/).first(),
   ).toBeVisible({ timeout: 15000 });
 });

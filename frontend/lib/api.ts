@@ -20,3 +20,4 @@ export { scansApi } from "./api/scans";
 export { healthApi } from "./api/health";
 export { setupApi } from "./api/setup";
 export { jobMonitorApi } from "./api/job-monitor";
+export { systemApi } from "./api/system";

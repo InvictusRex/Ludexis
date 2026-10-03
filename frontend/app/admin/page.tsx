@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Loader2,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -123,6 +124,14 @@ export default function AdminDashboard() {
       accentColor: "text-yellow-500",
     },
     {
+      title: "Scheduled Tasks",
+      description: "Nightly scans, metadata refresh and other recurring jobs",
+      href: "/admin/tasks",
+      icon: CalendarClock,
+      color: "bg-sky-500/10",
+      accentColor: "text-sky-500",
+    },
+    {
       title: "Metadata Review",
       description: "Review and correct unmatched archive entries",
       href: "/admin/metadata",
@@ -164,7 +173,7 @@ export default function AdminDashboard() {
     },
     {
       title: "System Settings",
-      description: "Configure system settings and appearance",
+      description: "Server name, metadata sources and system health",
       href: "/admin/settings",
       icon: CheckCircle2,
       color: "bg-teal-500/10",

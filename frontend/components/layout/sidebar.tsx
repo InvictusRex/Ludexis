@@ -32,6 +32,7 @@ const adminItems = [
   { label: 'Dashboard', href: '/admin' },
   { label: 'Library Management', href: '/admin/library' },
   { label: 'Job Center', href: '/admin/jobs' },
+  { label: 'Scheduled Tasks', href: '/admin/tasks' },
   { label: 'Metadata Review', href: '/admin/metadata' },
   { label: 'Artwork Center', href: '/admin/artwork' },
   { label: 'Collections', href: '/admin/collections' },
