@@ -201,6 +201,7 @@ export default function AdminLibrary() {
                   <TableHead>Name</TableHead>
                   <TableHead>Path</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Availability</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -232,6 +233,24 @@ export default function AdminLibrary() {
                           disabled={togglingId === lib.id || deletingId === lib.id}
                           onCheckedChange={() => handleToggle(lib)}
                         />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <Badge
+                          variant="outline"
+                          title={lib.last_error ?? undefined}
+                          className={
+                            lib.status === 'OFFLINE'
+                              ? 'border-amber-500/50 text-amber-500'
+                              : 'border-green-500/50 text-green-500'
+                          }
+                        >
+                          {lib.status === 'OFFLINE' ? 'Offline' : 'Online'}
+                        </Badge>
+                        {lib.status === 'OFFLINE' && lib.last_error && <p>{lib.last_error}</p>}
+                        <p>Last seen: {lib.last_seen_at ? new Date(lib.last_seen_at).toLocaleString() : '—'}</p>
+                        <p>Last scan: {lib.last_scan_at ? new Date(lib.last_scan_at).toLocaleString() : '—'}</p>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">

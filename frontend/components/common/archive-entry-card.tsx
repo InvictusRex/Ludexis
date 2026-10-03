@@ -58,6 +58,15 @@ export function ArchiveEntryCard({ entry }: ArchiveEntryCardProps) {
             <Badge variant="secondary" className="text-xs">
               {entry.verification_status}
             </Badge>
+            {entry.library_status === "OFFLINE" && (
+              <Badge
+                variant="outline"
+                className="text-xs border-amber-500/50 text-amber-500"
+                title="The drive or folder holding this game is not connected"
+              >
+                Offline
+              </Badge>
+            )}
             {(entry.version_count ?? 1) > 1 && (
               <Badge variant="outline" className="text-xs">
                 {entry.version_count} versions

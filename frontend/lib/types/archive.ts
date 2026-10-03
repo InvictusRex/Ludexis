@@ -102,4 +102,7 @@ export interface ArchiveEntry {
   season?: number | null;
   is_primary_version?: boolean;
   version_count?: number;
+  library_id?: string | null;
+  relative_path?: string | null;
+  library_status?: "ONLINE" | "OFFLINE" | null;
 }

@@ -3,6 +3,10 @@ export interface LibraryRead {
   name: string;
   path: string;
   enabled: boolean;
+  status?: "ONLINE" | "OFFLINE";
+  last_seen_at?: string | null;
+  last_scan_at?: string | null;
+  last_error?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }

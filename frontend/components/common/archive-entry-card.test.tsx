@@ -43,6 +43,17 @@ describe("ArchiveEntryCard", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
+  it("shows version count and offline badges only when they apply", () => {
+    render(<ArchiveEntryCard entry={makeEntry({ version_count: 3, library_status: "OFFLINE" })} />);
+    expect(screen.getByText("3 versions")).toBeInTheDocument();
+    expect(screen.getByText("Offline")).toBeInTheDocument();
+
+    cleanup();
+    render(<ArchiveEntryCard entry={makeEntry({ version_count: 1, library_status: "ONLINE" })} />);
+    expect(screen.queryByText(/versions/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Offline")).not.toBeInTheDocument();
+  });
+
   it("renders an img with the cover_path as its src when cover_path is set", () => {
     render(
       <ArchiveEntryCard
