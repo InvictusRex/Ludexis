@@ -255,9 +255,8 @@ export default function AdminArtwork() {
       await artworkApi.autoDownload();
       setAutoDownloadMessage({
         success: true,
-        text: "Auto-download completed. Refreshing missing artwork...",
+        text: "Artwork download started in the background. Follow it in the Job Center.",
       });
-      await fetchMissing();
     } catch (err) {
       console.error("Failed to auto-download missing artwork:", err);
       setAutoDownloadMessage({
