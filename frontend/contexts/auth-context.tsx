@@ -11,22 +11,9 @@ import {
 
 import { toast } from "sonner";
 
-import {
-  getAccessToken,
-  getRefreshToken,
-  onTokensCleared,
-  setAccessToken,
-  setMediaToken,
-  setTokens,
-  clearTokens,
-} from "@/lib/auth/token-store";
-import {
-  getTokenExpiry,
-  isExpired,
-  msUntilExpiry,
-} from "@/lib/auth/token-expiry";
+import { endSession, onSessionEnded } from "@/lib/auth/session";
 import { authApi } from "@/lib/api/auth";
-import type { User, TokenResponse } from "@/lib/types";
+import type { User } from "@/lib/types";
 
 type AuthContextType = {
   user: User | null;
@@ -39,181 +26,52 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_CHECK_INTERVAL_MS = 30_000;
-
-const SESSION_WARNING_WINDOW_MS = 5 * 60 * 1000;
-
-const MEDIA_TOKEN_RENEW_WINDOW_MS = 5 * 60 * 1000;
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   const [loading, setLoading] = useState(true);
 
-  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const userRef = useRef<User | null>(null);
 
-  const accessExpiryRef = useRef<number | null>(null);
-
-  const refreshExpiryRef = useRef<number | null>(null);
-
-  const warningShownRef = useRef(false);
-
-  const mediaExpiryRef = useRef<number | null>(null);
-
-  const logoutRef = useRef<() => Promise<void>>(async () => {});
+  const loggingOutRef = useRef(false);
 
   useEffect(() => {
-    initializeAuth();
-
-    const unsubscribe = onTokensCleared(() => {
-      setUser(null);
-      setRefreshToken(null);
-      accessExpiryRef.current = null;
-      refreshExpiryRef.current = null;
-      mediaExpiryRef.current = null;
-      warningShownRef.current = false;
-    });
-
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    logoutRef.current = logout;
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!user) return;
-
-      const now = Date.now();
-
-      if (
-        mediaExpiryRef.current !== null &&
-        msUntilExpiry(mediaExpiryRef.current, now) <= MEDIA_TOKEN_RENEW_WINDOW_MS
-      ) {
-        renewMediaToken();
-      }
-
-      const accessExpiry = accessExpiryRef.current;
-      const refreshExpiry = refreshExpiryRef.current;
-
-      if (
-        accessExpiry !== null &&
-        refreshExpiry !== null &&
-        isExpired(accessExpiry, now) &&
-        isExpired(refreshExpiry, now)
-      ) {
-        toast.info("Session expired, please sign in again");
-        logoutRef.current();
-        return;
-      }
-
-      if (
-        accessExpiry !== null &&
-        !warningShownRef.current &&
-        now < accessExpiry &&
-        msUntilExpiry(accessExpiry, now) <= SESSION_WARNING_WINDOW_MS
-      ) {
-        const minutes = Math.max(
-          1,
-          Math.ceil(msUntilExpiry(accessExpiry, now) / 60_000),
-        );
-
-        toast.warning(
-          `Session expires in ${minutes} minute${minutes === 1 ? "" : "s"}`,
-        );
-
-        warningShownRef.current = true;
-      }
-    }, SESSION_CHECK_INTERVAL_MS);
-
-    return () => clearInterval(interval);
+    userRef.current = user;
   }, [user]);
 
-  async function renewMediaToken() {
-    try {
-      const { media_token, expires_in } = await authApi.getMediaToken();
-      setMediaToken(media_token);
-      mediaExpiryRef.current = Date.now() + expires_in * 1000;
-    } catch {
-      // Without a media token images fail to load, but the rest of the app keeps working.
-      mediaExpiryRef.current = null;
-    }
-  }
+  useEffect(() => {
+    // The session cookie goes with every request; /auth/me says whether it is still valid
+    // (the client renews an expired access cookie through the refresh cookie on its own).
+    authApi
+      .getCurrentUser()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
 
-  async function initializeAuth() {
-    try {
-      const storedAccessToken = getAccessToken();
-
-      const storedRefreshToken = getRefreshToken();
-
-      if (!storedAccessToken || !storedRefreshToken) {
-        setAccessToken(null);
-        setLoading(false);
-        return;
+    // Fired when a refresh fails: the refresh cookie expired or was revoked.
+    return onSessionEnded(() => {
+      if (userRef.current && !loggingOutRef.current) {
+        toast.info("Session expired, please sign in again");
       }
-
-      setAccessToken(storedAccessToken);
-      setRefreshToken(storedRefreshToken);
-      accessExpiryRef.current = getTokenExpiry(storedAccessToken);
-      refreshExpiryRef.current = getTokenExpiry(storedRefreshToken);
-      warningShownRef.current = false;
-
-      const currentUser = await authApi.getCurrentUser();
-
-      await renewMediaToken();
-
-      setUser(currentUser);
-    } catch {
-      clearTokens();
-
-      accessExpiryRef.current = null;
-      refreshExpiryRef.current = null;
-      warningShownRef.current = false;
-    } finally {
-      setLoading(false);
-    }
-  }
+      setUser(null);
+    });
+  }, []);
 
   async function login(username: string, password: string) {
-    const tokens: TokenResponse = await authApi.login({
-      username,
-      password,
-    });
-
-    setTokens(tokens.access_token, tokens.refresh_token);
-
-    setRefreshToken(tokens.refresh_token);
-    accessExpiryRef.current = getTokenExpiry(tokens.access_token);
-    refreshExpiryRef.current = getTokenExpiry(tokens.refresh_token);
-    warningShownRef.current = false;
-
-    const currentUser = await authApi.getCurrentUser();
-
-    await renewMediaToken();
-
-    setUser(currentUser);
+    await authApi.login({ username, password });
+    setUser(await authApi.getCurrentUser());
   }
 
   async function logout() {
-    if (refreshToken) {
-      try {
-        await authApi.logout({
-          refresh_token: refreshToken,
-        });
-      } catch {
-        // Ignore logout failures
-      }
+    loggingOutRef.current = true;
+    try {
+      await authApi.logout();
+    } catch {
+      // The cookies are cleared locally below either way.
+    } finally {
+      endSession();
+      loggingOutRef.current = false;
     }
-
-    clearTokens();
-
-    setUser(null);
-    setRefreshToken(null);
-    accessExpiryRef.current = null;
-    refreshExpiryRef.current = null;
-    mediaExpiryRef.current = null;
-    warningShownRef.current = false;
   }
 
   return (

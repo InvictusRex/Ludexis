@@ -1,4 +1,3 @@
-import { getMediaToken } from "@/lib/auth/token-store";
 import { config } from "@/lib/config";
 
 export function mediaUrl(path?: string | null): string | undefined {
@@ -10,8 +9,6 @@ export function mediaUrl(path?: string | null): string | undefined {
     return path;
   }
 
-  const url = `${config.mediaBaseUrl}/${path.replace(/^\/+/, "")}`;
-  // <img> cannot send an Authorization header, so the URL carries a media-only token.
-  const token = getMediaToken();
-  return token ? `${url}?media_token=${encodeURIComponent(token)}` : url;
+  // The session cookie authenticates the image request; no token goes into the URL.
+  return `${config.mediaBaseUrl}/${path.replace(/^\/+/, "")}`;
 }

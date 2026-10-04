@@ -1,17 +1,17 @@
-import {
-  getAccessToken,
-  getRefreshToken,
-  setTokens,
-  clearTokens,
-} from "@/lib/auth/token-store";
+import { endSession } from "@/lib/auth/session";
 import { config } from "@/lib/config";
 import { ApiError } from "@/lib/errors";
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
+  // false: an expired session is not refreshed (login and other public endpoints).
   auth?: boolean;
 };
+
+// The session is an httpOnly cookie. The backend requires this header on cookie-authenticated
+// writes, which a cross-site form cannot send.
+const BASE_HEADERS = { "X-Requested-With": "ludexis" };
 
 const DEBUG = process.env.NEXT_PUBLIC_DEBUG === "1";
 
@@ -54,30 +54,20 @@ async function fetchWithRetry(url: string, init: RequestInit): Promise<Response>
 let refreshPromise: Promise<boolean> | null = null;
 
 async function doRefresh(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-
-  if (!refreshToken) {
-    clearTokens();
-    return false;
-  }
-
   try {
     const response = await fetch(`${config.apiBaseUrl}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      headers: BASE_HEADERS,
+      credentials: "include",
     });
 
     if (!response.ok) {
-      clearTokens();
+      endSession();
       return false;
     }
-
-    const data = await response.json();
-    setTokens(data.access_token, data.refresh_token ?? refreshToken);
     return true;
   } catch {
-    clearTokens();
+    endSession();
     return false;
   }
 }
@@ -96,17 +86,11 @@ async function fetchWithAuth(
   options: RequestOptions = {},
   retried = false,
 ): Promise<Response> {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
-
-  if (options.auth !== false) {
-    const accessToken = getAccessToken();
-
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-  }
+  // FormData sets its own multipart Content-Type with the boundary.
+  const isForm = options.body instanceof FormData;
+  const headers: Record<string, string> = isForm
+    ? { ...BASE_HEADERS }
+    : { ...BASE_HEADERS, "Content-Type": "application/json" };
 
   const startedAt = Date.now();
 
@@ -120,7 +104,13 @@ async function fetchWithAuth(
     response = await fetchWithRetry(url, {
       method,
       headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      credentials: "include",
+      body:
+        options.body === undefined
+          ? undefined
+          : isForm
+            ? (options.body as FormData)
+            : JSON.stringify(options.body),
     });
   } catch (error) {
     debugLog(method, url, "error", Date.now() - startedAt);

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Activity, RefreshCw } from "lucide-react";
 import { config } from "@/lib/config";
-import { getAccessToken } from "@/lib/auth/token-store";
 import { toastError } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,10 +58,7 @@ export function PrometheusMetricsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const token = getAccessToken();
-      const response = await fetch(METRICS_URL, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+      const response = await fetch(METRICS_URL, { credentials: "include" });
       if (!response.ok) {
         throw new Error(
           `Metrics request failed with status ${response.status}`,

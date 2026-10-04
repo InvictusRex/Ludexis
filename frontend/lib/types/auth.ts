@@ -4,20 +4,10 @@ export interface LoginRequest {
 }
 
 export interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
+  // Present for tooling; the browser session itself lives in httpOnly cookies.
+  access_token?: string | null;
+  refresh_token?: string | null;
   token_type: string;
-}
-
-export interface MediaTokenResponse {
-  media_token: string;
   expires_in: number;
-}
-
-export interface RefreshRequest {
-  refresh_token: string;
-}
-
-export interface LogoutRequest {
-  refresh_token: string;
+  refresh_expires_in: number;
 }

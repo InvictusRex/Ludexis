@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArchiveEntry, Developer, Publisher, Screenshot } from "@/lib/types";
-import { archiveApi, developersApi, publishersApi } from "@/lib/api";
+import { archiveApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
 import { Badge } from "@/components/ui/badge";
@@ -88,16 +88,8 @@ export default function ArchiveDetailsPage() {
 
         setEntry(data);
 
-        // Load related developers and publishers
-        const devs = await Promise.all(
-          data.developer_ids.map((id) => developersApi.getById(id)),
-        );
-        const pubs = await Promise.all(
-          data.publisher_ids.map((id) => publishersApi.getById(id)),
-        );
-
-        setDevelopers(devs.filter(Boolean) as Developer[]);
-        setPublishers(pubs.filter(Boolean) as Publisher[]);
+        setDevelopers(data.developers ?? []);
+        setPublishers(data.publishers ?? []);
 
         try {
           setScreenshots(await archiveApi.getScreenshots(entryId));

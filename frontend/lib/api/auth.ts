@@ -2,9 +2,6 @@ import { apiClient } from "./client";
 
 import type {
   LoginRequest,
-  LogoutRequest,
-  MediaTokenResponse,
-  RefreshRequest,
   TokenResponse,
 } from "@/lib/types/auth";
 
@@ -15,19 +12,16 @@ export const authApi = {
     return apiClient.post<TokenResponse>("/auth/login", credentials, false);
   },
 
-  refresh: async (request: RefreshRequest): Promise<TokenResponse> => {
-    return apiClient.post<TokenResponse>("/auth/refresh", request, false);
+  // Both use the refresh cookie; the response renews or clears the session cookies.
+  refresh: async (): Promise<TokenResponse> => {
+    return apiClient.post<TokenResponse>("/auth/refresh", undefined, false);
   },
 
-  logout: async (request: LogoutRequest): Promise<void> => {
-    return apiClient.post<void>("/auth/logout", request, false);
+  logout: async (): Promise<void> => {
+    return apiClient.post<void>("/auth/logout", undefined, false);
   },
 
   getCurrentUser: async (): Promise<User> => {
     return apiClient.get<User>("/auth/me");
-  },
-
-  getMediaToken: async (): Promise<MediaTokenResponse> => {
-    return apiClient.get<MediaTokenResponse>("/auth/media-token");
   },
 };

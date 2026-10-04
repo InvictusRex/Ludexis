@@ -1,13 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "@/lib/api/client";
 import { config } from "@/lib/config";
-import * as tokenStore from "@/lib/auth/token-store";
+import * as session from "@/lib/auth/session";
 
-vi.mock("@/lib/auth/token-store", () => ({
-  getAccessToken: vi.fn(),
-  getRefreshToken: vi.fn(),
-  setTokens: vi.fn(),
-  clearTokens: vi.fn(),
+vi.mock("@/lib/auth/session", () => ({
+  endSession: vi.fn(),
 }));
 
 const refreshUrl = `${config.apiBaseUrl}/auth/refresh`;
@@ -26,15 +23,14 @@ describe("apiClient", () => {
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    vi.mocked(tokenStore.getAccessToken).mockReturnValue("access-token");
-    vi.mocked(tokenStore.getRefreshToken).mockReturnValue("refresh-token");
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.clearAllMocks();
   });
 
-  it("1. GET attaches Bearer header from access token and hits the base URL", async () => {
+  it("1. GET sends the session cookie and the CSRF header to the base URL", async () => {
     const body = { id: 1, name: "Ludexis" };
     fetchMock.mockResolvedValue(jsonResponse(200, body));
 
@@ -46,16 +42,29 @@ describe("apiClient", () => {
     expect(url).toBe(`${config.apiBaseUrl}/users`);
     expect(init.method).toBe("GET");
     expect(init.headers["Content-Type"]).toBe("application/json");
-    expect(init.headers.Authorization).toBe("Bearer access-token");
+    expect(init.headers["X-Requested-With"]).toBe("ludexis");
+    expect(init.credentials).toBe("include");
+    expect(init.headers.Authorization).toBeUndefined();
   });
 
-  it("2. auth=false omits the Authorization header", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+  it("2. auth=false does not try to refresh on 401", async () => {
+    fetchMock.mockResolvedValue(unauthorized);
 
-    await apiClient.get("/users", false);
+    await expect(apiClient.post("/auth/login", {}, false)).rejects.toThrow("HTTP 401");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("2b. FormData is sent as-is with no JSON content type", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    const form = new FormData();
+    form.set("artwork_type", "cover");
+
+    await apiClient.post("/artwork/upload", form);
 
     const [, init] = fetchMock.mock.calls[0];
-    expect(init.headers.Authorization).toBeUndefined();
+    expect(init.body).toBe(form);
+    expect(init.headers["Content-Type"]).toBeUndefined();
+    expect(init.headers["X-Requested-With"]).toBe("ludexis");
   });
 
   it("3. POST sends JSON.stringify(body) with correct method/headers", async () => {
@@ -110,16 +119,10 @@ describe("apiClient", () => {
     await expect(apiClient.delete("/things/1")).resolves.toBeUndefined();
   });
 
-  it("8. 401 triggers refresh and retries once", async () => {
-    vi.mocked(tokenStore.getRefreshToken).mockReturnValue("old-refresh");
+  it("8. 401 refreshes through the cookie and retries once", async () => {
     fetchMock
       .mockResolvedValueOnce(unauthorized)
-      .mockResolvedValueOnce(
-        jsonResponse(200, {
-          access_token: "new-access",
-          refresh_token: "new-refresh",
-        }),
-      )
+      .mockResolvedValueOnce(jsonResponse(200, { token_type: "bearer" }))
       .mockResolvedValueOnce(jsonResponse(200, { id: 42 }));
 
     const result = await apiClient.get<{ id: number }>("/users");
@@ -127,22 +130,15 @@ describe("apiClient", () => {
     expect(result).toEqual({ id: 42 });
     expect(fetchMock).toHaveBeenCalledTimes(3);
 
-    const [, refreshInit] = fetchMock.mock.calls[1];
-    expect(fetchMock.mock.calls[1][0]).toBe(refreshUrl);
+    const [refreshCallUrl, refreshInit] = fetchMock.mock.calls[1];
+    expect(refreshCallUrl).toBe(refreshUrl);
     expect(refreshInit.method).toBe("POST");
-    expect(JSON.parse(refreshInit.body)).toEqual({
-      refresh_token: "old-refresh",
-    });
-    expect(tokenStore.setTokens).toHaveBeenCalledWith(
-      "new-access",
-      "new-refresh",
-    );
-
-    const [, retryInit] = fetchMock.mock.calls[2];
-    expect(retryInit.headers.Authorization).toBe("Bearer access-token");
+    expect(refreshInit.body).toBeUndefined();
+    expect(refreshInit.credentials).toBe("include");
+    expect(refreshInit.headers["X-Requested-With"]).toBe("ludexis");
   });
 
-  it("9. 401 with failed refresh clears tokens and does not retry", async () => {
+  it("9. 401 with failed refresh ends the session and does not retry", async () => {
     fetchMock
       .mockResolvedValueOnce(unauthorized)
       .mockResolvedValueOnce(
@@ -150,29 +146,24 @@ describe("apiClient", () => {
       );
 
     await expect(apiClient.get("/users")).rejects.toThrow("HTTP 401");
-    expect(tokenStore.clearTokens).toHaveBeenCalled();
+    expect(session.endSession).toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("10. 401 with no refresh token clears tokens and rejects", async () => {
-    vi.mocked(tokenStore.getRefreshToken).mockReturnValue(null);
-    fetchMock.mockResolvedValue(unauthorized);
+  it("10. a network failure during refresh ends the session", async () => {
+    fetchMock
+      .mockResolvedValueOnce(unauthorized)
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"));
 
     await expect(apiClient.get("/users")).rejects.toThrow("HTTP 401");
-    expect(tokenStore.clearTokens).toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(session.endSession).toHaveBeenCalled();
   });
 
   it("11. concurrent 401s trigger a single refresh", async () => {
     fetchMock
       .mockResolvedValueOnce(unauthorized)
       .mockResolvedValueOnce(unauthorized)
-      .mockResolvedValueOnce(
-        jsonResponse(200, {
-          access_token: "new-access",
-          refresh_token: "new-refresh",
-        }),
-      )
+      .mockResolvedValueOnce(jsonResponse(200, { token_type: "bearer" }))
       .mockResolvedValueOnce(jsonResponse(200, { id: 1 }))
       .mockResolvedValueOnce(jsonResponse(200, { id: 1 }));
 
@@ -187,26 +178,15 @@ describe("apiClient", () => {
       (call) => call[0] === refreshUrl,
     );
     expect(refreshCalls).toHaveLength(1);
-    expect(tokenStore.setTokens).toHaveBeenCalledTimes(1);
   });
 
   it("12. refreshPromise is reset after a completed refresh", async () => {
     fetchMock
       .mockResolvedValueOnce(unauthorized)
-      .mockResolvedValueOnce(
-        jsonResponse(200, {
-          access_token: "new-access",
-          refresh_token: "new-refresh",
-        }),
-      )
+      .mockResolvedValueOnce(jsonResponse(200, { token_type: "bearer" }))
       .mockResolvedValueOnce(jsonResponse(200, { id: 1 }))
       .mockResolvedValueOnce(unauthorized)
-      .mockResolvedValueOnce(
-        jsonResponse(200, {
-          access_token: "newer-access",
-          refresh_token: "newer-refresh",
-        }),
-      )
+      .mockResolvedValueOnce(jsonResponse(200, { token_type: "bearer" }))
       .mockResolvedValueOnce(jsonResponse(200, { id: 2 }));
 
     const first = await apiClient.get<{ id: number }>("/users");
@@ -218,7 +198,6 @@ describe("apiClient", () => {
       (call) => call[0] === refreshUrl,
     );
     expect(refreshCalls).toHaveLength(2);
-    expect(tokenStore.setTokens).toHaveBeenCalledTimes(2);
   });
 
   it("13. GET retries transient failures and then succeeds", async () => {

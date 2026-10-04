@@ -1,3 +1,8 @@
+import type { Collection } from "./collection";
+import type { Developer } from "./developer";
+import type { Publisher } from "./publisher";
+import type { Tag } from "./tag";
+
 export type MetadataStatus = "MATCHED" | "PARTIAL" | "UNMATCHED" | "MANUAL";
 export type VerificationStatus =
   | "VERIFIED"
@@ -105,4 +110,9 @@ export interface ArchiveEntry {
   library_id?: string | null;
   relative_path?: string | null;
   library_status?: "ONLINE" | "OFFLINE" | null;
+  // Returned inline by the API, so pages need no extra lookups.
+  tags?: Tag[];
+  developers?: Developer[];
+  publishers?: Publisher[];
+  collections?: Collection[];
 }
