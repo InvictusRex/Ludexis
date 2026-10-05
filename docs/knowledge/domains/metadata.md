@@ -15,7 +15,7 @@ External metadata lookup (IGDB, Steam; GOG and Manual are stubs), automatic matc
 | `backend/app/providers/igdb_client.py` | Twitch OAuth + IGDB HTTP | `IGDBClient.get_headers`, `post`, `_refresh_token`, `_ensure_token` |
 | `backend/app/providers/steam.py` | Steam provider (priority 20) | `SteamProvider` |
 | `backend/app/providers/gog.py`, `backend/app/providers/manual.py` | Stubs (priority 30, 100) | `GOGProvider`, `ManualProvider` |
-| `backend/app/tasks/metadata_tasks.py` | Celery tasks | `refresh_metadata_task`, `scheduled_metadata_refresh_task` |
+| `backend/app/tasks/metadata_tasks.py` | Celery tasks | `refresh_metadata_task` |
 | `backend/app/schemas/metadata.py` | Schemas | `MetadataSearchResult`, `MetadataDetails` |
 | `backend/app/models/metadata_source.py` | Model (unused by code) | `MetadataSource` |
 | `backend/app/core/config.py` | Settings | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `IGDB_TOKEN_URL`, `IGDB_API_URL` |
@@ -35,7 +35,8 @@ External metadata lookup (IGDB, Steam; GOG and Manual are stubs), automatic matc
 | Service | `service:app.services.metadata.MetadataService`, `service:app.services.metadata_conflict.MetadataConflictResolver` |
 | Provider | `provider:app.providers.metadata_provider.MetadataProvider`, `provider:app.providers.igdb.IGDBProvider`, `provider:app.providers.igdb_client.IGDBClient`, `provider:app.providers.steam.SteamProvider`, `provider:app.providers.gog.GOGProvider`, `provider:app.providers.manual.ManualProvider` |
 | ExternalProvider | `extprov:IGDB`, `extprov:Steam`, `extprov:GOG` |
-| Task | `task:app.tasks.metadata_tasks.refresh_metadata_task`, `task:app.tasks.metadata_tasks.scheduled_metadata_refresh_task` |
+| Task | `task:app.tasks.metadata_tasks.refresh_metadata_task` |
+| Provider | `provider:app.providers.vndb.VNDBProvider` |
 | Repository | `repo:app.repositories.genre.GenreRepository`, `repo:app.repositories.developer.DeveloperRepository`, `repo:app.repositories.publisher.PublisherRepository` |
 | Model | `model:app.models.metadata_source.MetadataSource` |
 | Schema | `schema:app.schemas.metadata.MetadataSearchResult`, `schema:app.schemas.metadata.MetadataDetails` |
@@ -71,5 +72,10 @@ External metadata lookup (IGDB, Steam; GOG and Manual are stubs), automatic matc
 - `auto_match_archive` always stores `metadata_confidence` and `last_metadata_refresh`; below 0.70 the entry stays UNMATCHED with no provider source, so weak candidates are never used for refreshes. Matched entries are refreshed immediately.
 - `refresh_archive` skips entries with `metadata_override` or without a provider source and looks up details by the stored `metadata_source`/`metadata_source_code`; a Steam record is merged only when its title scores >= 0.85.
 - New scan entries get a METADATA_REFRESH job for exactly their ids (`_queue_enrichment` in `backend/app/tasks/scan_tasks.py`). Entries attempted and left UNMATCHED are not re-searched nightly; they wait for manual review.
-- `scheduled_metadata_refresh_task` skips if a `METADATA_REFRESH` job is already `PENDING`/`RUNNING`.
+- The `metadata_refresh` scheduled task is skipped by the scheduler tick while a `METADATA_REFRESH` job is already `PENDING`/`RUNNING`, and retried at the next tick.
 - `MetadataHistoryCard` / `MetadataAuditTrail` read `GET /api/admin/audit-logs` (requires `VIEW_AUDIT_LOGS`) filtered to `entity="ArchiveEntry"`.
+- Auto-matching tries providers in the `provider_order` setting (default `VNDB, IGDB, Steam`; `SettingsService`), stopping at the first match scoring >= 0.85. A provider left out of the list is disabled. Injected providers (tests) are all tried in priority order.
+- `VNDBProvider` uses the keyless Kana API with ~1.5 s between requests; after a connection failure it is skipped for 10 minutes so a network that blocks VNDB does not stall matching. Tags: spoiler 0, rating >= 2, top 15; `[url]`/`[b]` markup is stripped from descriptions.
+- Before searching, `auto_match_archive` reuses the source of an already matched sibling version (same `group_key`), so every version of a game shares one match.
+- `refresh_archive` also syncs tags and franchise: `_sync_tags` replaces only tags with `origin="provider"` (user tags stay), `_sync_franchise` sets `franchise_id` from IGDB franchises/collections only when the entry has none. Steam categories (store features) are not imported as tags.
+- IGDB credentials: `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` env vars win, otherwise the values saved under Admin > Settings; without credentials IGDB searches return nothing.

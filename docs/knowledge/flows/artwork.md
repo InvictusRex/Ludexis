@@ -77,7 +77,7 @@ EnrichmentService.enrich -> ArtworkService.fill_missing_artwork(db, entry, repai
 
 ## 5. Validation and repair (scheduled or job)
 ```
-celery beat 04:00 UTC -> scheduled_artwork_validation_task()      backend/app/tasks/artwork_tasks.py
+scheduler tick (artwork_validation, 04:00) -> SchedulerService.run    backend/app/services/scheduler.py
   -> JobService.active_job(db, ARTWORK_REFRESH) ? skip : JobService.start_job(db, None, ARTWORK_REFRESH, ...)
 POST /api/jobs/start {"job_type": "ARTWORK_REFRESH"} -> JobService._select_task -> validate_artwork_task
 validate_artwork_task -> run_job -> ArtworkService.validate_and_redownload_artwork(db)
@@ -94,13 +94,11 @@ Not wired to any route or task: `deduplicate_artwork` (SHA-256 via `_file_sha256
 ## 6. Serving files
 ```
 AuthContext.renewMediaToken()  after login/init and within 5 min of expiry      frontend/contexts/auth-context.tsx
-  -> authApi.getMediaToken()  GET /api/auth/media-token -> issue_media_token -> create_media_token (type "media", 60 min)
-  -> setMediaToken(token)                                         frontend/lib/auth/token-store.ts
 <img src={mediaUrl(entry.cover_path)}>                            frontend/lib/media.ts
-  -> "{config.mediaBaseUrl}/{path}?media_token={token}"   (default http://localhost:8000/media)
+  -> "{config.mediaBaseUrl}/{path}"   (/media behind the proxy; the browser sends the ludexis_access cookie)
   GET /media/{path:path}                                          backend/main.py
   -> read_media(path, current_user=Depends(get_media_user))
-       Bearer header -> get_current_user ; else verify_token(media_token, token_type="media") ; 401 otherwise
+       get_current_active_user: Bearer header, else ludexis_access cookie ; 401 otherwise
      resolve under media_dir (= StorageService().base_dir) ; 404 if outside or not a file
   <- FileResponse
 ```
@@ -115,4 +113,4 @@ ScreenshotGallery -> archiveApi.getScreenshots(entryId)
 ```
 
 ## Entities
-`router:app.api.artwork`, `service:app.services.artwork.ArtworkService`, `service:app.services.storage.StorageService`, `service:app.services.metadata.MetadataService`, `repo:app.repositories.screenshot.ScreenshotRepository`, `repo:app.repositories.archive_entry.ArchiveEntryRepository`, `module:app.utils.artwork`, `task:app.tasks.artwork_tasks.validate_artwork_task`, `task:app.tasks.artwork_tasks.scheduled_artwork_validation_task`, `table:archive_entries`, `table:screenshots`, `router:main`, `page:/admin/artwork`, `page:/archive/[id]`, `comp:components/common/artwork-management-dialog`, `comp:components/common/screenshot-gallery`, `apimod:lib/api/artwork`, `lib:lib/media`.
+`router:app.api.artwork`, `service:app.services.artwork.ArtworkService`, `service:app.services.storage.StorageService`, `service:app.services.metadata.MetadataService`, `repo:app.repositories.screenshot.ScreenshotRepository`, `repo:app.repositories.archive_entry.ArchiveEntryRepository`, `module:app.utils.artwork`, `task:app.tasks.artwork_tasks.validate_artwork_task`, `service:app.services.scheduler.SchedulerService`, `table:archive_entries`, `table:screenshots`, `router:main`, `page:/admin/artwork`, `page:/archive/[id]`, `comp:components/common/artwork-management-dialog`, `comp:components/common/screenshot-gallery`, `apimod:lib/api/artwork`, `lib:lib/media`.

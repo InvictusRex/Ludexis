@@ -9,8 +9,7 @@ Job creation, task selection, execution, cancellation, scheduling and monitoring
 
 | Entry | Task name | Schedule |
 |---|---|---|
-| `daily-metadata-refresh` | `app.tasks.metadata_tasks.scheduled_metadata_refresh_task` | `crontab(hour=3, minute=0)` (03:00 UTC daily) |
-| `daily-artwork-validation` | `app.tasks.artwork_tasks.scheduled_artwork_validation_task` | `crontab(hour=4, minute=0)` (04:00 UTC daily) |
+| `scheduler-tick` | `app.tasks.scheduler_tasks.scheduler_tick_task` | `crontab(minute="*/5")`: starts due rows of `scheduled_tasks` (library scan 02:00, metadata refresh 03:00, artwork validation 04:00 daily; integrity verification 05:00 and duplicate detection 05:30 on Sundays; server local time, editable under Admin > Scheduled Tasks) |
 
 ## 1. Start a job
 ```
@@ -74,14 +73,14 @@ Cooperative checks while running:
 
 ## 4. Scheduled jobs (beat)
 ```
-03:00 UTC  scheduled_metadata_refresh_task()                  backend/app/tasks/metadata_tasks.py
-  -> JobService.active_job(db, METADATA_REFRESH) -> return early if PENDING/RUNNING
-  -> JobService.start_job(db, None, METADATA_REFRESH, details="Scheduled metadata refresh")
-04:00 UTC  scheduled_artwork_validation_task()                backend/app/tasks/artwork_tasks.py
-  -> JobService.active_job(db, ARTWORK_REFRESH) -> return early if PENDING/RUNNING
-  -> JobService.start_job(db, None, ARTWORK_REFRESH, details="Scheduled artwork refresh")
+*/5 min    scheduler_tick_task() -> SchedulerService.tick     backend/app/services/scheduler.py
+             -> JobService.fail_stale_jobs (RUNNING > 12 h, PENDING > 24 h)
+             -> for each enabled task whose time passed since last_run_at:
+                  JobService.active_job(db, job type) ? retry at the next tick
+                  SchedulerService.run -> JobService.start_job(db, None, job type) ; last_run_at, last_job_id
+worker start  worker_ready -> JobService.fail_stale_jobs(worker_restarted=True): RUNNING rows lost their worker
 ```
-Scheduled jobs have `user_id = NULL`. Beat runs as its own process (`celery -A app.tasks.celery_app beat`); both Compose stacks have a `beat` service.
+Scheduled jobs have `user_id = NULL`; "Run now" (`POST /api/admin/scheduled-tasks/{key}/run`) records the admin. Default rows are created by `SchedulerService.list_tasks` on first use with `last_run_at = now`, so a fresh install does not run every task at once. The library scan task is an incremental scan: offline libraries are skipped and checked again at the next run, and a library that came back gets a full rescan. Beat runs as its own process (`celery -A app.tasks.celery_app beat`); every Compose stack has a `beat` service.
 
 ## 5. List and monitor
 ```
@@ -101,4 +100,4 @@ jobMonitorApi.getWorkers() GET /api/job-monitor/workers (ACCESS_ADMIN) -> JobMon
 ```
 
 ## Entities
-`router:app.api.jobs`, `router:app.api.job_monitor`, `service:app.services.job.JobService`, `service:app.services.job_monitor.JobMonitorService`, `repo:app.repositories.job_history.JobHistoryRepository`, `model:app.models.job_history.JobHistory`, `task:app.tasks.scan_tasks.scan_full_task`, `task:app.tasks.scan_tasks.scan_incremental_task`, `task:app.tasks.scan_tasks.verify_integrity_task`, `task:app.tasks.scan_tasks.detect_duplicates_task`, `task:app.tasks.artwork_tasks.validate_artwork_task`, `task:app.tasks.artwork_tasks.scheduled_artwork_validation_task`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `task:app.tasks.metadata_tasks.scheduled_metadata_refresh_task`, `table:job_history`, `extprov:Celery`, `page:/admin/jobs`, `apimod:lib/api/jobs`, `apimod:lib/api/job-monitor`.
+`router:app.api.jobs`, `router:app.api.job_monitor`, `service:app.services.job.JobService`, `service:app.services.job_monitor.JobMonitorService`, `repo:app.repositories.job_history.JobHistoryRepository`, `model:app.models.job_history.JobHistory`, `task:app.tasks.scan_tasks.scan_full_task`, `task:app.tasks.scan_tasks.scan_incremental_task`, `task:app.tasks.scan_tasks.verify_integrity_task`, `task:app.tasks.scan_tasks.detect_duplicates_task`, `task:app.tasks.artwork_tasks.validate_artwork_task`, `task:app.tasks.scheduler_tasks.scheduler_tick_task`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `service:app.services.scheduler.SchedulerService`, `table:job_history`, `extprov:Celery`, `page:/admin/jobs`, `apimod:lib/api/jobs`, `apimod:lib/api/job-monitor`.

@@ -22,8 +22,7 @@ frontend/app/auth/login/page.tsx  (form submit)
                  -> RefreshTokenRepository.create(db, {token, user_id, expires_at})   INSERT refresh_tokens
               -> AuditService.log(db, action=LOGIN_SUCCESS, entity="User", user_id=...)
            <- Token {access_token, refresh_token, token_type: "bearer"}
-     -> setTokens(access, refresh)                            frontend/lib/auth/token-store.ts (localStorage)
-     -> getTokenExpiry(token) for both                         frontend/lib/auth/token-expiry.ts
+     <- Set-Cookie ludexis_access (path /), ludexis_refresh (path /api/auth); httpOnly, SameSite=Lax
      -> authApi.getCurrentUser()  -> GET /api/auth/me
         -> read_current_user(current_user=Depends(get_current_user))   backend/app/api/auth.py
            -> get_current_user(token, db)                     backend/app/core/auth.py
@@ -102,4 +101,4 @@ POST /api/setup/initialize (UserCreate)
 The frontend setup page (`frontend/app/auth/setup/page.tsx`) does not call these endpoints; `setupApi` is unused.
 
 ## Entities
-`router:app.api.auth`, `router:app.api.setup`, `service:app.services.auth.AuthService`, `service:app.services.audit.AuditService`, `repo:app.repositories.user.UserRepository`, `repo:app.repositories.refresh_token.RefreshTokenRepository`, `module:app.core.security`, `module:app.core.auth`, `table:users`, `table:refresh_tokens`, `table:audit_logs`, `ctx:contexts/auth-context`, `hook:hooks/use-protected-route`, `apimod:lib/api/auth`, `apimod:lib/api/client`, `lib:lib/auth/token-store`, `lib:lib/auth/token-expiry`, `page:/auth/login`.
+`router:app.api.auth`, `router:app.api.setup`, `service:app.services.auth.AuthService`, `service:app.services.audit.AuditService`, `repo:app.repositories.user.UserRepository`, `repo:app.repositories.refresh_token.RefreshTokenRepository`, `module:app.core.security`, `module:app.core.auth`, `table:users`, `table:refresh_tokens`, `table:audit_logs`, `ctx:contexts/auth-context`, `hook:hooks/use-protected-route`, `apimod:lib/api/auth`, `apimod:lib/api/client`, `lib:lib/auth/session`, `module:app.core.rate_limit`, `page:/auth/login`.

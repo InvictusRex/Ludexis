@@ -22,7 +22,7 @@ apiClient.get | getList | post | patch | put | delete (endpoint, body?, auth?)
                   (NEXT_PUBLIC_API_URL, default "http://localhost:8000/api")
         headers = Content-Type: application/json
                   Authorization: Bearer <getAccessToken()>   unless auth === false
-                  (frontend/lib/auth/token-store.ts, localStorage key "ludexis_access_token")
+                  (credentials: "include" sends the httpOnly ludexis_access cookie; X-Requested-With: ludexis)
         body    = JSON.stringify(body)
         debugLog(...) when NEXT_PUBLIC_DEBUG === "1"
         401 && auth !== false && !retried
@@ -68,4 +68,4 @@ Writes follow the same shape with `Depends(require_permission(PermissionName.X))
 | `backend/app/api/health.py` | raw `SELECT 1` and `Redis.from_url(...).ping()` |
 
 ## Entities
-`page:/collections/[id]`, `ctx:contexts/auth-context`, `hook:hooks/use-protected-route`, `lib:lib/api`, `apimod:lib/api/collections`, `apifn:lib/api/collections.collectionsApi.getById`, `apimod:lib/api/client`, `lib:lib/config`, `lib:lib/errors`, `lib:lib/auth/token-store`, `router:app.api.collections`, `service:app.services.collection.CollectionService`, `repo:app.repositories.collection.CollectionRepository`, `module:app.db.session`, `module:app.core.auth`, `table:collections`.
+`page:/collections/[id]`, `ctx:contexts/auth-context`, `hook:hooks/use-protected-route`, `lib:lib/api`, `apimod:lib/api/collections`, `apifn:lib/api/collections.collectionsApi.getById`, `apimod:lib/api/client`, `lib:lib/config`, `lib:lib/errors`, `lib:lib/auth/session`, `router:app.api.collections`, `service:app.services.collection.CollectionService`, `repo:app.repositories.collection.CollectionRepository`, `module:app.db.session`, `module:app.core.auth`, `table:collections`.

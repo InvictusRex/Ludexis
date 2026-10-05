@@ -66,7 +66,7 @@ Each domain file lists its backend and frontend files, graph IDs, endpoints (wit
 Ludexis/
 ├── backend/                     FastAPI 0.111 + SQLAlchemy 2.0 + Celery 5.4 + PostgreSQL + Redis
 │   ├── main.py                  app factory, CORS, /media, /healthz, /api/metrics
-│   ├── app/api/                 20 routers, 87 routes under /api (+3 in main.py)
+│   ├── app/api/                 21 routers, 93 routes under /api (+3 in main.py)
 │   ├── app/services/            20 services (+ ArchiveScanItem helper class)
 │   ├── app/repositories/        15 repositories + BaseRepository
 │   ├── app/models/              18 models + association_tables.py (27 tables)
@@ -130,49 +130,49 @@ Load only the file you need.
 
 ## Graph Statistics
 
-Verified at commit `e197525` on 2026-10-01. Regenerate with `validate.py --stats-json`.
+Verified at commit `9f6a510` on 2026-10-05. Regenerate with `validate.py --stats-json`.
 
 | | Count |
 |-|-------|
-| Entities | 718 |
-| Relationships | 3,416 |
+| Entities | 756 |
+| Relationships | 3,528 |
 
 | Entity type | Count | Entity type | Count |
 |-------------|-------|-------------|-------|
-| APIRoute | 91 | Component | 53 |
-| Schema | 68 | ApiFunction | 101 |
-| DBTable | 27 | TestFile | 69 (23 backend, 46 frontend) |
-| Router | 21 | Type | 68 |
-| Service | 19 | Page | 32 |
-| Domain | 19 | ApiModule | 21 |
-| Model | 18 | TypeModule | 20 |
-| Module | 18 | LibUtil | 11 |
+| APIRoute | 96 | Component | 54 |
+| Schema | 71 | ApiFunction | 106 |
+| DBTable | 29 | TestFile | 76 (29 backend, 47 frontend) |
+| Router | 22 | Type | 69 |
+| Service | 22 | Page | 33 |
+| Domain | 19 | ApiModule | 22 |
+| Model | 20 | TypeModule | 21 |
+| Module | 19 | LibUtil | 10 |
 | Repository | 16 | Hook | 1 |
 | Layer | 16 | Context | 1 |
 | DBEnum | 7 | Layout | 1 |
-| Task | 8 | Class | 1 |
-| Provider | 6 | Migration | 1 |
-| ExternalProvider | 4 | | |
+| Task | 7 | Class | 1 |
+| Provider | 7 | Migration | 5 |
+| ExternalProvider | 5 | | |
 
 | Relationship type | Count | Relationship type | Count |
 |-------------------|-------|-------------------|-------|
-| BELONGS_TO | 1220 | DEPENDS_ON | 34 |
-| IMPORTS | 406 | ACCEPTS | 27 |
-| RENDERS | 280 | ACCESSES | 27 |
-| TESTS | 173 | CREATES | 27 |
-| CONTAINS | 159 | MAPS_TO | 25 |
-| CALLS | 129 | USES_CLIENT | 19 |
-| CALLS_API | 129 | DEFINES | 28 |
+| BELONGS_TO | 1280 | DEPENDS_ON | 38 |
+| IMPORTS | 396 | ACCEPTS | 27 |
+| RENDERS | 281 | ACCESSES | 30 |
+| TESTS | 194 | CREATES | 29 |
+| CONTAINS | 156 | MAPS_TO | 27 |
+| CALLS | 140 | USES_CLIENT | 20 |
+| CALLS_API | 134 | DEFINES | 27 |
 | FLOWS_TO | 106 | MANY_TO_MANY | 15 |
-| CALLS_ENDPOINT | 106 | ASSOCIATED_THROUGH | 13 |
-| EXPOSES | 91 | MANY_TO_ONE | 12 |
-| RETURNS | 69 | ONE_TO_MANY | 11 |
-| READS | 63 | USES_PROVIDER | 10 |
-| WRITES | 48 | CONSUMES | 12 |
-| EXTENDS | 45 | NESTS | 9 |
-| MIRRORS | 40 | DISPATCHES | 10 |
-| USES_CONTEXT | 35 | USES_ENUM | 5 |
-| USES_HOOK | 30 | PROVIDES | 3 |
+| CALLS_ENDPOINT | 111 | ASSOCIATED_THROUGH | 13 |
+| EXPOSES | 96 | MANY_TO_ONE | 12 |
+| RETURNS | 68 | ONE_TO_MANY | 11 |
+| READS | 63 | USES_PROVIDER | 9 |
+| WRITES | 53 | CONSUMES | 12 |
+| EXTENDS | 46 | NESTS | 9 |
+| MIRRORS | 42 | DISPATCHES | 8 |
+| USES_CONTEXT | 36 | USES_ENUM | 5 |
+| USES_HOOK | 31 | PROVIDES | 3 |
 
 ---
 

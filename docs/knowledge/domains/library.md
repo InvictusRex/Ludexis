@@ -49,5 +49,8 @@ Filesystem roots that the scanner walks. Each `Library` has a unique `name` and 
 
 ## Notes
 - Writes require `ACCESS_ADMIN` (not `RUN_SCANS`).
-- The scanner skips libraries with `enabled = False` and paths that do not exist (`ScannerService._discover_items` returns `[]`).
+- The scanner skips libraries with `enabled = False`. Before each scan `ScannerService.check_library` sets `status`: `OFFLINE` with `last_error` when the folder is missing or unreadable, or empty while the library still has entries (an unplugged drive behind a Docker bind mount); otherwise `ONLINE` and `last_seen_at`. Offline libraries are skipped and their entries keep all data; the scan result lists them in `offline_libraries`.
+- A library that was `OFFLINE` and is reachable again is scanned in full, even by an incremental scan, and listed in `reconnected_libraries`. Integrity verification skips entries of offline libraries, so they never turn `MISSING`.
+- After processing, entries of each scanned library whose file is gone become `MISSING`; ones that came back return to `UNKNOWN`. `last_scan_at` is set.
+- `archive_entries.relative_path` (posix path below the root) re-links entries when the library is re-pointed or a drive returns under another path: an unknown path whose `(library_id, relative_path)` matches an entry whose old file is gone updates that entry instead of creating one.
 - `path` is resolved by the Celery worker process, so it must exist on the worker host.

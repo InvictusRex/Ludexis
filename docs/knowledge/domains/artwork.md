@@ -13,7 +13,7 @@ Cover, banner, logo and screenshot files for archive entries: multipart upload/r
 | `backend/app/models/screenshot.py` | Model | `Screenshot` |
 | `backend/app/schemas/artwork.py` | Schemas | `ArtworkUploadResponse`, `ArtworkReplaceResponse`, `ArtworkDeleteResponse`, `ArtworkMissingResponse`, `ArtworkValidationResult` |
 | `backend/app/schemas/screenshot.py` | Schema | `ScreenshotRead` |
-| `backend/app/tasks/artwork_tasks.py` | Celery tasks | `validate_artwork_task`, `scheduled_artwork_validation_task` |
+| `backend/app/tasks/artwork_tasks.py` | Celery tasks | `validate_artwork_task` (mode `validate` or `fill`) |
 | `backend/app/core/config.py` | Settings | `ARTWORK_STORAGE_PATH`, `MAX_ARTWORK_SIZE_MB`, `ALLOWED_ARTWORK_MIME_TYPES` |
 | `backend/app/core/metrics.py` | Counters | `artwork_downloads_total`, `artwork_validation_failures_total`, `artwork_deduplications_total`, `artwork_auto_download_runs_total` |
 | `frontend/app/admin/artwork/page.tsx` | Artwork admin page | `artworkApi.getMissing`, `artworkApi.autoDownload`, `artworkApi.upload`, `archiveApi.getById` |
@@ -37,7 +37,7 @@ Cover, banner, logo and screenshot files for archive entries: multipart upload/r
 | Repository | `repo:app.repositories.screenshot.ScreenshotRepository`, `repo:app.repositories.archive_entry.ArchiveEntryRepository` |
 | Model | `model:app.models.screenshot.Screenshot` |
 | Schema | `schema:app.schemas.artwork.ArtworkUploadResponse`, `schema:app.schemas.artwork.ArtworkReplaceResponse`, `schema:app.schemas.artwork.ArtworkDeleteResponse`, `schema:app.schemas.artwork.ArtworkMissingResponse`, `schema:app.schemas.screenshot.ScreenshotRead` |
-| Task | `task:app.tasks.artwork_tasks.validate_artwork_task`, `task:app.tasks.artwork_tasks.scheduled_artwork_validation_task` |
+| Task | `task:app.tasks.artwork_tasks.validate_artwork_task` |
 | Module | `module:app.utils.artwork` |
 | Table | `table:screenshots`, `table:archive_entries` |
 | Page | `page:/admin/artwork`, `page:/archive/[id]` |
@@ -81,6 +81,7 @@ Related: `GET /api/archive-entries/{archive_entry_id}/screenshots` (archive rout
 - `DELETE /api/artwork/{artwork_id}`: with `artwork_type` cover/banner/logo, `artwork_id` is the archive entry id; without it (or with `screenshot`) it is a screenshot id.
 - Dedup uses exact SHA-256 file hashes (`_file_sha256`), not perceptual hashing. `find_duplicate_artwork`, `deduplicate_artwork` and `garbage_collect_artwork` have no route or task callers.
 - `garbage_collect_artwork` only scans `covers/`, `banners/`, `logos/`; uploaded files under `{entry_id}/...` are never collected.
-- `validate_and_redownload_artwork` (daily 04:00 UTC via `scheduled_artwork_validation_task`, or `JobType.ARTWORK_REFRESH`) runs `validate_all_artwork` (Pillow check of cover/banner/logo; returns per-entry `missing_types`, `corrupt_types`, `complete`) and repairs broken assets for provider-matched entries. It never writes `verification_status`, which belongs to the archive file.
+- `validate_and_redownload_artwork` (the `artwork_validation` scheduled task, daily 04:00 server time by default, or `JobType.ARTWORK_REFRESH`) runs `validate_all_artwork` (Pillow check of cover/banner/logo; returns per-entry `missing_types`, `corrupt_types`, `complete`) and repairs broken assets for provider-matched entries. It never writes `verification_status`, which belongs to the archive file.
 - Upload, replace and delete record `UPLOAD_ARTWORK`, `REPLACE_ARTWORK`, `DELETE_ARTWORK` audit entries with `entity="ArchiveEntry"`, so `ArtworkVersionHistory` shows them; auto-download records `AUTO_DOWNLOAD_ARTWORK` with `entity="Artwork"`.
 - `artworkApi.upload`/`replace` bypass `apiClient` (multipart), so they get no 401 refresh retry and throw plain `Error` instead of `ApiError`.
+- `POST /api/artwork/auto-download` queues an `ARTWORK_REFRESH` job with `mode="fill"` (`auto_download_missing_artwork` in the worker) and returns the job (202); a running artwork job is returned instead of starting a second one.
