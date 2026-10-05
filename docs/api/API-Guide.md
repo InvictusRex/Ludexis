@@ -46,9 +46,13 @@ POST /api/auth/login
 {
   "access_token": "<jwt>",
   "refresh_token": "<jwt>",
-  "token_type": "bearer"
+  "token_type": "bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 2592000
 }
 ```
+
+The response also sets the httpOnly session cookies `ludexis_access` and `ludexis_refresh` used by the web app. Five failed attempts for one username from one address within 15 minutes return `429 Too Many Requests` with a `Retry-After` header.
 
 ---
 
@@ -77,7 +81,7 @@ Parameters:
 
 ## Refresh Access Token
 
-Exchange a refresh token for a new token pair.
+Exchange a refresh token for a new token pair and new cookies.
 
 ```http
 POST /api/auth/refresh
@@ -89,11 +93,13 @@ POST /api/auth/refresh
 }
 ```
 
+Without a body the `ludexis_refresh` cookie is used (send `X-Requested-With`); the cookies are renewed and the body carries no tokens.
+
 ---
 
 ## Logout
 
-Revoke a refresh token.
+Revoke the refresh token from the body or the `ludexis_refresh` cookie and clear the session cookies.
 
 ```http
 POST /api/auth/logout
@@ -123,36 +129,21 @@ GET /api/auth/me
 
 ---
 
-## Media Token
-
-Issue a short-lived token for loading stored artwork in the browser.
-
-```http
-GET /api/auth/media-token
-```
-
-**Response**
-
-```json
-{
-  "media_token": "<jwt>",
-  "expires_in": 3600
-}
-```
-
-The token is only accepted by `/media/{path}` and is rejected by every other endpoint.
-
----
-
 # Authorization
 
-Protected endpoints require:
+Protected endpoints accept either header:
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
-Access tokens are never accepted as URL parameters.
+or the `ludexis_access` cookie set at login. Requests that authenticate by cookie and change data (`POST`, `PUT`, `PATCH`, `DELETE`) must also send:
+
+```http
+X-Requested-With: ludexis
+```
+
+Tokens are never accepted as URL parameters.
 
 ## Stored Artwork
 
@@ -160,7 +151,7 @@ Access tokens are never accepted as URL parameters.
 GET /media/{path}
 ```
 
-Serves files from the artwork storage directory. Send either the `Authorization` header or a media token as `?media_token=<token>` (for `<img>` tags, which cannot send headers).
+Serves files from the artwork storage directory. Authenticated by the `Authorization` header or the session cookie, which `<img>` requests send automatically.
 
 ---
 
@@ -560,6 +551,16 @@ GET /api/archive-entries
 
 ---
 
+## List Versions
+
+```http
+GET /api/archive-entries/{id}/versions
+```
+
+Returns every version of the entry's game (entries sharing its `group_key`), newest first.
+
+---
+
 ## Get Archive Entry
 
 ```http
@@ -854,7 +855,7 @@ Returns entries missing artwork assets.
 POST /api/artwork/auto-download
 ```
 
-Downloads missing artwork for all active entries. Runs synchronously in the API process.
+Queues an `ARTWORK_REFRESH` job that downloads missing artwork for every entry and returns the job (`202 Accepted`). If an artwork job is already running, that job is returned.
 
 ---
 
@@ -867,6 +868,8 @@ GET /api/search
 ```
 
 Searches archive entries across title and metadata fields.
+
+`group_versions=true` returns one entry per game (its newest version) with `version_count` set.
 
 ---
 
@@ -1037,6 +1040,46 @@ ACCESS_ADMIN
 ```
 
 Provides a consolidated administrative overview.
+
+---
+
+## Scheduled Tasks
+
+Requires `ACCESS_ADMIN`.
+
+```http
+GET /api/admin/scheduled-tasks
+PATCH /api/admin/scheduled-tasks/{key}
+POST /api/admin/scheduled-tasks/{key}/run
+```
+
+Keys: `library_scan` (incremental scan; offline libraries are retried at the next run), `metadata_refresh`, `artwork_validation`, `integrity_verification`, `duplicate_detection`. A task runs daily at `hour:minute` (server local time) or weekly when `day_of_week` is 0 (Monday) to 6; send `day_of_week: -1` to make it daily again. `run` starts the job now and returns it (`202`).
+
+```json
+{ "enabled": true, "hour": 2, "minute": 0, "day_of_week": -1 }
+```
+
+---
+
+## Server Settings
+
+Requires `ACCESS_ADMIN`.
+
+```http
+GET /api/admin/settings
+PATCH /api/admin/settings
+```
+
+```json
+{
+  "server_name": "Ludexis",
+  "provider_order": ["VNDB", "IGDB", "Steam"],
+  "igdb_client_id": "<twitch client id>",
+  "igdb_client_secret": "<twitch client secret>"
+}
+```
+
+`provider_order` sets which metadata sources auto-matching uses and in which order; a provider left out is disabled. The IGDB secret is write-only, and `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` environment variables override the saved credentials (`igdb_from_env` in the response).
 
 ---
 

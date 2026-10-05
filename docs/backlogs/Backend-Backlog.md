@@ -194,7 +194,23 @@
 - ✅~~`GET /api/archive-entries/{id}/screenshots` endpoint with `ScreenshotRead` schema.~~
 - ✅~~`metadata_confidence` field on archive entries, persisted by `auto_match_archive` (`round(score, 3)`, incl. `0.0` on UNMATCHED).~~
 - ✅~~`metadata_confidence` column.~~ (part of the single baseline migration `ecabaf1d5dab`; the earlier `4c81f2a9b6d7` revision was folded into it)
-- ✅~~Authenticated `/media` route serving the artwork storage dir.~~ (Bearer access token or a media-only token from `GET /api/auth/media-token`)
+- ✅~~Authenticated `/media` route serving the artwork storage dir.~~ (Bearer access token or the httpOnly session cookie)
+
+---
+
+## ✅~~Self-Hosted Service~~
+
+- ✅~~Folder-name parser for VN/Ren'Py releases.~~ (bracket versions, build counters and status noise, DLsite codes, episodes/chapters/parts/seasons, small-word casing)
+- ✅~~Group versions of one game and gather episodes into collections.~~ (`GroupingService`; grouped search, versions endpoint; sibling versions share one metadata match)
+- ✅~~VNDB metadata provider.~~ (keyless Kana API with back-off; provider order and enablement in settings)
+- ✅~~Import tags and franchises from providers.~~ (`tags.origin`; user tags are never removed)
+- ✅~~Keep data when a library drive is disconnected.~~ (library `status`, offline skip, reconnect rescan, `relative_path` re-linking)
+- ✅~~Scheduled tasks stored in the database and edited in the admin UI.~~ (five-minute beat tick)
+- ✅~~Server settings API.~~ (server name, provider order, IGDB credentials)
+- ✅~~httpOnly cookie sessions with CSRF header; login rate limiting.~~
+- ✅~~Stale-job recovery.~~ (worker restart and age-based sweep)
+- ✅~~Artwork auto-download as a background job.~~
+- ✅~~Pull-and-run compose stack.~~ (Caddy on one port, GHCR images, generated JWT secret, read-only `/games` mount)
 
 ---
 

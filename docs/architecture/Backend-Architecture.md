@@ -617,7 +617,7 @@ Database consistency remains protected even when exceptions occur during request
 
 ### Overview
 
-Ludexis separates metadata acquisition from metadata persistence through a provider-based architecture. External services such as IGDB, Steam, GOG, and manual metadata sources are abstracted behind a common provider interface. This allows metadata enrichment logic to remain independent of any specific external API implementation.
+Ludexis separates metadata acquisition from metadata persistence through a provider-based architecture. External services such as VNDB, IGDB, Steam, GOG, and manual metadata sources are abstracted behind a common provider interface. This allows metadata enrichment logic to remain independent of any specific external API implementation.
 
 The objective of the subsystem is to transform a scanned archive entry into a fully enriched catalog record containing descriptive information, release metadata, artwork, genres, developers, publishers, and verification information.
 
@@ -963,7 +963,7 @@ Metadata may become outdated over time as external providers update their databa
 
 Ludexis therefore supports metadata refresh operations.
 
-Entries with a provider source are refreshed from that source without a new title search. Entries never attempted are matched. Entries that were attempted and stayed UNMATCHED are left for manual review. The nightly METADATA_REFRESH job (03:00 UTC) applies these rules to all non-override entries.
+Entries with a provider source are refreshed from that source without a new title search. Entries never attempted are matched. Entries that were attempted and stayed UNMATCHED are left for manual review. The nightly METADATA_REFRESH job (the `metadata_refresh` scheduled task, 03:00 by default) applies these rules to all non-override entries.
 
 ```mermaid
 flowchart TD
@@ -1630,7 +1630,7 @@ Separating scans from request processing ensures that large storage libraries do
 
 ### Metadata Processing Jobs
 
-Metadata enrichment runs as METADATA_REFRESH jobs: queued automatically after scans, fired nightly by Celery beat, or started manually. ARTWORK_REFRESH (04:00 UTC) validates and repairs artwork for matched entries. Celery beat runs as its own process; both Compose stacks include a `beat` service.
+Metadata enrichment runs as METADATA_REFRESH jobs: queued automatically after scans, started nightly by the scheduler, or started manually. ARTWORK_REFRESH (04:00 by default) validates and repairs artwork for matched entries. Celery beat runs as its own process and every five minutes starts the due entries of the scheduled tasks stored in the database (library scan 02:00, metadata refresh 03:00, artwork validation 04:00, weekly integrity verification and duplicate detection; server local time, editable under Admin > Scheduled Tasks); every Compose stack includes a `beat` service. A worker that starts marks jobs left RUNNING as FAILED, and the tick fails jobs RUNNING longer than 12 hours or PENDING longer than 24.
 
 ```mermaid
 flowchart TD
@@ -2115,11 +2115,15 @@ flowchart TD
     --> D[JWT Identifier]
 ```
 
-Access tokens are intentionally short-lived (15 minutes by default) to reduce risk if a token is compromised. `JWT_SECRET_KEY` must be at least 32 characters; the backend refuses to start otherwise.
+Access tokens are intentionally short-lived (15 minutes by default) to reduce risk if a token is compromised. An explicit `JWT_SECRET_KEY` must be at least 32 characters; when it is unset a random secret is generated once into `CONFIG_DIR/jwt_secret` (created with `O_EXCL`, so backend, worker and beat agree).
 
-### Media Tokens
+### Browser Sessions
 
-Browsers cannot send an `Authorization` header with `<img>` requests, so `/media/{path}` also accepts `?media_token=`. Media tokens come from `GET /api/auth/media-token`, carry type "media", last 60 minutes (`MEDIA_TOKEN_EXPIRE_MINUTES`) and are rejected by every other endpoint. Access tokens are never accepted in URLs. Path traversal returns 404.
+Login and refresh set the tokens as httpOnly cookies: `ludexis_access` (path `/`) and `ludexis_refresh` (path `/api/auth`), `SameSite=Lax`, `Secure` when the request came over HTTPS. `get_current_user` reads the `Authorization` header first and falls back to the cookie. Cookie-authenticated `POST`/`PUT`/`PATCH`/`DELETE` requests must send `X-Requested-With`, which a cross-site form cannot set. A refresh through the cookie returns no tokens in its body. `/media/{path}` authenticates the same way, so `<img>` requests need nothing in the URL; path traversal returns 404.
+
+### Login Rate Limiting
+
+`LoginRateLimiter` (`app/core/rate_limit.py`) counts failed logins in Redis per username and client address: after 5 failures within 15 minutes, `/auth/login` and `/auth/token` return 429 with `Retry-After`, even for the right password. A successful login clears the counter. If Redis is unavailable logins are not limited.
 
 Because authentication information is embedded directly within the token, API requests can be validated without maintaining server-side session state.
 

@@ -199,7 +199,8 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 - ✅~~Users management integration.~~
 - ✅~~Audit log integration.~~
 - ✅~~Library management integration.~~
-- ✅~~System configuration integration (read-only; config is env-based, not exposed via API).~~
+- ✅~~System configuration integration.~~ (Server Settings form: server name, metadata source order, IGDB credentials)
+- ✅~~Scheduled Tasks page.~~ (schedule, enable, run now, last result)
 
 ### Medium Priority
 

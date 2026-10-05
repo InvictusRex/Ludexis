@@ -228,7 +228,7 @@ Examples include:
 - Artwork validation and repair
 - Integrity verification and duplicate detection
 
-Celery beat runs as its own process and fires the daily metadata refresh (03:00 UTC) and artwork validation (04:00 UTC) jobs.
+Celery beat runs as its own process and, every five minutes, starts whichever of the scheduled tasks stored in the database (library scan 02:00, metadata refresh 03:00, artwork validation 04:00, weekly integrity verification and duplicate detection; server local time, editable under Admin > Scheduled Tasks) are due.
 
 By moving these operations into background workers, API responsiveness remains unaffected during resource-intensive processing.
 
@@ -242,7 +242,7 @@ The database stores references and metadata describing artwork while the actual 
 
 This separation improves database efficiency and simplifies backup strategies.
 
-Stored files are served by the authenticated `/media/{path}` route. Browsers load images with a short-lived media-only token (`GET /api/auth/media-token`, passed as `?media_token=`); access tokens are never accepted in URLs.
+Stored files are served by the authenticated `/media/{path}` route. Browsers load images with the httpOnly session cookie, so no token ever appears in a URL.
 
 ---
 
@@ -353,9 +353,9 @@ sequenceDiagram
 
 The authentication subsystem is implemented using signed JWT tokens generated with a server-side secret key.
 
-A third token type, the media token, is issued by `GET /api/auth/media-token` (60 minutes). It is only valid for `/media` image requests.
+The browser keeps both tokens in httpOnly cookies (`ludexis_access`, `ludexis_refresh`; `SameSite=Lax`, `Secure` over HTTPS) that page scripts cannot read; cookie-authenticated writes must carry an `X-Requested-With` header. Tools can still send `Authorization: Bearer`. Five failed logins for one username from one address within 15 minutes return 429.
 
-`JWT_SECRET_KEY` must be at least 32 characters; the backend refuses to start otherwise.
+When `JWT_SECRET_KEY` is unset, the backend generates a random secret once and keeps it in `CONFIG_DIR/jwt_secret`, shared by every container; an explicit value must be at least 32 characters.
 
 Each access token contains:
 

@@ -478,7 +478,7 @@ flowchart TD
     --> F[Enriched Entry]
 ```
 
-Enrichment runs automatically for the entries a scan created, nightly at 03:00 UTC for entries that have a provider source (refresh) or were never attempted (match), and on demand through `/api/jobs/start` or the metadata endpoints. Entries with `metadata_override=true` are skipped. Entries that were attempted and stayed UNMATCHED are left for manual review rather than re-searched every night.
+Enrichment runs automatically for the entries a scan created, nightly (03:00 by default) for entries that have a provider source (refresh) or were never attempted (match), and on demand through `/api/jobs/start` or the metadata endpoints. Entries with `metadata_override=true` are skipped. Entries that were attempted and stayed UNMATCHED are left for manual review rather than re-searched every night.
 
 `EnrichmentService.enrich` (`app/services/enrichment.py`) processes each candidate independently: errors are rolled back and counted, and the job can be cancelled between entries.
 
@@ -504,7 +504,7 @@ flowchart TD
     B --> F[Manual]
 ```
 
-Providers are tried in priority order: IGDB, Steam, GOG, Manual. GOG and Manual are stubs that return no results.
+Auto-matching tries the providers in the `provider_order` setting (default VNDB, IGDB, Steam) and stops at the first confident match; a provider left out is disabled. A new version of an already matched game reuses its sibling's source instead of searching. GOG and Manual are stubs that return no results.
 
 This architecture allows the enrichment pipeline to remain independent of any individual metadata source.
 
@@ -871,7 +871,7 @@ This one-to-many relationship provides richer visual representation within the c
 
 ### Artwork Refresh
 
-Artwork may be refreshed independently from metadata. The daily ARTWORK_REFRESH job (04:00 UTC) validates every entry's cover, banner and logo and re-downloads missing or corrupt assets, plus screenshots when none exist, for provider-matched entries. Artwork validation never changes `verification_status`.
+Artwork may be refreshed independently from metadata. The daily ARTWORK_REFRESH job (04:00 by default) validates every entry's cover, banner and logo and re-downloads missing or corrupt assets, plus screenshots when none exist, for provider-matched entries. Artwork validation never changes `verification_status`.
 
 `POST /api/artwork/auto-download` still runs synchronously in the API process for all active entries.
 
@@ -1110,7 +1110,7 @@ The system supports multiple categories of background work.
 | INTEGRITY_VERIFICATION | `verify_integrity_task` | Re-hash archives: VERIFIED, MISSING or CORRUPTED |
 | DUPLICATE_DETECTION | `detect_duplicates_task` | Group active entries by identical SHA-256 |
 
-Celery beat (a separate process; a `beat` service in both Compose stacks) fires METADATA_REFRESH at 03:00 and ARTWORK_REFRESH at 04:00 UTC. Each scheduled task skips if a job of the same type is already PENDING or RUNNING.
+Celery beat (a separate process; a `beat` service in every Compose stack) runs a five-minute tick that starts the scheduled tasks stored in the database (library scan 02:00, metadata refresh 03:00, artwork validation 04:00, weekly integrity verification and duplicate detection; server local time, editable under Admin > Scheduled Tasks). A task whose job type is already PENDING or RUNNING is retried at the next tick. The nightly library scan skips libraries whose folder is offline, keeps their entries, and fully rescans a library once it is reachable again.
 
 All job types follow the same execution model.
 
