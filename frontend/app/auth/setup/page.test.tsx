@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { useAuth } from "@/contexts/auth-context";
 import { librariesApi } from "@/lib/api/libraries";
 import { setupApi } from "@/lib/api/setup";
+import { scansApi } from "@/lib/api/scans";
+import { systemApi } from "@/lib/api/system";
 import SetupPage from "./page";
 
 const mockPush = vi.fn();
@@ -23,6 +25,14 @@ vi.mock("@/lib/api/setup", () => ({
 
 vi.mock("@/lib/api/libraries", () => ({
   librariesApi: { create: vi.fn() },
+}));
+
+vi.mock("@/lib/api/scans", () => ({
+  scansApi: { runFull: vi.fn().mockResolvedValue({}) },
+}));
+
+vi.mock("@/lib/api/system", () => ({
+  systemApi: { updateSettings: vi.fn().mockResolvedValue({}) },
 }));
 
 describe("SetupPage", () => {
@@ -58,8 +68,9 @@ describe("SetupPage", () => {
     await user.type(screen.getByLabelText("Confirm Password"), "secret1");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    await user.clear(screen.getByLabelText("Primary Archive Location"));
-    await user.type(screen.getByLabelText("Primary Archive Location"), "/games");
+    expect(screen.getByLabelText("Primary Archive Location")).toHaveValue("/games");
+    await user.type(screen.getByLabelText("IGDB client ID (optional)"), "client-1");
+    await user.type(screen.getByLabelText("IGDB client secret (optional)"), "secret-1");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await user.click(screen.getByRole("button", { name: "Complete Setup" }));
@@ -74,5 +85,7 @@ describe("SetupPage", () => {
     });
     expect(login).toHaveBeenCalledWith("admin", "secret1");
     expect(librariesApi.create).toHaveBeenCalledWith({ name: "Main Library", path: "/games" });
+    expect(systemApi.updateSettings).toHaveBeenCalledWith({ igdb_client_id: "client-1", igdb_client_secret: "secret-1" });
+    expect(scansApi.runFull).toHaveBeenCalled();
   });
 });

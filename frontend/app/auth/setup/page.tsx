@@ -9,6 +9,8 @@ import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
 import { librariesApi } from '@/lib/api/libraries'
 import { setupApi } from '@/lib/api/setup'
+import { scansApi } from '@/lib/api/scans'
+import { systemApi } from '@/lib/api/system'
 
 export default function SetupPage() {
   const router = useRouter()
@@ -22,7 +24,10 @@ export default function SetupPage() {
   const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('')
 
   const [libraryName, setLibraryName] = useState('Main Library')
-  const [libraryPath, setLibraryPath] = useState('/archive')
+  // The Docker stack mounts GAMES_PATH here.
+  const [libraryPath, setLibraryPath] = useState('/games')
+  const [igdbClientId, setIgdbClientId] = useState('')
+  const [igdbClientSecret, setIgdbClientSecret] = useState('')
 
   const [error, setError] = useState('')
   const [adminCreated, setAdminCreated] = useState(false)
@@ -88,6 +93,11 @@ export default function SetupPage() {
       }
       await login(adminUsername, adminPassword)
       await librariesApi.create({ name: libraryName, path: libraryPath })
+      if (igdbClientId.trim() && igdbClientSecret) {
+        await systemApi.updateSettings({ igdb_client_id: igdbClientId.trim(), igdb_client_secret: igdbClientSecret })
+      }
+      // The first scan starts right away; later scans follow the nightly schedule.
+      await scansApi.runFull().catch(() => undefined)
       setCompleted(true)
       router.push('/')
     } catch (err) {
@@ -270,7 +280,34 @@ export default function SetupPage() {
                       disabled={loading}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Path where your game archives are stored
+                      Folder holding your games, as the server sees it. With the Docker stack this is /games.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="igdb-client-id" className="text-sm font-medium">
+                      IGDB client ID (optional)
+                    </label>
+                    <Input
+                      id="igdb-client-id"
+                      value={igdbClientId}
+                      onChange={(e) => setIgdbClientId(e.target.value)}
+                      disabled={loading}
+                    />
+                    <label htmlFor="igdb-client-secret" className="text-sm font-medium">
+                      IGDB client secret (optional)
+                    </label>
+                    <Input
+                      id="igdb-client-secret"
+                      type="password"
+                      autoComplete="new-password"
+                      value={igdbClientSecret}
+                      onChange={(e) => setIgdbClientSecret(e.target.value)}
+                      disabled={loading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      VNDB and Steam work without keys. IGDB needs a Twitch application from dev.twitch.tv; you can
+                      also add it later under Admin &gt; Settings.
                     </p>
                   </div>
 
