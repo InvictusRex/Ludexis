@@ -12,6 +12,27 @@ This document describes the deployment architecture, infrastructure design decis
 
 ---
 
+# Homelab Quick Start
+
+The root `docker-compose.yml` is the production stack: `db`, `redis`, `backend` (runs `alembic upgrade head` on start), `worker`, `beat`, `frontend` and `proxy` (Caddy). Only the proxy publishes a port.
+
+1. Copy `.env.example` to `.env` and set `GAMES_PATH` (mounted read-only at `/games`), `TZ` and `POSTGRES_PASSWORD`.
+2. `docker compose up -d` (add `--build` to build from the checkout instead of pulling `ghcr.io/invictusrex/ludexis-*`).
+3. Open `http://<host>:${LUDEXIS_PORT:-8420}` and finish the setup wizard.
+
+| Path on the proxy | Goes to |
+| ----------------- | ------- |
+| `/api/*`, `/media/*`, `/healthz` | backend:8000 |
+| everything else | frontend:3000 |
+
+The frontend image is built with relative `/api` and `/media` URLs, so it works behind any hostname without rebuilding.
+
+Persistent data lives in two volumes: `db_data` (PostgreSQL) and `ludexis_data` (`/data/artwork` for downloaded artwork and `/data/config/jwt_secret`, generated on first start when `JWT_SECRET_KEY` is unset).
+
+Scheduled tasks (nightly incremental scan, metadata refresh, artwork validation, weekly integrity verification and duplicate detection) are stored in the database and edited under **Admin > Scheduled Tasks**. Celery beat only runs a five-minute tick that starts due tasks.
+
+`docker-compose.demo.yml` remains the evaluation stack with seeded demo data; `backend/docker-compose.yml` is the development stack with Prometheus and Grafana.
+
 # Deployment Philosophy
 
 The deployment model used by Ludexis is based on several engineering principles.

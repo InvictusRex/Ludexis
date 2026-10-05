@@ -1,14 +1,16 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
-RUN npm ci --omit=dev || npm install
+# Build tooling (Tailwind, TypeScript) is needed to build; only the standalone output reaches the runtime image.
+RUN npm ci
 
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api
-ARG NEXT_PUBLIC_MEDIA_URL=http://localhost:8000/media
+# Relative URLs: the bundled proxy serves the API and the web app on one origin, so one image fits any host.
+ARG NEXT_PUBLIC_API_URL=/api
+ARG NEXT_PUBLIC_MEDIA_URL=/media
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_MEDIA_URL=$NEXT_PUBLIC_MEDIA_URL
 ENV NEXT_TELEMETRY_DISABLED=1

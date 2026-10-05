@@ -59,13 +59,15 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health').read()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz').read()"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   worker:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     command: celery -A app.tasks.celery_app worker --loglevel=info
     env_file: ./backend/.env.docker
@@ -79,9 +81,11 @@ services:
         condition: service_healthy
 
   beat:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
-    # Fires the daily metadata refresh and artwork validation jobs.
+    # Starts due scheduled tasks (nightly scan, metadata refresh, artwork validation) every five minutes.
     command: celery -A app.tasks.celery_app beat --loglevel=info --schedule /tmp/celerybeat-schedule
     env_file: ./backend/.env.docker
     environment: *backend-environment

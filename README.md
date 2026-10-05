@@ -308,67 +308,64 @@ Screenshots and usage demonstrations will be added as the user interface matures
 
 ## Quick Start
 
-Ludexis is designed as a self-hosted service and can be deployed using Docker Compose. A standard deployment includes the FastAPI backend, Celery workers, PostgreSQL, Redis, Prometheus, Grafana, and system monitoring exporters.
+Ludexis runs as one Docker Compose stack: the web app, API, background worker, scheduler, PostgreSQL, Redis and a small proxy that serves everything on a single port.
 
 ### Requirements
 
-Before deployment, ensure the host system has:
+- Docker Engine 24+ with Docker Compose
+- 2 GB RAM (4 GB recommended for large libraries)
+- A folder of games: unpacked game folders and/or archives (`.zip`, `.rar`, `.7z`, `.iso`, `.exe`)
 
-- Docker
-- Docker Engine 24+ (Windows)
-- Docker Compose
-- 4 GB RAM recommended
-
-### Obtain the Source
+### Install
 
 ```bash
-git clone https://github.com/InvictusRex/Ludexis.git
-
-cd Ludexis/backend
+curl -O https://raw.githubusercontent.com/InvictusRex/Ludexis/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/InvictusRex/Ludexis/main/.env.example
+mkdir deploy && curl -o deploy/Caddyfile https://raw.githubusercontent.com/InvictusRex/Ludexis/main/deploy/Caddyfile
+cp .env.example .env
 ```
 
-### Configure the Environment
-
-Create a deployment configuration using `.env.docker` as a template and review all environment variables before starting the platform.
-
-At minimum, the following values should be configured:
+Edit `.env`:
 
 ```env
-JWT_SECRET_KEY=<your-secret-key>
-
-TWITCH_CLIENT_ID=<your-client-id>
-TWITCH_CLIENT_SECRET=<your-client-secret>
+GAMES_PATH=/mnt/games    # the folder holding your games, mounted read-only at /games
+TZ=Europe/Berlin         # scheduled tasks run in this time zone
+POSTGRES_PASSWORD=change-me
 ```
 
-The Twitch credentials are used for metadata retrieval through IGDB. Without valid credentials, metadata enrichment capabilities will be unavailable.
+Or clone the repository and run the same commands from its root; `docker compose up -d --build` builds the images from source.
 
-### Start the Platform
+### Start
 
 ```bash
 docker compose up -d
 ```
 
-The deployment automatically provisions and configures all required services, including the application backend, background workers, database services, monitoring stack, and observability tooling.
+Open `http://<host>:8420`. The setup wizard creates the administrator, adds `/games` as the first library, optionally stores IGDB credentials and starts the first scan.
 
-### Verify Deployment
+The JWT signing secret is generated on first start and kept in the `ludexis_data` volume; set `JWT_SECRET_KEY` only if you want to manage it yourself.
 
-Once all containers have started successfully, the following services should be available:
+### Metadata sources
 
-| Service    | URL                        |
-| ---------- | -------------------------- |
-| API        | http://localhost:8000      |
-| Swagger UI | http://localhost:8000/docs |
-| Prometheus | http://localhost:9090      |
-| Grafana    | http://localhost:3000      |
+| Source | Key needed | Good for |
+| ------ | ---------- | -------- |
+| VNDB   | No         | Visual novels and Ren'Py games |
+| IGDB   | Twitch client ID and secret ([dev.twitch.tv](https://dev.twitch.tv/console)) | Most commercial games |
+| Steam  | No         | Steam releases, screenshots and categories |
 
-Grafana ships with the default credentials:
+Order and enable them under **Admin > Settings**.
 
-```text
-Username: admin
-Password: admin
+### Drives that come and go
+
+Libraries on external or network drives can be disconnected at any time. The nightly scan marks a library **Offline** when its folder is missing (or empty while it still has entries), skips it, and keeps every entry and its metadata. The next nightly scan after the drive comes back marks it **Online** and rescans it in full. Schedules live under **Admin > Scheduled Tasks**.
+
+### Updating
+
+```bash
+docker compose pull && docker compose up -d
 ```
 
-These credentials should be changed before exposing the deployment outside a trusted environment.
+Database migrations run automatically when the backend starts.
 
 ### Initial Configuration
 
@@ -584,7 +581,7 @@ On Windows add `--pool=solo`.
 
 ### Start Celery Beat
 
-The daily metadata refresh (03:00 UTC) and artwork validation (04:00 UTC) jobs need the beat scheduler in a third terminal:
+Scheduled tasks (nightly library scan, metadata refresh, artwork validation and the weekly checks) need the beat scheduler in a third terminal:
 
 ```bash
 celery -A app.tasks.celery_app beat --loglevel=info

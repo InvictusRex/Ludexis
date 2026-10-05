@@ -18,6 +18,7 @@ env/
 
 # Secrets
 secrets/
+backend/config/
 *.pem
 *.key
 *.crt
