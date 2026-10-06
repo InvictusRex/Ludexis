@@ -4,6 +4,7 @@
 #   docker compose up -d
 #
 # Then open http://<host>:8420 and create the administrator account.
+# For HTTPS, point a domain at this host and set LUDEXIS_DOMAIN, LUDEXIS_PORT=80 and LUDEXIS_HTTPS_PORT=443.
 # Images come from GHCR; add --build to build them from this checkout instead.
 
 x-backend: &backend
@@ -73,6 +74,11 @@ services:
   worker:
     <<: *backend
     command: celery -A app.tasks.celery_app worker --loglevel=info
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.tasks.celery_app inspect ping -d celery@$$HOSTNAME --timeout 10"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
     depends_on:
       backend:
         condition: service_healthy
@@ -81,6 +87,13 @@ services:
     <<: *backend
     # Starts due scheduled tasks every five minutes; schedules are edited in Admin > Scheduled Tasks.
     command: celery -A app.tasks.celery_app beat --loglevel=info --schedule /tmp/celerybeat-schedule
+    # Beat saves its schedule file every few minutes while it runs.
+    healthcheck:
+      test: ["CMD-SHELL", "find /tmp -maxdepth 1 -name 'celerybeat-schedule*' -mmin -10 | grep -q ."]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 5m
     depends_on:
       backend:
         condition: service_healthy
@@ -90,6 +103,11 @@ services:
     build:
       context: ./frontend
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     depends_on:
       backend:
         condition: service_healthy
@@ -99,12 +117,21 @@ services:
     restart: unless-stopped
     ports:
       - "${LUDEXIS_PORT:-8420}:80"
+      - "${LUDEXIS_HTTPS_PORT:-8443}:443"
+    environment:
+      # Caddy treats an empty value as no site address, so plain HTTP is passed explicitly.
+      LUDEXIS_DOMAIN: ${LUDEXIS_DOMAIN:-:80}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates for LUDEXIS_DOMAIN.
+      - caddy_data:/data
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
 
 volumes:
   db_data:
   ludexis_data:
+  caddy_data:

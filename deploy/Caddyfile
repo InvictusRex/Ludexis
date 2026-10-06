@@ -1,5 +1,7 @@
-# One port for the whole service: the API and artwork go to the backend, everything else to the web app.
-:80 {
+# One address for the whole service: the API and artwork go to the backend, everything else to the web app.
+# Plain HTTP on port 80 by default; set LUDEXIS_DOMAIN to a public domain name and Caddy obtains and renews
+# a certificate for it and redirects HTTP to HTTPS.
+{$LUDEXIS_DOMAIN::80} {
 	encode gzip
 
 	@backend path /api/* /media/* /healthz
