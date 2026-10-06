@@ -18,6 +18,7 @@ import { ArtworkQualityIndicators } from "@/components/common/artwork-quality-in
 import { ArtworkComparisonDialog } from "@/components/common/artwork-comparison-dialog";
 import { ArtworkVersionHistory } from "@/components/common/artwork-version-history";
 import { ArchiveEditDialog } from "@/components/common/archive-edit-dialog";
+import { VersionList } from "@/components/common/version-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mediaUrl } from "@/lib/media";
 import { toastError, toastSuccess } from "@/lib/toast";
@@ -392,42 +393,7 @@ export default function ArchiveDetailsPage() {
             </div>
           </div>
 
-          {versions.length > 1 && (
-            <div className="bg-card rounded-lg border border-border p-6">
-              <h3 className="font-semibold text-foreground mb-4">
-                Versions ({versions.length})
-              </h3>
-              <ul className="space-y-2 text-sm">
-                {versions.map((version) => (
-                  <li key={version.id}>
-                    <Link
-                      href={`/archive/${version.id}`}
-                      className={`flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border transition-colors hover:border-accent ${
-                        version.id === entry.id ? "border-accent" : "border-border"
-                      }`}
-                    >
-                      <span className="font-medium text-foreground">
-                        {version.version ? `v${version.version}` : "Unversioned"}
-                      </span>
-                      <code className="text-muted-foreground font-mono text-xs break-all">
-                        {version.file_path}
-                      </code>
-                      <span className="flex items-center gap-2">
-                        {version.file_size != null && (
-                          <span className="text-muted-foreground">
-                            {(version.file_size / 1024 / 1024).toFixed(1)} MB
-                          </span>
-                        )}
-                        <Badge variant="secondary" className="text-xs">
-                          {version.verification_status}
-                        </Badge>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <VersionList versions={versions} currentId={entry.id} />
         </div>
       </div>
 
