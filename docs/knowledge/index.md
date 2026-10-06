@@ -72,7 +72,7 @@ Ludexis/
 │   ├── app/models/              18 models + association_tables.py (27 tables)
 │   ├── app/schemas/             20 modules, 67 Pydantic schemas
 │   ├── app/tasks/               celery_app + scan/metadata/artwork tasks (8 tasks)
-│   ├── app/providers/           MetadataProvider base, IGDB (+client), Steam, GOG, Manual
+│   ├── app/providers/           MetadataProvider base, VNDB, IGDB (+client), Steam, Manual
 │   ├── app/core/ app/utils/ app/db/   config, auth/permissions, security, logging, metrics, enums, helpers
 │   ├── alembic/versions/        1 baseline migration (ecabaf1d5dab)
 │   └── tests/                   20 pytest files
@@ -130,18 +130,18 @@ Load only the file you need.
 
 ## Graph Statistics
 
-Verified at commit `9f6a510` on 2026-10-05. Regenerate with `validate.py --stats-json`.
+Verified at commit `c0b5f19` on 2026-10-06. Regenerate with `validate.py --stats-json`.
 
 | | Count |
 |-|-------|
-| Entities | 756 |
-| Relationships | 3,528 |
+| Entities | 776 |
+| Relationships | 3,598 |
 
 | Entity type | Count | Entity type | Count |
 |-------------|-------|-------------|-------|
-| APIRoute | 96 | Component | 54 |
-| Schema | 71 | ApiFunction | 106 |
-| DBTable | 29 | TestFile | 76 (29 backend, 47 frontend) |
+| APIRoute | 99 | Component | 57 |
+| Schema | 74 | ApiFunction | 110 |
+| DBTable | 29 | TestFile | 83 (32 backend, 51 frontend) |
 | Router | 22 | Type | 69 |
 | Service | 22 | Page | 33 |
 | Domain | 19 | ApiModule | 22 |
@@ -151,28 +151,28 @@ Verified at commit `9f6a510` on 2026-10-05. Regenerate with `validate.py --stats
 | Layer | 16 | Context | 1 |
 | DBEnum | 7 | Layout | 1 |
 | Task | 7 | Class | 1 |
-| Provider | 7 | Migration | 5 |
-| ExternalProvider | 5 | | |
+| Provider | 6 | Migration | 7 |
+| ExternalProvider | 4 | | |
 
 | Relationship type | Count | Relationship type | Count |
 |-------------------|-------|-------------------|-------|
-| BELONGS_TO | 1280 | DEPENDS_ON | 38 |
+| BELONGS_TO | 1308 | DEPENDS_ON | 40 |
 | IMPORTS | 396 | ACCEPTS | 27 |
-| RENDERS | 281 | ACCESSES | 30 |
-| TESTS | 194 | CREATES | 29 |
+| RENDERS | 294 | ACCESSES | 31 |
+| TESTS | 206 | CREATES | 29 |
 | CONTAINS | 156 | MAPS_TO | 27 |
-| CALLS | 140 | USES_CLIENT | 20 |
-| CALLS_API | 134 | DEFINES | 27 |
-| FLOWS_TO | 106 | MANY_TO_MANY | 15 |
-| CALLS_ENDPOINT | 111 | ASSOCIATED_THROUGH | 13 |
-| EXPOSES | 96 | MANY_TO_ONE | 12 |
+| CALLS | 144 | USES_CLIENT | 20 |
+| CALLS_API | 138 | DEFINES | 27 |
+| FLOWS_TO | 105 | MANY_TO_MANY | 15 |
+| CALLS_ENDPOINT | 115 | ASSOCIATED_THROUGH | 13 |
+| EXPOSES | 99 | MANY_TO_ONE | 12 |
 | RETURNS | 68 | ONE_TO_MANY | 11 |
-| READS | 63 | USES_PROVIDER | 9 |
-| WRITES | 53 | CONSUMES | 12 |
-| EXTENDS | 46 | NESTS | 9 |
+| READS | 63 | USES_PROVIDER | 7 |
+| WRITES | 56 | CONSUMES | 12 |
+| EXTENDS | 45 | NESTS | 9 |
 | MIRRORS | 42 | DISPATCHES | 8 |
-| USES_CONTEXT | 36 | USES_ENUM | 5 |
-| USES_HOOK | 31 | PROVIDES | 3 |
+| USES_CONTEXT | 37 | USES_ENUM | 5 |
+| USES_HOOK | 31 | PROVIDES | 2 |
 
 ---
 

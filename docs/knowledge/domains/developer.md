@@ -54,3 +54,4 @@ Game development studios linked to archive entries through `archive_entry_develo
 - Tests: no dedicated backend test file.
 - `developersApi.getEntries` delegates to `archiveApi.getByDeveloper` (client-side filter of the first 1000 entries).
 - `frontend/app/archive/[id]/page.tsx` resolves developer names with `developersApi.getById` per id.
+- `developers.name_key` (unique) holds `company_key(name)`, set by a `@validates("name")` hook; `DeveloperRepository.get_by_name` matches on it, so "SEGA" and "Sega" are one developer. Create and rename return 400 when another developer has the same key.

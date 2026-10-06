@@ -57,6 +57,8 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 | POST | `/api/auth/refresh` | `refresh` (`backend/app/api/auth.py`) | public | `apifn:lib/api/auth.authApi.refresh` |
 | POST | `/api/auth/logout` | `logout` (`backend/app/api/auth.py`) | public | `apifn:lib/api/auth.authApi.logout` |
 | GET | `/api/auth/me` | `read_current_user` (`backend/app/api/auth.py`) | authenticated (get_current_user) | `apifn:lib/api/auth.authApi.getCurrentUser` |
+| POST | `/api/auth/change-password` | `change_password` (`backend/app/api/auth.py`) | authenticated | `apifn:lib/api/auth.authApi.changePassword` |
+| POST | `/api/auth/logout-all` | `logout_all` (`backend/app/api/auth.py`) | authenticated | `apifn:lib/api/auth.authApi.logoutAll` |
 | POST | `/api/auth/token` | `token_login` (`backend/app/api/auth.py`) | public | none |
 | GET | `/api/setup/status` | `setup_status` (`backend/app/api/setup.py`) | public | `apifn:lib/api/setup.setupApi.getStatus` |
 | POST | `/api/setup/initialize` | `initialize_system` (`backend/app/api/setup.py`) | public | `apifn:lib/api/setup.setupApi.initialize` |
@@ -72,7 +74,7 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 - Protect a new page: call `useRequireAuth(user, loading)` or `useRequireAdmin(user, loading)` from `frontend/hooks/use-protected-route.ts` with `useAuth()` values.
 
 ## Notes
-- Access token 15 min, refresh token 30 days (defaults in `Settings`). JWT payload: `sub` (user id), `type` (`access`/`refresh`), `exp`, `jti`.
+- Access token 15 min, refresh token 30 days (defaults in `Settings`). JWT payload: `sub` (user id), `type` (`access`/`refresh`), `exp`, `jti`; access tokens also carry a fractional `iat`.
 - `AuthService.refresh_tokens` revokes the presented refresh token and issues a new pair (rotation). Reusing a revoked token returns 401.
 - `POST /api/auth/token` is the OAuth2 form endpoint used by `oauth2_scheme` (`tokenUrl="/api/auth/token"`); the frontend uses `POST /api/auth/login` (JSON).
 - `get_current_user` rejects inactive users with 401; `login` returns 400 for inactive users after a correct password.
@@ -82,3 +84,5 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 - Browser sessions use httpOnly cookies set by `POST /api/auth/login` and `/auth/refresh` (`set_auth_cookies` in `backend/app/core/auth.py`): `ludexis_access` (path `/`, access lifetime) and `ludexis_refresh` (path `/api/auth`, refresh lifetime), `SameSite=Lax`, `Secure` over HTTPS. `get_current_user` accepts the Authorization header first, then the cookie; cookie-authenticated POST/PUT/PATCH/DELETE must send `X-Requested-With` (`require_csrf_header`), which `apiClient` always sends.
 - A cookie refresh (no body) renews the cookies and returns no tokens in the body; `/auth/token` and body refreshes still return tokens for tooling. `/auth/logout` revokes the body or cookie refresh token and clears both cookies.
 - `LoginRateLimiter` (Redis key `login-failures:<username>:<ip>`): 5 failures within 15 minutes return 429 with `Retry-After`, even for the right password; a success clears the counter; if Redis is down logins are not limited.
+- Ending sessions (`AuthService.end_sessions`): sets `users.sessions_revoked_at` and revokes every refresh token of the user; `_user_from_token` rejects access tokens whose `iat` is older (401 "Session ended"), so stolen access tokens stop working at once instead of after 15 minutes.
+- `POST /api/auth/change-password` checks the current password (failures count against the login rate limiter for that username and address), requires 8+ characters, ends every session, then issues new tokens and cookies for the caller (tokens in the body only for Authorization-header callers). `POST /api/auth/logout-all` ends every session including the caller's and clears the cookies. Both are on the account page (`AccountSecurityCard`).

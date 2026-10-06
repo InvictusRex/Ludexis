@@ -53,3 +53,4 @@ Game publishers linked to archive entries through `archive_entry_publishers`. Al
 - `publishersApi.getEntries` delegates to `archiveApi.getByPublisher` (client-side filter of the first 1000 entries).
 - There is no publisher card component; `frontend/app/publishers/page.tsx` renders its own markup.
 - `frontend/app/archive/[id]/page.tsx` resolves publisher names with `publishersApi.getById` per id.
+- `publishers.name_key` (unique) holds `company_key(name)`, set by a `@validates("name")` hook; `PublisherRepository.get_by_name` matches on it, so "SEGA" and "Sega" are one publisher. Create and rename return 400 when another publisher has the same key.
