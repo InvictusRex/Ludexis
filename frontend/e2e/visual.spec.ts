@@ -2,6 +2,12 @@ import { test, expect, type Page } from "@playwright/test";
 
 const SHOT_OPTS = { maxDiffPixelRatio: 0.02 };
 
+// Counts, job lists, game cards and the account email depend on whatever library the server holds,
+// so they are masked: these baselines check the layout, not the data.
+const accountEmail = (page: Page) => page.locator("header").getByText(/@/);
+const innermostGrid = (page: Page, text: string) =>
+  page.getByText(text, { exact: true }).locator("xpath=ancestor::div[contains(concat(' ', @class, ' '), ' grid ')][1]");
+
 async function loginAsAdmin(page: Page) {
   await page.goto("/");
   await expect(page).toHaveURL(/\/login/);
@@ -33,7 +39,11 @@ test("admin dashboard screenshot after login", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   await expect(page).toHaveScreenshot("admin-dashboard.png", {
     ...SHOT_OPTS,
-    fullPage: true,
+    mask: [
+      accountEmail(page),
+      innermostGrid(page, "Total Entries"),
+      page.locator('[data-slot="card"]').filter({ hasText: "Recent Jobs" }),
+    ],
   });
 });
 
@@ -50,7 +60,15 @@ test("library page screenshot after login", async ({ page }) => {
     page.getByRole("checkbox", { name: "Select all entries" }),
   ).toBeVisible();
   await page.waitForLoadState("networkidle");
-  await expect(page).toHaveScreenshot("library.png", { ...SHOT_OPTS });
+  await expect(page).toHaveScreenshot("library.png", {
+    ...SHOT_OPTS,
+    mask: [
+      accountEmail(page),
+      page.getByText(/^Showing /),
+      page.getByText(/ shown · /),
+      page.locator("div.grid:has(> div.relative)"),
+    ],
+  });
 });
 
 test("monitoring page screenshot after login", async ({ page }) => {
