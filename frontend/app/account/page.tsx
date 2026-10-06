@@ -4,6 +4,7 @@ import { Mail, ShieldCheck, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useRequireAuth } from "@/hooks/use-protected-route";
 import { AccountActivityList } from "@/components/common/account-activity-list";
+import { AccountSecurityCard } from "@/components/common/account-security-card";
 import { EffectivePermissionsPanel } from "@/components/common/effective-permissions-panel";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -96,6 +97,8 @@ export default function AccountPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AccountSecurityCard />
 
       <EffectivePermissionsPanel />
 
