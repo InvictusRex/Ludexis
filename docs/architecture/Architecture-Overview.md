@@ -250,12 +250,14 @@ Stored files are served by the authenticated `/media/{path}` route. Browsers loa
 
 Metadata services provide enrichment information for archive entries.
 
-Providers, in priority order:
+Providers, in the default order of the `provider_order` setting:
 
+- VNDB
 - IGDB
 - Steam
-- GOG (stub, returns no results)
 - Manual (stub; manual edits go through the archive entry metadata endpoint)
+
+A match on one provider is completed by the other enabled providers: each one's best search hit is merged when its title scores at least 0.85 against the matched title and the release years, when both are known, are at most one year apart. A VNDB match therefore gains IGDB genres, franchises and artwork and Steam screenshots. When a match is missing or wrong, **Identify** searches one or all providers from the browser and applies the chosen record to every version of the game. Developer and publisher names are stored once per spelling-independent key, so "SEGA" and "Sega" are one company.
 
 The architecture treats providers as interchangeable components, allowing additional sources to be integrated without major modifications to existing code.
 

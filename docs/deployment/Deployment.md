@@ -27,7 +27,11 @@ The root `docker-compose.yml` is the production stack: `db`, `redis`, `backend` 
 
 The frontend image is built with relative `/api` and `/media` URLs, so it works behind any hostname without rebuilding.
 
-Persistent data lives in two volumes: `db_data` (PostgreSQL) and `ludexis_data` (`/data/artwork` for downloaded artwork and `/data/config/jwt_secret`, generated on first start when `JWT_SECRET_KEY` is unset).
+Persistent data lives in three volumes: `db_data` (PostgreSQL), `ludexis_data` (`/data/artwork` for downloaded artwork and `/data/config/jwt_secret`, generated on first start when `JWT_SECRET_KEY` is unset) and `caddy_data` (certificates). Back up the first two with `pg_dump` and a `tar` of `/data`; the README's Backups section has the commands.
+
+Setting `LUDEXIS_DOMAIN` makes Caddy serve that domain over HTTPS with an automatically renewed certificate (publish ports 80 and 443 with `LUDEXIS_PORT` and `LUDEXIS_HTTPS_PORT`). Left empty, the proxy serves plain HTTP. Behind HTTPS the backend sees `X-Forwarded-Proto: https` and marks the session cookies `Secure`.
+
+Every long-running service has a health check: the backend answers `/healthz`, the worker answers a Celery ping, beat keeps its schedule file fresh and the frontend answers on port 3000. The proxy starts once the backend and frontend are healthy. Images are published for `linux/amd64` and `linux/arm64`.
 
 Scheduled tasks (nightly incremental scan, metadata refresh, artwork validation, weekly integrity verification and duplicate detection) are stored in the database and edited under **Admin > Scheduled Tasks**. Celery beat only runs a five-minute tick that starts due tasks.
 

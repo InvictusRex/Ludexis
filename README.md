@@ -91,7 +91,7 @@ Discovered entries are normalized and stored in a structured catalog, enabling c
 
 ### Metadata Aggregation & Enrichment
 
-Ludexis automatically enriches archive entries using external metadata providers and is designed around a provider-agnostic architecture that allows additional metadata sources to be integrated over time. The current implementation utilizes IGDB and can be extended to support platforms such as Steam, MobyGames, RAWG, GOG, PCGamingWiki, and other preservation-oriented metadata sources.
+Ludexis automatically enriches archive entries from VNDB, IGDB and Steam through a provider-agnostic architecture that allows additional metadata sources to be integrated over time. A match on one source is completed with whatever the others know about the same game, and any entry can be identified by hand from a search across all of them.
 
 Metadata enrichment transforms raw archive files into richly cataloged entries by retrieving official game information and associating it with discovered archives.
 
@@ -351,9 +351,11 @@ The JWT signing secret is generated on first start and kept in the `ludexis_data
 | ------ | ---------- | -------- |
 | VNDB   | No         | Visual novels and Ren'Py games |
 | IGDB   | Twitch client ID and secret ([dev.twitch.tv](https://dev.twitch.tv/console)) | Most commercial games |
-| Steam  | No         | Steam releases, screenshots and categories |
+| Steam  | No         | Steam releases, descriptions and screenshots |
 
-Order and enable them under **Admin > Settings**.
+Order and enable them under **Admin > Settings**. The first source with a confident match supplies the metadata, and the other enabled sources fill what it lacks (genres, franchises, artwork) when they clearly have the same game. Developer and publisher names are merged across spellings, so "SEGA" and "Sega" are one company.
+
+When a match is missing or wrong, open the game and choose **Identify**: search VNDB, IGDB or Steam (or all of them), pick the right result, and its metadata is applied to every version of the game while fresh artwork downloads in the background.
 
 ### Drives that come and go
 
@@ -366,6 +368,38 @@ docker compose pull && docker compose up -d
 ```
 
 Database migrations run automatically when the backend starts.
+
+### HTTPS
+
+On a home network the plain `http://<host>:8420` address is fine. Before exposing Ludexis to the internet, point a domain name at the host and set in `.env`:
+
+```env
+LUDEXIS_DOMAIN=games.example.com
+LUDEXIS_PORT=80
+LUDEXIS_HTTPS_PORT=443
+```
+
+After `docker compose up -d`, Caddy obtains and renews a certificate for the domain, redirects HTTP to HTTPS, and the session cookies are marked `Secure`. Certificates are kept in the `caddy_data` volume.
+
+### Backups
+
+Everything worth keeping is the database and the `ludexis_data` volume (artwork and the generated JWT secret). From the folder with `docker-compose.yml`:
+
+```bash
+docker compose exec -T db pg_dump -U ludexis -Fc ludexis > ludexis-db.dump
+docker compose run --rm --no-deps -v "$PWD:/backup" --entrypoint tar backend czf /backup/ludexis-data.tgz -C /data .
+```
+
+To restore into a fresh stack, start only the database, load the dump, unpack the data, then start everything:
+
+```bash
+docker compose up -d db
+docker compose exec -T db pg_restore -U ludexis -d ludexis --clean --if-exists < ludexis-db.dump
+docker compose run --rm --no-deps -v "$PWD:/backup" --entrypoint tar backend xzf /backup/ludexis-data.tgz -C /data
+docker compose up -d
+```
+
+Your games themselves are never modified, so they need no backup from Ludexis.
 
 ### Initial Configuration
 

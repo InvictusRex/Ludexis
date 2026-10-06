@@ -119,6 +119,41 @@ POST /api/auth/logout
 
 ---
 
+## Change Password
+
+Change the signed-in user's password. Every other session is signed out; this one receives new tokens and cookies.
+
+```http
+POST /api/auth/change-password
+```
+
+```json
+{
+  "current_password": "<current>",
+  "new_password": "<at least 8 characters>"
+}
+```
+
+Returns the same body as login (tokens only when the request used the `Authorization` header). A wrong current password returns `400`; repeated failures return `429` like sign-in.
+
+---
+
+## Log Out Everywhere
+
+End every session of the signed-in user on every device, including this one.
+
+```http
+POST /api/auth/logout-all
+```
+
+```http
+204 No Content
+```
+
+Access tokens issued before the call stop working immediately.
+
+---
+
 ## Current User
 
 Retrieve information about the authenticated user.
@@ -561,6 +596,32 @@ Returns every version of the entry's game (entries sharing its `group_key`), new
 
 ---
 
+## Identify Archive Entry
+
+Requires `EDIT_METADATA`. Match the entry, and every version of the same game without a metadata lock, to a provider record chosen by the user.
+
+```http
+POST /api/archive-entries/{id}/identify
+```
+
+```json
+{ "provider": "VNDB", "provider_id": "v945" }
+```
+
+**Response**
+
+```json
+{
+  "entry": { "id": "...", "title": "Katawa Shoujo", "metadata_status": "MATCHED", "metadata_source": "VNDB" },
+  "updated_entries": 2,
+  "artwork_job": { "job_type": "ARTWORK_REFRESH", "status": "PENDING" }
+}
+```
+
+Metadata is applied immediately; fresh artwork for the updated entries is downloaded by the returned job. `404` when the entry or the provider record does not exist.
+
+---
+
 ## Get Archive Entry
 
 ```http
@@ -779,7 +840,11 @@ Metadata is retrieved from external providers and used for archive enrichment.
 GET /api/metadata/search
 ```
 
-Searches external metadata providers.
+Searches external metadata providers. Without `provider`, the first provider with results answers. With `provider=VNDB|IGDB|Steam`, only that provider is searched; `provider=all` searches every enabled provider in the configured order. Results include `cover_url` thumbnails where the provider has one (used by the Identify dialog).
+
+```http
+GET /api/metadata/search?q=katawa%20shoujo&provider=all
+```
 
 ---
 

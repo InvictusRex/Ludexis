@@ -201,6 +201,8 @@ Status: `✅` completed and verified; `[in progress]` partially implemented or r
 - ✅~~Library management integration.~~
 - ✅~~System configuration integration.~~ (Server Settings form: server name, metadata source order, IGDB credentials)
 - ✅~~Scheduled Tasks page.~~ (schedule, enable, run now, last result)
+- ✅~~Identify dialog.~~ (search VNDB, IGDB, Steam or all from the game page and the metadata review page; apply to every version)
+- ✅~~Account security.~~ (change password, log out everywhere)
 
 ### Medium Priority
 

@@ -211,6 +211,13 @@
 - ✅~~Stale-job recovery.~~ (worker restart and age-based sweep)
 - ✅~~Artwork auto-download as a background job.~~
 - ✅~~Pull-and-run compose stack.~~ (Caddy on one port, GHCR images, generated JWT secret, read-only `/games` mount)
+- ✅~~Merge spellings of one developer or publisher.~~ (`company_key`, `name_key`, migration merges existing duplicates)
+- ✅~~Combine provider data for one game.~~ (every enabled provider supplements the primary match)
+- ✅~~Interactive identify.~~ (provider-scoped search with thumbnails, identify endpoint, artwork replace job)
+- ✅~~Change own password and log out everywhere.~~ (`sessions_revoked_at` rejects older access tokens)
+- ✅~~EPISODE relationships for series; verify a library right after it reconnects.~~
+- ✅~~HTTPS, health checks, arm64 images and backups for the homelab stack.~~ (`LUDEXIS_DOMAIN`, Caddy certificates)
+- ❌~~GOG provider stub.~~ (removed)
 
 ---
 

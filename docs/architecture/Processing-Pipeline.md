@@ -495,16 +495,16 @@ flowchart TD
 
     A --> B[Metadata Provider]
 
-    B --> C[IGDB]
+    B --> C[VNDB]
 
-    B --> D[Steam]
+    B --> D[IGDB]
 
-    B --> E[GOG]
+    B --> E[Steam]
 
     B --> F[Manual]
 ```
 
-Auto-matching tries the providers in the `provider_order` setting (default VNDB, IGDB, Steam) and stops at the first confident match; a provider left out is disabled. A new version of an already matched game reuses its sibling's source instead of searching. GOG and Manual are stubs that return no results.
+Auto-matching tries the providers in the `provider_order` setting (default VNDB, IGDB, Steam) and stops at the first confident match; a provider left out is disabled. A new version of an already matched game reuses its sibling's source instead of searching. A match on one provider is completed by the other enabled providers: each one's best search hit is merged when its title scores at least 0.85 against the matched title and the release years, when both are known, are at most one year apart. A VNDB match therefore gains IGDB genres, franchises and artwork and Steam screenshots. Manual is a stub that returns no results. A user can correct any match with Identify (`POST /api/archive-entries/{id}/identify`): the chosen record is applied to every unlocked version at once and an `ARTWORK_REFRESH` job replaces their artwork.
 
 This architecture allows the enrichment pipeline to remain independent of any individual metadata source.
 

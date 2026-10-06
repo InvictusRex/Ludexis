@@ -617,7 +617,7 @@ Database consistency remains protected even when exceptions occur during request
 
 ### Overview
 
-Ludexis separates metadata acquisition from metadata persistence through a provider-based architecture. External services such as VNDB, IGDB, Steam, GOG, and manual metadata sources are abstracted behind a common provider interface. This allows metadata enrichment logic to remain independent of any specific external API implementation.
+Ludexis separates metadata acquisition from metadata persistence through a provider-based architecture. External services such as VNDB, IGDB, Steam and manual metadata sources are abstracted behind a common provider interface. This allows metadata enrichment logic to remain independent of any specific external API implementation.
 
 The objective of the subsystem is to transform a scanned archive entry into a fully enriched catalog record containing descriptive information, release metadata, artwork, genres, developers, publishers, and verification information.
 
@@ -697,9 +697,9 @@ classDiagram
         download_artwork()
     }
 
+    MetadataProvider <|-- VNDBProvider
     MetadataProvider <|-- IGDBProvider
     MetadataProvider <|-- SteamProvider
-    MetadataProvider <|-- GOGProvider
     MetadataProvider <|-- ManualProvider
 ```
 
@@ -719,17 +719,9 @@ Automatic matching tries IGDB first and falls back to Steam when IGDB has no con
 
 The Steam provider functions as a secondary enrichment source.
 
-Steam is both a fallback match source and a secondary enrichment source. After a match, a Steam record is merged into the primary dataset only when its title is itself a confident match (>= 0.85). Steam supplies genres, developers, publishers, descriptions, a banner (header image), logos (capsule images), a portrait cover (`library_600x900.jpg`, when the app has one) and screenshots.
+Steam is both a fallback match source and a secondary enrichment source. A match on one provider is completed by the other enabled providers: each one's best search hit is merged when its title scores at least 0.85 against the matched title and the release years, when both are known, are at most one year apart. A VNDB match therefore gains IGDB genres, franchises and artwork and Steam screenshots. Steam supplies genres, developers, publishers, descriptions, a banner (header image), logos (capsule images), a portrait cover (`library_600x900.jpg`, when the app has one) and screenshots.
 
 The final metadata record is generated through a conflict resolution process that combines data from both providers.
-
----
-
-### GOG Provider
-
-The GOG provider implements the same abstraction interface and can participate in the metadata acquisition pipeline.
-
-The GOG provider is a stub that returns no results; GOG integration is not planned.
 
 ---
 
@@ -747,9 +739,9 @@ Metadata providers are registered within the Metadata Service during initializat
 
 ```python
 self.providers = [
+    VNDBProvider(),
     IGDBProvider(),
     SteamProvider(),
-    GOGProvider(),
     ManualProvider(),
 ]
 ```
@@ -924,9 +916,9 @@ flowchart LR
     A[Archive Entry]
     --> B[Metadata Source]
 
-    B --> C[IGDB]
-    B --> D[Steam]
-    B --> E[GOG]
+    B --> C[VNDB]
+    B --> D[IGDB]
+    B --> E[Steam]
     B --> F[Manual]
 ```
 
@@ -2121,6 +2113,10 @@ Access tokens are intentionally short-lived (15 minutes by default) to reduce ri
 
 Login and refresh set the tokens as httpOnly cookies: `ludexis_access` (path `/`) and `ludexis_refresh` (path `/api/auth`), `SameSite=Lax`, `Secure` when the request came over HTTPS. `get_current_user` reads the `Authorization` header first and falls back to the cookie. Cookie-authenticated `POST`/`PUT`/`PATCH`/`DELETE` requests must send `X-Requested-With`, which a cross-site form cannot set. A refresh through the cookie returns no tokens in its body. `/media/{path}` authenticates the same way, so `<img>` requests need nothing in the URL; path traversal returns 404.
 
+### Ending Sessions
+
+`users.sessions_revoked_at` marks the moment a user's sessions ended. Access tokens carry a fractional `iat`, and `get_current_user` rejects any access token issued before that moment, so ending sessions takes effect at once rather than when the 15-minute access token expires; every refresh token of the user is revoked at the same time. `POST /auth/change-password` (current password, new password of 8+ characters) ends all sessions and gives the caller fresh tokens and cookies; failed attempts count against the login rate limiter. `POST /auth/logout-all` ends every session, including the caller's.
+
 ### Login Rate Limiting
 
 `LoginRateLimiter` (`app/core/rate_limit.py`) counts failed logins in Redis per username and client address: after 5 failures within 15 minutes, `/auth/login` and `/auth/token` return 429 with `Retry-After`, even for the right password. A successful login clears the counter. If Redis is unavailable logins are not limited.
@@ -2993,9 +2989,9 @@ Metadata enrichment relies on external services.
 
 Examples include:
 
+- VNDB
 - IGDB
 - Steam
-- GOG
 - Manual metadata sources
 
 Directly coupling metadata services to a specific provider would create long-term maintenance risks.
@@ -3019,7 +3015,7 @@ flowchart LR
 
     MetadataProvider
 
-    --> GOG
+    --> VNDB
 
     MetadataProvider
 
