@@ -13,6 +13,7 @@ export interface MetadataSearchResult {
   summary?: string | null;
   release_date?: string | null;
   score?: number | null;
+  cover_url?: string | null;
 }
 
 export interface MetadataDetails {

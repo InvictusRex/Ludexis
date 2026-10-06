@@ -18,6 +18,17 @@ export const metadataApi = {
     );
   },
 
+  /** Interactive search: one provider, or "all" enabled providers in their configured order. */
+  async searchProvider(
+    query: string,
+    provider: string,
+  ): Promise<MetadataSearchResult[]> {
+    const params = new URLSearchParams({ q: query, provider });
+    return apiClient.get<MetadataSearchResult[]>(
+      `/metadata/search?${params.toString()}`,
+    );
+  },
+
   async getDetails(
     providerName: string,
     providerId: string,

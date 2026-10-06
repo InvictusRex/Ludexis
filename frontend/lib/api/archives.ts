@@ -1,5 +1,11 @@
 import { apiClient } from "./client";
-import type { ArchiveEntry, ArchiveEntryUpdate, SearchFilters } from "@/lib/types";
+import type { ArchiveEntry, ArchiveEntryUpdate, JobHistory, SearchFilters } from "@/lib/types";
+
+export interface IdentifyResult {
+  entry: ArchiveEntry;
+  updated_entries: number;
+  artwork_job: JobHistory;
+}
 
 export const archiveApi = {
   async getAll(offset = 0, limit = 100): Promise<ArchiveEntry[]> {
@@ -76,6 +82,13 @@ export const archiveApi = {
     return apiClient.get<import("@/lib/types").DuplicateGroup[]>(
       "/archive-entries/duplicates",
     );
+  },
+
+  async identify(id: string, provider: string, providerId: string): Promise<IdentifyResult> {
+    return apiClient.post<IdentifyResult>(`/archive-entries/${id}/identify`, {
+      provider,
+      provider_id: providerId,
+    });
   },
 
   async getVersions(id: string): Promise<ArchiveEntry[]> {

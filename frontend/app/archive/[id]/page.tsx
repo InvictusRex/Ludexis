@@ -18,6 +18,7 @@ import { ArtworkQualityIndicators } from "@/components/common/artwork-quality-in
 import { ArtworkComparisonDialog } from "@/components/common/artwork-comparison-dialog";
 import { ArtworkVersionHistory } from "@/components/common/artwork-version-history";
 import { ArchiveEditDialog } from "@/components/common/archive-edit-dialog";
+import { IdentifyDialog } from "@/components/common/identify-dialog";
 import { VersionList } from "@/components/common/version-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mediaUrl } from "@/lib/media";
@@ -29,6 +30,7 @@ import {
   Calendar,
   Zap,
   Trash2,
+  SearchCheck,
 } from "lucide-react";
 
 export default function ArchiveDetailsPage() {
@@ -43,6 +45,9 @@ export default function ArchiveDetailsPage() {
   const [versions, setVersions] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [identifyOpen, setIdentifyOpen] = useState(false);
+  // Bumped after an identify so every section reloads with the new metadata.
+  const [reloadKey, setReloadKey] = useState(0);
 
   const { user, loading: authLoading } = useAuth();
 
@@ -111,7 +116,7 @@ export default function ArchiveDetailsPage() {
     };
 
     loadDetails();
-  }, [entryId, authLoading, user]);
+  }, [entryId, authLoading, user, reloadKey]);
 
   if (authLoading || loading) {
     return <div className="h-96 bg-card rounded-lg animate-pulse" />;
@@ -196,6 +201,14 @@ export default function ArchiveDetailsPage() {
             >
               <Edit size={18} />
               Edit Entry
+            </Button>
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => setIdentifyOpen(true)}
+            >
+              <SearchCheck size={18} />
+              Identify
             </Button>
             <Button className="w-full" variant="outline" onClick={handleShare}>
               <Share2 size={18} />
@@ -438,6 +451,12 @@ export default function ArchiveDetailsPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         onSaved={setEntry}
+      />
+      <IdentifyDialog
+        entry={entry}
+        open={identifyOpen}
+        onOpenChange={setIdentifyOpen}
+        onIdentified={() => setReloadKey((key) => key + 1)}
       />
     </div>
   );

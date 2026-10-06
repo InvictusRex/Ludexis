@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ProviderSourceBadge } from "@/components/common/provider-source-badge";
+import { IdentifyDialog } from "@/components/common/identify-dialog";
 import {
   ArrowLeft,
   AlertCircle,
@@ -27,6 +28,7 @@ import {
   Search,
   Save,
   FileText,
+  SearchCheck,
 } from "lucide-react";
 
 const getMetadataStatusColor = (status: string) => {
@@ -70,6 +72,7 @@ export default function AdminMetadata() {
   const [searchResults, setSearchResults] = useState<MetadataSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [identifyOpen, setIdentifyOpen] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
 
@@ -327,6 +330,15 @@ export default function AdminMetadata() {
                   )}
 
                   <Button
+                    variant="outline"
+                    onClick={() => setIdentifyOpen(true)}
+                    className="gap-2 w-full"
+                  >
+                    <SearchCheck className="w-4 h-4" />
+                    Identify from VNDB, IGDB or Steam
+                  </Button>
+
+                  <Button
                     onClick={handleSave}
                     disabled={saving}
                     className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 w-full"
@@ -490,6 +502,18 @@ export default function AdminMetadata() {
           )}
         </CardContent>
       </Card>
+
+      {selectedEntry && (
+        <IdentifyDialog
+          entry={selectedEntry}
+          open={identifyOpen}
+          onOpenChange={setIdentifyOpen}
+          onIdentified={() => {
+            setSelectedId(null);
+            loadEntries();
+          }}
+        />
+      )}
     </div>
   );
 }
