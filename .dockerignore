@@ -1,7 +1,6 @@
 .git
 frontend
 docs
-session-ses_036b.md
 **/__pycache__
 **/*.pyc
 backend/.venv
