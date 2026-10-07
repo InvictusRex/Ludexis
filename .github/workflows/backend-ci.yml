@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - "backend/**"
+      - "requirements.txt"
       - ".github/workflows/backend-ci.yml"
 
   pull_request:
     paths:
       - "backend/**"
+      - "requirements.txt"
       - ".github/workflows/backend-ci.yml"
 
 jobs:
