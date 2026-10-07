@@ -227,6 +227,7 @@ The following variables are required for normal operation.
 | JWT_SECRET_KEY        | JWT signing secret           |
 | TWITCH_CLIENT_ID      | Twitch API client identifier |
 | TWITCH_CLIENT_SECRET  | Twitch API secret            |
+| STEAMGRIDDB_API_KEY   | SteamGridDB API key (optional community artwork) |
 | ARTWORK_STORAGE_PATH  | Artwork storage directory    |
 
 Example configuration:

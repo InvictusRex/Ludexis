@@ -569,6 +569,7 @@ JWT_SECRET_KEY=   # at least 32 characters: openssl rand -hex 32
 
 TWITCH_CLIENT_ID=
 TWITCH_CLIENT_SECRET=
+STEAMGRIDDB_API_KEY=
 ```
 
 ### Start Development Infrastructure

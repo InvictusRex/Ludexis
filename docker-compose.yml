@@ -24,6 +24,7 @@ x-backend: &backend
     JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
     TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
     TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}
+    STEAMGRIDDB_API_KEY: ${STEAMGRIDDB_API_KEY:-}
     CORS_ORIGINS: ${CORS_ORIGINS:-}
     # Scheduled tasks run in this time zone.
     TZ: ${TZ:-UTC}
