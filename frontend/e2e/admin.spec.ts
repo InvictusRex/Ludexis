@@ -1,52 +1,36 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { loginAsAdmin } from "./helpers";
 
-async function loginAsAdmin(page: Page) {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/login/);
-  await page.getByLabel("Username").fill("admin");
-  await page.getByLabel("Password").fill("Admin123!");
-  await page.getByRole("button", { name: "Sign In" }).click();
-  await expect(page.getByText("Total Archive Entries")).toBeVisible({
-    timeout: 15000,
-  });
-}
-
-test("admin dashboard loads stats", async ({ page }) => {
+test("dashboard overview shows sections, scans and server health", async ({ page }) => {
   await loginAsAdmin(page);
-
   await page.goto("/admin");
 
-  await expect(
-    page.getByRole("heading", { name: "Administration Dashboard" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Admin Dashboard", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
 
-  for (const label of [
-    "Total Entries",
-    "Collections",
-    "Users",
-    "Metadata Coverage",
-    "Verification Coverage",
-  ]) {
-    await expect(page.getByText(label).first()).toBeVisible();
+  const sections = page.getByRole("navigation", { name: "Dashboard sections" });
+  for (const name of ["Overview", "Libraries", "Tasks", "Metadata", "Users", "Activity log", "Settings"]) {
+    await expect(sections.getByRole("link", { name })).toBeVisible();
   }
 
-  await expect(page.getByText("Quick Actions")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Scan for changes" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Full scan" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Services" })).toContainText("Database", { timeout: 15000 });
+});
 
-  await page.goto("/admin/analytics");
+test("retired pages redirect to where their content moved", async ({ page }) => {
+  await loginAsAdmin(page);
 
-  await expect(
-    page.getByRole("heading", { name: "Job & System Analytics" }),
-  ).toBeVisible();
-
-  await expect(
-    page
-      .getByRole("heading", { name: "Scan Progress" })
-      .or(page.getByText("Failed to load analytics data. Please try again.")),
-  ).toBeVisible({ timeout: 15000 });
-
-  await expect(
-    page
-      .getByText("Job Status Distribution")
-      .or(page.getByText("Failed to load analytics data. Please try again.")),
-  ).toBeVisible();
+  const moves: [string, RegExp][] = [
+    ["/admin/monitoring", /\/admin$/],
+    ["/admin/analytics", /\/admin$/],
+    ["/admin/library", /\/admin\/libraries$/],
+    ["/admin/audit-logs", /\/admin\/logs$/],
+    ["/admin/permissions", /\/admin\/users\?tab=roles$/],
+    ["/search", /\/library$/],
+  ];
+  for (const [from, to] of moves) {
+    await page.goto(from);
+    await expect(page).toHaveURL(to);
+  }
 });

@@ -1,33 +1,19 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { loginAsAdmin } from "./helpers";
 
-async function loginAsAdmin(page: Page) {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/login/);
-  await page.getByLabel("Username").fill("admin");
-  await page.getByLabel("Password").fill("Admin123!");
-  await page.getByRole("button", { name: "Sign In" }).click();
-  await expect(page.getByText("Total Archive Entries")).toBeVisible({
-    timeout: 15000,
-  });
-}
-
-test("duplicates page renders heading and empty or list state", async ({
-  page,
-}) => {
+test("duplicates live in the Metadata section", async ({ page }) => {
   await loginAsAdmin(page);
-
   await page.goto("/admin/duplicates");
 
-  await expect(
-    page.getByRole("heading", { name: "Duplicate Detection" }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/metadata\?tab=duplicates$/);
+  await expect(page.getByRole("heading", { name: "Metadata" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Duplicates" })).toHaveAttribute("aria-selected", "true");
 
   await expect(
     page
-      .getByText("No duplicates found")
-      .or(page.getByRole("heading", { name: /High Priority|Duplicates/ }))
-      .or(page.getByText("Failed to load duplicate groups")),
+      .getByText(/stored more than once/)
+      .or(page.getByText("No duplicates found"))
+      .or(page.getByText("Duplicates could not be loaded")),
   ).toBeVisible({ timeout: 15000 });
-
   await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
 });
