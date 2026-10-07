@@ -31,6 +31,8 @@ backend/config/
 
 # Logs
 logs/
+# The dashboard's Activity log route, not a log folder.
+!frontend/app/(app)/admin/logs/
 *.log
 
 # Celery

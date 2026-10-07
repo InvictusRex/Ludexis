@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import { archiveApi } from "./archives";
 import type { Publisher, PublisherCreate, PublisherUpdate } from "@/lib/types";
 
 export const publishersApi = {
@@ -34,7 +33,4 @@ export const publishersApi = {
     return apiClient.delete<void>(`/publishers/${id}`);
   },
 
-  async getEntries(id: string) {
-    return archiveApi.getByPublisher(id);
-  },
 };

@@ -115,4 +115,5 @@ export interface ArchiveEntry {
   developers?: Developer[];
   publishers?: Publisher[];
   collections?: Collection[];
+  genres?: string[];
 }

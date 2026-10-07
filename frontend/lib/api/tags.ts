@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import { archiveApi } from "./archives";
 import type { Tag, TagCreate, TagUpdate } from "@/lib/types";
 
 export const tagsApi = {
@@ -34,13 +33,5 @@ export const tagsApi = {
     return apiClient.delete<void>(`/tags/${id}`);
   },
 
-  async getEntries(id: string) {
-    return archiveApi.getByTag(id);
-  },
 
-  async getRelatedTags(id: string) {
-    // Naive related tags: return some tags from all tags for now
-    const { items } = await tagsApi.getAll();
-    return items.filter((t) => t.id !== id).slice(0, 6);
-  },
 };

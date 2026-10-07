@@ -8,7 +8,7 @@ export { tagsApi } from "./api/tags";
 export { developersApi } from "./api/developers";
 export { publishersApi } from "./api/publishers";
 export { franchisesApi } from "./api/franchises";
-export { searchApi } from "./api/search";
+export { genresApi } from "./api/genres";
 export { adminApi } from "./api/admin";
 export { usersApi } from "./api/users";
 export { rolesApi } from "./api/roles";

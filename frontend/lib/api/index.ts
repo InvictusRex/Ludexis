@@ -7,7 +7,7 @@ export * from "./tags";
 export * from "./developers";
 export * from "./publishers";
 export * from "./franchises";
-export * from "./search";
+export * from "./genres";
 export * from "./admin";
 export * from "./users";
 export * from "./roles";

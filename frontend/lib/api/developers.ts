@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import { archiveApi } from "./archives";
 import type { Developer, DeveloperCreate, DeveloperUpdate } from "@/lib/types";
 
 export const developersApi = {
@@ -34,7 +33,4 @@ export const developersApi = {
     return apiClient.delete<void>(`/developers/${id}`);
   },
 
-  async getEntries(id: string) {
-    return archiveApi.getByDeveloper(id);
-  },
 };

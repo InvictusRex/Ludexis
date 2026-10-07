@@ -23,6 +23,9 @@ export default [
       // react-hooks v7 "set-state-in-effect" flags the app's standard
       // fetch-on-mount / filter-in-effect patterns, which are intentional.
       "react-hooks/set-state-in-effect": "off",
+      // Images come from the API's /media and the build sets images.unoptimized,
+      // so next/image would add nothing over a plain <img>.
+      "@next/next/no-img-element": "off",
     },
   },
 ];

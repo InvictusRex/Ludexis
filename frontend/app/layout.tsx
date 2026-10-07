@@ -1,35 +1,23 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+import type { Metadata, Viewport } from "next";
+import { Cinzel, Hanken_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
-import { AppWrapper } from "@/components/layout/app-wrapper";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+// Downloaded at build time and served by the app itself: no requests to Google at runtime.
+const cinzel = Cinzel({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-cinzel" });
+const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-hanken" });
 
 export const metadata: Metadata = {
-  title: "Ludexis - Game Archive Platform",
-  description:
-    "A self-hosted game metadata archive and catalog platform. Organize, discover, and manage your game collection with intelligent tagging and metadata management.",
-  icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
-  },
+  title: { default: "Ludexis", template: "%s · Ludexis" },
+  description: "Catalog, enrich and preserve your game archive.",
+  icons: { icon: "/icon.png", apple: "/apple-icon.png" },
+  openGraph: { title: "Ludexis", description: "Catalog, enrich and preserve your game archive.", images: ["/brand/og.png"] },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#09080d",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -38,24 +26,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark bg-background">
-      <body
-        suppressHydrationWarning
-        className="font-sans antialiased bg-background text-foreground"
-      >
+    <html lang="en" className={`dark ${cinzel.variable} ${hanken.variable}`}>
+      <body suppressHydrationWarning className="font-sans antialiased">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-md focus:ring-2 focus:ring-ring"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-stone focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-parchment"
         >
           Skip to content
         </a>
-        <AuthProvider>
-          <AppWrapper>{children}</AppWrapper>
-        </AuthProvider>
-
-        <Toaster richColors position="bottom-right" />
-
-        {process.env.NODE_ENV === "production" && <Analytics />}
+        <AuthProvider>{children}</AuthProvider>
+        <Toaster
+          position="bottom-right"
+          theme="dark"
+          toastOptions={{
+            classNames: {
+              toast: "!bg-stone !border-seam !text-parchment !font-sans",
+              description: "!text-ash",
+              error: "!border-ember/50",
+              success: "!border-moss/40",
+            },
+          }}
+        />
       </body>
     </html>
   );

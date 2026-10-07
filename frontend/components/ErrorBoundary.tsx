@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
+import { EmptyState } from "@/components/brand/empty-state";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -29,12 +30,11 @@ export class ErrorBoundary extends Component<
     if (this.state.hasError) {
       return (
         this.props.fallback ?? (
-          <div className="p-8 text-center text-muted-foreground">
-            <p className="text-lg font-semibold text-foreground mb-2">
-              Something went wrong
-            </p>
-            <p>An unexpected error occurred. Try refreshing the page.</p>
-          </div>
+          <EmptyState
+            prominent
+            title="This page failed to load"
+            description="Something unexpected went wrong. Reload the page to try again."
+          />
         )
       );
     }

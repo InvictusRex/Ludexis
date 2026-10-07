@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import { archiveApi } from "./archives";
 import type {
   Collection,
   CollectionCreate,
@@ -22,10 +21,6 @@ export const collectionsApi = {
     return apiClient.get<Collection>(`/collections/${id}`);
   },
 
-  async getEntries(id: string) {
-    const entries = await archiveApi.getAll(0, 1000);
-    return entries.filter((e) => e.collection_ids?.includes(id));
-  },
 
   async create(data: CollectionCreate): Promise<Collection> {
     return apiClient.post<Collection>("/collections/", data);

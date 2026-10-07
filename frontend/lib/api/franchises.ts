@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import { archiveApi } from "./archives";
 import type { Franchise, FranchiseCreate, FranchiseUpdate } from "@/lib/types";
 
 export const franchisesApi = {
@@ -34,7 +33,4 @@ export const franchisesApi = {
     return apiClient.delete<void>(`/franchises/${id}`);
   },
 
-  async getEntries(id: string) {
-    return archiveApi.getByFranchise(id);
-  },
 };

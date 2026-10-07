@@ -1,5 +1,10 @@
 import { apiClient } from "./client";
-import type { ArchiveEntry, ArchiveEntryUpdate, JobHistory, SearchFilters } from "@/lib/types";
+import type {
+  ArchiveEntry,
+  ArchiveEntryUpdate,
+  JobHistory,
+  LibraryQuery,
+} from "@/lib/types";
 
 export interface IdentifyResult {
   entry: ArchiveEntry;
@@ -13,69 +18,19 @@ export const archiveApi = {
     return apiClient.get<ArchiveEntry[]>(`/archive-entries/${qs}`);
   },
 
+  // One page of the library, filtered and sorted on the server; total comes from X-Total-Count.
+  async browse(query: LibraryQuery = {}): Promise<{ items: ArchiveEntry[]; total: number }> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && value !== "" && value !== false) {
+        params.set(key, String(value));
+      }
+    }
+    return apiClient.getList<ArchiveEntry>(`/search/?${params.toString()}`);
+  },
+
   async getById(id: string): Promise<ArchiveEntry> {
     return apiClient.get<ArchiveEntry>(`/archive-entries/${id}`);
-  },
-
-  async search(
-    query: string,
-    filters?: SearchFilters,
-    offset = 0,
-    limit = 200,
-    groupVersions = false,
-  ): Promise<ArchiveEntry[]> {
-    const params = new URLSearchParams();
-
-    if (query?.trim()) {
-      params.set("q", query.trim());
-    }
-
-    const setFilter = (key: string, values?: string[]) => {
-      const value = values?.[0];
-      if (value) {
-        params.set(key, value);
-      }
-    };
-
-    setFilter("genre", filters?.genres);
-    setFilter("tag", filters?.tags);
-    setFilter("developer", filters?.developers);
-    setFilter("publisher", filters?.publishers);
-    setFilter("franchise", filters?.franchises);
-    setFilter("metadata_status", filters?.metadataStatus);
-    setFilter("verification_status", filters?.verificationStatus);
-    setFilter("storage_device", filters?.storageDevices);
-
-    if (groupVersions) {
-      params.set("group_versions", "true");
-    }
-    params.set("offset", String(offset));
-    params.set("limit", String(limit));
-
-    return apiClient.get<ArchiveEntry[]>(`/search/?${params.toString()}`);
-  },
-
-  async getByDeveloper(developerId: string): Promise<ArchiveEntry[]> {
-    const entries = await archiveApi.getAll(0, 1000);
-    return entries.filter((e) => e.developer_ids?.includes(developerId));
-  },
-
-  async getByPublisher(publisherId: string): Promise<ArchiveEntry[]> {
-    const entries = await archiveApi.getAll(0, 1000);
-    return entries.filter((e) => e.publisher_ids?.includes(publisherId));
-  },
-
-  async getByTag(tagId: string): Promise<ArchiveEntry[]> {
-    const entries = await archiveApi.getAll(0, 1000);
-    return entries.filter((e) => e.tag_ids?.includes(tagId));
-  },
-
-  async getByFranchise(franchiseId: string): Promise<ArchiveEntry[]> {
-    const entries = await archiveApi.getAll(0, 1000);
-    return entries.filter(
-      (e) =>
-        e.parent_series_id === franchiseId || e.franchise_id === franchiseId,
-    );
   },
 
   async getDuplicates(): Promise<import("@/lib/types").DuplicateGroup[]> {
@@ -89,6 +44,11 @@ export const archiveApi = {
       provider,
       provider_id: providerId,
     });
+  },
+
+  /** Shows the game's file or folder in the server's file manager; 404 when it is not there. */
+  async openLocation(id: string): Promise<{ path: string; opened: boolean }> {
+    return apiClient.post<{ path: string; opened: boolean }>(`/archive-entries/${id}/open-location`);
   },
 
   async getVersions(id: string): Promise<ArchiveEntry[]> {

@@ -54,6 +54,19 @@ export const artworkApi = {
     return apiClient.patch<ArtworkReplaceResponse>("/artwork/replace", form);
   },
 
+  /** Images the game's matched sources offer for one slot. */
+  async candidates(archiveEntryId: string, artworkType: ArtworkType): Promise<string[]> {
+    return apiClient.get<string[]>(`/artwork/${archiveEntryId}/candidates?artwork_type=${artworkType}`);
+  },
+
+  async fromUrl(archiveEntryId: string, artworkType: ArtworkType, url: string): Promise<ArtworkReplaceResponse> {
+    return apiClient.post<ArtworkReplaceResponse>("/artwork/from-url", {
+      archive_entry_id: archiveEntryId,
+      artwork_type: artworkType,
+      url,
+    });
+  },
+
   async remove(
     artworkId: string,
     artworkType?: ArtworkType,

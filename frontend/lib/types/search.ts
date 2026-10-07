@@ -1,27 +1,34 @@
-import type { ArchiveEntry } from "./archive";
-import type { Collection } from "./collection";
-import type { Developer } from "./developer";
-import type { Publisher } from "./publisher";
-import type { Tag } from "./tag";
-import type { Franchise } from "./franchise";
 
-export interface SearchResults {
-  total: number;
-  entries: ArchiveEntry[];
-  collections: Collection[];
-  developers: Developer[];
-  publishers: Publisher[];
-  tags: Tag[];
-  franchises: Franchise[];
+// Sort keys accepted by /search; a leading "-" sorts descending.
+export type LibrarySort =
+  | "title"
+  | "-title"
+  | "created_at"
+  | "-created_at"
+  | "release_date"
+  | "-release_date"
+  | "file_size"
+  | "-file_size"
+  | "random";
+
+export interface LibraryQuery {
+  q?: string;
+  genre?: string;
+  tag?: string;
+  developer?: string;
+  publisher?: string;
+  franchise?: string;
+  collection?: string;
+  collection_id?: string;
+  metadata_status?: string;
+  verification_status?: string;
+  group_versions?: boolean;
+  sort?: LibrarySort;
+  offset?: number;
+  limit?: number;
 }
 
-export interface SearchFilters {
-  genres?: string[];
-  tags?: string[];
-  developers?: string[];
-  publishers?: string[];
-  franchises?: string[];
-  metadataStatus?: string[];
-  verificationStatus?: string[];
-  storageDevices?: string[];
+export interface Genre {
+  name: string;
+  entry_count: number;
 }

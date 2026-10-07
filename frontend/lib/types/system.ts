@@ -28,6 +28,8 @@ export interface ServerSettings {
   igdb_client_id: string;
   igdb_configured: boolean;
   igdb_from_env: boolean;
+  steamgriddb_configured: boolean;
+  steamgriddb_from_env: boolean;
 }
 
 export interface ServerSettingsUpdate {
@@ -35,4 +37,5 @@ export interface ServerSettingsUpdate {
   provider_order?: string[];
   igdb_client_id?: string;
   igdb_client_secret?: string;
+  steamgriddb_api_key?: string;
 }

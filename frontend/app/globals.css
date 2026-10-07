@@ -3,80 +3,78 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The Keep: colours taken from the Ludexis knight. A violet-tinted night, the shield's
+ * violet, the wordmark's parchment, and the amber of the sparkles around the knight.
+ * Amber (--spark) is rare on purpose: the matched-metadata mark, the active-nav pip and
+ * confidence fills only.
+ */
 :root {
-  --background: #FFFFFF;
-  --foreground: #000000;
-  --card: #FFFFFF;
-  --card-foreground: #000000;
-  --popover: #FFFFFF;
-  --popover-foreground: #000000;
-  --primary: #000000;
-  --primary-foreground: #FFFFFF;
-  --secondary: #E4E4E4;
-  --secondary-foreground: #000000;
-  --muted: #F0F0F0;
-  --muted-foreground: #666666;
-  --accent: #FFE51A;
-  --accent-foreground: #000000;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #E0E0E0;
-  --input: #FFFFFF;
-  --ring: #FFE51A;
-  --chart-1: #FFE51A;
-  --chart-2: #FFD700;
-  --chart-3: #FFC107;
-  --chart-4: #FB923C;
-  --chart-5: #F97316;
+  --night: #09080d;
+  --vault: #121019;
+  --stone: #1b1825;
+  --seam: #2b2738;
+  --parchment: #ece5d6;
+  --ash: #958fa5;
+  --violet: #5b35a3;
+  --violet-lit: #a284f2;
+  --spark: #e3a83b;
+  --moss: #7fb069;
+  --ember: #d1604d;
+
+  --background: var(--night);
+  --foreground: var(--parchment);
+  --card: var(--vault);
+  --card-foreground: var(--parchment);
+  --popover: var(--stone);
+  --popover-foreground: var(--parchment);
+  --primary: var(--violet);
+  --primary-foreground: #f6f1e7;
+  --secondary: var(--stone);
+  --secondary-foreground: var(--parchment);
+  --muted: var(--stone);
+  --muted-foreground: var(--ash);
+  /* shadcn's "accent" is the hover surface, not a highlight colour. */
+  --accent: #252034;
+  --accent-foreground: var(--parchment);
+  --destructive: var(--ember);
+  --destructive-foreground: #fff;
+  --border: var(--seam);
+  --input: var(--stone);
+  --ring: var(--violet-lit);
   --radius: 0.625rem;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #000000;
-  --sidebar-primary: #000000;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #FFE51A;
-  --sidebar-accent-foreground: #000000;
-  --sidebar-border: #E0E0E0;
-  --sidebar-ring: #FFE51A;
+
+  --sidebar-w: 15rem;
+  --sidebar-w-collapsed: 4.5rem;
+  --topbar-h: 4rem;
+  --gutter: 1.25rem;
+  --scrim: linear-gradient(to top, var(--night) 0%, rgb(9 8 13 / 0.82) 32%, rgb(9 8 13 / 0.2) 70%, rgb(9 8 13 / 0.35) 100%);
+  --scrim-side: linear-gradient(to right, rgb(9 8 13 / 0.92) 0%, rgb(9 8 13 / 0.55) 45%, transparent 75%);
 }
 
-.dark {
-  --background: #030405;
-  --foreground: #E4E4E4;
-  --card: #090A0B;
-  --card-foreground: #E4E4E4;
-  --popover: #090A0B;
-  --popover-foreground: #E4E4E4;
-  --primary: #FFE51A;
-  --primary-foreground: #030405;
-  --secondary: #1A1B1D;
-  --secondary-foreground: #E4E4E4;
-  --muted: #2A2B2D;
-  --muted-foreground: #999999;
-  --accent: #FFE51A;
-  --accent-foreground: #030405;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #2A2B2D;
-  --input: #1A1B1D;
-  --ring: #FFE51A;
-  --chart-1: #FFE51A;
-  --chart-2: #FFD700;
-  --chart-3: #FFC107;
-  --chart-4: #FB923C;
-  --chart-5: #F97316;
-  --sidebar: #030405;
-  --sidebar-foreground: #E4E4E4;
-  --sidebar-primary: #FFE51A;
-  --sidebar-primary-foreground: #030405;
-  --sidebar-accent: #FFE51A;
-  --sidebar-accent-foreground: #030405;
-  --sidebar-border: #2A2B2D;
-  --sidebar-ring: #FFE51A;
+@media (min-width: 64rem) {
+  :root {
+    --gutter: 2.5rem;
+  }
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cinzel), ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Menlo, monospace;
+
+  --color-night: var(--night);
+  --color-vault: var(--vault);
+  --color-stone: var(--stone);
+  --color-seam: var(--seam);
+  --color-parchment: var(--parchment);
+  --color-ash: var(--ash);
+  --color-violet: var(--violet);
+  --color-violet-lit: var(--violet-lit);
+  --color-spark: var(--spark);
+  --color-moss: var(--moss);
+  --color-ember: var(--ember);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -96,59 +94,121 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-xl: 14px;
+}
+
+/* A 1.25 scale around a 15px body. */
+@theme {
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.45;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2.375rem;
+  --text-3xl--line-height: 1.12;
+  --text-4xl: 3rem;
+  --text-4xl--line-height: 1.05;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  html {
+    color-scheme: dark;
+    background: var(--night);
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-base;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  ::selection {
+    background: rgb(91 53 163 / 0.65);
+    color: #fff;
+  }
+  :focus-visible {
+    outline: 2px solid var(--violet-lit);
+    outline-offset: 2px;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* Thin, dark scrollbars so long lists don't drop a grey slab into the night. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--seam) transparent;
   }
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out both;
+@utility font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
 }
 
-.animate-scale-in {
-  animation: scale-in 0.25s ease-out both;
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
 
-@keyframes fade-in-up {
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Login and setup only: the knight's sparkles drifting in the dark. */
+@keyframes sparkle-drift {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6) rotate(0deg);
+  }
+  40%,
+  60% {
+    opacity: var(--sparkle-o, 0.5);
+    transform: translateY(-18px) scale(1) rotate(12deg);
+  }
+}
+
+.sparkle {
+  position: absolute;
+  color: var(--violet-lit);
+  animation: sparkle-drift var(--sparkle-d, 9s) ease-in-out var(--sparkle-delay, 0s) infinite;
+  pointer-events: none;
+}
+
+@keyframes art-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
+@keyframes mark-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.97);
   }
-  to {
+  50% {
     opacity: 1;
     transform: scale(1);
   }
@@ -162,5 +222,9 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .sparkle {
+    animation: none;
+    opacity: var(--sparkle-o, 0.5);
   }
 }

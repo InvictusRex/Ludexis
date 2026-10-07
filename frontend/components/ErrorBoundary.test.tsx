@@ -33,7 +33,7 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText("This page failed to load")).toBeInTheDocument();
     expect(spy).toHaveBeenCalled();
   });
 
@@ -70,7 +70,7 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText("This page failed to load")).toBeInTheDocument();
 
     rerender(
       <ErrorBoundary key="reset">

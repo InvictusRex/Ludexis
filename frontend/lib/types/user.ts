@@ -1,10 +1,13 @@
+import type { PermissionRead } from "./permission";
+
 export interface User {
   id: string;
   username: string;
   email: string;
   is_active: boolean;
   is_superuser: boolean;
-  roles?: Array<{ id: string; name: string }>;
+  created_at?: string;
+  roles?: Array<{ id: string; name: string; permissions?: PermissionRead[] }>;
 }
 
 export interface UserCreate {
