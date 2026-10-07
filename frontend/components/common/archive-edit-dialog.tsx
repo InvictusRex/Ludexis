@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, Loader2, Save } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { archiveApi } from "@/lib/api";
 import type { ArchiveEntry, ArchiveEntryUpdate } from "@/lib/types";
 import { toastError, toastSuccess } from "@/lib/toast";
@@ -100,106 +100,89 @@ export function ArchiveEditDialog({
     setSaveError(null);
     try {
       const updated = await archiveApi.update(entry.id, buildPayload(form));
-      toastSuccess("Archive entry updated");
+      toastSuccess("Game updated");
       onSaved(updated);
       onOpenChange(false);
     } catch (error) {
-      toastError(error, "Failed to update archive entry");
-      setSaveError("Failed to update archive entry");
+      toastError(error, "The game could not be saved");
+      setSaveError("The game could not be saved. Check the details and try again.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit Entry</DialogTitle>
-          <DialogDescription>
-            Update core details for {entry.title}
-          </DialogDescription>
+          <DialogTitle>Edit game</DialogTitle>
+          <DialogDescription>Change the details stored for {entry.title}.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <form
+          id="archive-edit-form"
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSave();
+          }}
+        >
           <div className="space-y-2">
             <Label htmlFor="edit-title">Title</Label>
-            <Input
-              id="edit-title"
-              value={form.title}
-              onChange={(e) => setField("title", e.target.value)}
-            />
+            <Input id="edit-title" value={form.title} onChange={(e) => setField("title", e.target.value)} />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="edit-description">Description</Label>
             <Textarea
               id="edit-description"
+              rows={5}
               value={form.description}
               onChange={(e) => setField("description", e.target.value)}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-release-date">Release Date</Label>
-            <Input
-              id="edit-release-date"
-              type="date"
-              value={form.release_date}
-              onChange={(e) => setField("release_date", e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-release-date">Release date</Label>
+              <Input
+                id="edit-release-date"
+                type="date"
+                value={form.release_date}
+                onChange={(e) => setField("release_date", e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="edit-version">Version</Label>
-              <Input
-                id="edit-version"
-                value={form.version}
-                onChange={(e) => setField("version", e.target.value)}
-              />
+              <Input id="edit-version" value={form.version} onChange={(e) => setField("version", e.target.value)} />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="edit-engine">Engine</Label>
+              <Input id="edit-engine" value={form.engine} onChange={(e) => setField("engine", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-storage-device">Storage device</Label>
               <Input
-                id="edit-engine"
-                value={form.engine}
-                onChange={(e) => setField("engine", e.target.value)}
+                id="edit-storage-device"
+                value={form.storage_device}
+                onChange={(e) => setField("storage_device", e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-storage-device">Storage Device</Label>
-            <Input
-              id="edit-storage-device"
-              value={form.storage_device}
-              onChange={(e) => setField("storage_device", e.target.value)}
-            />
           </div>
 
           {saveError && (
-            <div className="flex items-center gap-2 p-3 rounded-lg border border-red-500/50 bg-red-500/10 text-red-500 text-sm">
-              <AlertCircle className="w-4 h-4" />
-              <span>{saveError}</span>
-            </div>
+            <p role="alert" className="flex items-center gap-2 rounded-lg bg-ember/10 px-3 py-2 text-sm text-ember">
+              <AlertCircle className="size-4 shrink-0" />
+              {saveError}
+            </p>
           )}
-        </div>
+        </form>
         <DialogFooter>
-          <Button
-            variant="outline"
-            disabled={saving}
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" disabled={saving} onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            Save
+          <Button type="submit" form="archive-edit-form" disabled={saving}>
+            {saving && <Loader2 className="animate-spin" />}
+            Save changes
           </Button>
         </DialogFooter>
       </DialogContent>

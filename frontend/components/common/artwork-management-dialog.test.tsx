@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ArtworkManagementDialog } from "./artwork-management-dialog";
 import { archiveApi, artworkApi } from "@/lib/api";
@@ -13,6 +13,8 @@ vi.mock("@/lib/api", () => ({
     upload: vi.fn(),
     replace: vi.fn(),
     remove: vi.fn(),
+    candidates: vi.fn(),
+    fromUrl: vi.fn(),
   },
 }));
 
@@ -81,12 +83,14 @@ describe("ArtworkManagementDialog", () => {
       file_path: "entry-1/cover/new.png",
     });
     const user = userEvent.setup();
+    const onChanged = vi.fn();
 
     render(
       <ArtworkManagementDialog
         entry={entry}
         open
         onOpenChange={vi.fn()}
+        onChanged={onChanged}
       />,
     );
 
@@ -102,6 +106,7 @@ describe("ArtworkManagementDialog", () => {
         file,
       }),
     );
+    await waitFor(() => expect(onChanged).toHaveBeenCalledWith(entry));
   });
 
   it("deletes present artwork via artworkApi.remove", async () => {
@@ -140,5 +145,28 @@ describe("ArtworkManagementDialog", () => {
     await user.click(screen.getByRole("button", { name: /close/i }));
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("sets a banner picked from the matched sources", async () => {
+    const entry = makeEntry();
+    vi.mocked(archiveApi.getById).mockResolvedValue({ ...entry, banner_path: "entry-1/banner/new.jpg" });
+    vi.mocked(artworkApi.candidates).mockResolvedValue(["https://img.example/hero.jpg", "https://img.example/shot.jpg"]);
+    vi.mocked(artworkApi.fromUrl).mockResolvedValue({
+      archive_entry_id: "entry-1",
+      artwork_type: "banner",
+      file_path: "entry-1/banner/new.jpg",
+    });
+    const user = userEvent.setup();
+
+    render(<ArtworkManagementDialog entry={entry} open onOpenChange={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Find banner online" }));
+    const options = await screen.findAllByRole("button", { name: "Use this banner" });
+    expect(artworkApi.candidates).toHaveBeenCalledWith("entry-1", "banner");
+
+    await user.click(options[1]);
+    await waitFor(() =>
+      expect(artworkApi.fromUrl).toHaveBeenCalledWith("entry-1", "banner", "https://img.example/shot.jpg"),
+    );
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Use this banner" })).not.toBeInTheDocument());
   });
 });

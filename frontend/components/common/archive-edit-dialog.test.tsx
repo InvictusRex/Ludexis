@@ -104,7 +104,7 @@ describe("ArchiveEditDialog", () => {
         expect.objectContaining({ title: "Updated Title" }),
       ),
     );
-    expect(toastSuccess).toHaveBeenCalledWith("Archive entry updated");
+    expect(toastSuccess).toHaveBeenCalledWith("Game updated");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
@@ -124,12 +124,12 @@ describe("ArchiveEditDialog", () => {
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith(
         expect.any(Error),
-        "Failed to update archive entry",
+        "The game could not be saved",
       ),
     );
     expect(onOpenChange).not.toHaveBeenCalled();
     expect(onSaved).not.toHaveBeenCalled();
-    expect(screen.getByText(/failed to update archive entry/i)).toBeInTheDocument();
+    expect(screen.getByText(/could not be saved/i)).toBeInTheDocument();
   });
 
   it("blocks saving when the title is empty", async () => {

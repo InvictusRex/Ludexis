@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ImageOff, Loader2, Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { archiveApi, metadataApi } from "@/lib/api";
 import type { ArchiveEntry, MetadataSearchResult } from "@/lib/types";
+import { year } from "@/lib/format";
 import { toastError, toastSuccess } from "@/lib/toast";
-import { Badge } from "@/components/ui/badge";
+import { announceJobsChanged } from "@/components/shell/jobs-indicator";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,13 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PROVIDERS = [
   { value: "all", label: "All sources" },
@@ -38,12 +34,27 @@ interface IdentifyDialogProps {
   onIdentified: (updated: ArchiveEntry) => void;
 }
 
-export function IdentifyDialog({
-  entry,
-  open,
-  onOpenChange,
-  onIdentified,
-}: IdentifyDialogProps) {
+/** Provider cover thumbnails are remote URLs, so they load without a referrer and fall back quietly. */
+function ResultCover({ url }: { url?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="relative aspect-[2/3] w-12 flex-none overflow-hidden rounded bg-night">
+      {url && !failed && (
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          className="absolute inset-0 size-full object-cover object-center"
+        />
+      )}
+    </div>
+  );
+}
+
+export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: IdentifyDialogProps) {
   const [query, setQuery] = useState(entry.title);
   const [provider, setProvider] = useState("all");
   const [results, setResults] = useState<MetadataSearchResult[] | null>(null);
@@ -75,22 +86,16 @@ export function IdentifyDialog({
     const key = `${result.provider}:${result.provider_id}`;
     setApplying(key);
     try {
-      const identified = await archiveApi.identify(
-        entry.id,
-        result.provider,
-        result.provider_id,
-      );
-      const versions =
-        identified.updated_entries > 1
-          ? ` and ${identified.updated_entries - 1} other version(s)`
-          : "";
-      toastSuccess(
-        `Identified as ${identified.entry.title}${versions}. Artwork is downloading in the background.`,
-      );
+      const identified = await archiveApi.identify(entry.id, result.provider, result.provider_id);
+      const others = identified.updated_entries - 1;
+      const versions = others > 0 ? ` and ${others} other version${others === 1 ? "" : "s"}` : "";
+      toastSuccess(`Identified as ${identified.entry.title}${versions}. Artwork is downloading in the background.`);
+      // Identify starts an artwork job; let the activity indicator pick it up now.
+      announceJobsChanged();
       onIdentified(identified.entry);
       onOpenChange(false);
     } catch (error) {
-      toastError(error, "Failed to apply metadata");
+      toastError(error, "The match could not be applied");
     } finally {
       setApplying(null);
     }
@@ -100,29 +105,22 @@ export function IdentifyDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Identify</DialogTitle>
+          <DialogTitle>Identify game</DialogTitle>
           <DialogDescription>
-            Search a metadata source and pick the right game. Its metadata
-            replaces the current metadata on every version of this game.
+            Search a metadata source and pick the right game. Its details replace the current ones on every version
+            of this game.
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSearch}
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
-        >
+        <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1 space-y-2">
             <Label htmlFor="identify-query">Title</Label>
-            <Input
-              id="identify-query"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
+            <Input id="identify-query" value={query} onChange={(event) => setQuery(event.target.value)} />
           </div>
           <div className="space-y-2 sm:w-40">
             <Label htmlFor="identify-provider">Source</Label>
             <Select value={provider} onValueChange={setProvider}>
-              <SelectTrigger id="identify-provider">
+              <SelectTrigger id="identify-provider" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -135,66 +133,51 @@ export function IdentifyDialog({
             </Select>
           </div>
           <Button type="submit" disabled={searching || !query.trim()}>
-            {searching ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Search className="w-4 h-4" />
-            )}
+            {searching ? <Loader2 className="animate-spin" /> : <Search />}
             Search
           </Button>
         </form>
 
-        <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
-          {results?.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No results. Try another title or source.
-            </p>
+        <div className="-mx-2 max-h-[50vh] overflow-y-auto px-2" aria-busy={searching}>
+          {searching && !results ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((row) => (
+                <Skeleton key={row} className="h-20 w-full" />
+              ))}
+            </div>
+          ) : results?.length === 0 ? (
+            <p className="py-8 text-center text-sm text-ash">No results. Try another title or source.</p>
+          ) : (
+            <ul className="space-y-1">
+              {results?.map((result) => {
+                const key = `${result.provider}:${result.provider_id}`;
+                return (
+                  <li key={key} className="flex items-center gap-3 rounded-lg p-2 hover:bg-night/40">
+                    <ResultCover url={result.cover_url} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-parchment">{result.title}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ash">
+                        <span className="font-medium text-violet-lit">{result.provider}</span>
+                        {result.release_date && <span className="tabular">{year(result.release_date)}</span>}
+                        <span className="truncate">#{result.provider_id}</span>
+                      </p>
+                      {result.summary && <p className="mt-1 line-clamp-2 text-xs text-ash">{result.summary}</p>}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={applying !== null}
+                      onClick={() => handleSelect(result)}
+                      aria-label={`Select ${result.title} from ${result.provider}`}
+                    >
+                      {applying === key && <Loader2 className="animate-spin" />}
+                      Select
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          {results?.map((result) => {
-            const key = `${result.provider}:${result.provider_id}`;
-            return (
-              <div
-                key={key}
-                className="flex items-center gap-3 rounded-lg border border-border p-2"
-              >
-                {result.cover_url ? (
-                  <img
-                    src={result.cover_url}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    className="h-16 w-12 flex-none rounded object-cover bg-muted"
-                  />
-                ) : (
-                  <div className="flex h-16 w-12 flex-none items-center justify-center rounded bg-muted text-muted-foreground">
-                    <ImageOff className="w-4 h-4" />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-foreground">
-                    {result.title}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline">{result.provider}</Badge>
-                    {result.release_date && (
-                      <span>{result.release_date.slice(0, 4)}</span>
-                    )}
-                    <span className="truncate">{result.provider_id}</span>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={applying !== null}
-                  onClick={() => handleSelect(result)}
-                >
-                  {applying === key && (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  )}
-                  Select
-                </Button>
-              </div>
-            );
-          })}
         </div>
       </DialogContent>
     </Dialog>

@@ -1,170 +1,77 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { History, RefreshCw } from "lucide-react";
 import { adminApi } from "@/lib/api";
-import { toastError } from "@/lib/toast";
-import type { AuditLogRead } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { useApi } from "@/hooks/use-api";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const AUDIT_ENTITY = "ArchiveEntry";
+// /admin/audit-logs cannot filter by entity id, so this reads the latest 100 game events
+// and keeps this game's; older history drops out of view. Add an entity_id filter to the API to fix.
 const AUDIT_LIMIT = 100;
 
-function formatTimestamp(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+const ACTIONS: Record<string, string> = {
+  create: "Added to the library",
+  update: "Details edited",
+  delete: "Deleted",
+  MANUAL_METADATA_OVERRIDE: "Metadata set by hand",
+  IDENTIFY_ARCHIVE: "Identified",
+  UPLOAD_ARTWORK: "Artwork uploaded",
+  REPLACE_ARTWORK: "Artwork replaced",
+  DELETE_ARTWORK: "Artwork removed",
+};
+
+export const auditActionLabel = (action: string) => ACTIONS[action] ?? action.replaceAll("_", " ").toLowerCase();
+
+function actor(userId: string | null | undefined, currentUserId?: string) {
+  if (!userId) return "the system";
+  return userId === currentUserId ? "you" : "another user";
 }
 
-function dotClass(action: string): string {
-  const lower = action.toLowerCase();
-  if (lower.includes("delete") || lower.includes("remove"))
-    return "bg-red-500";
-  if (lower.includes("create")) return "bg-green-500";
-  if (lower.includes("override")) return "bg-purple-500";
-  if (lower.includes("update")) return "bg-blue-500";
-  return "bg-accent";
-}
-
-export function MetadataAuditTrail({ entryId }: { entryId: string }) {
-  const [logs, setLogs] = useState<AuditLogRead[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const data = await adminApi.getAuditLogs({
-        entity: AUDIT_ENTITY,
-        limit: AUDIT_LIMIT,
-      });
-      const scoped = data
-        .filter((log) => log.entity_id === entryId)
-        .sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        );
-      setLogs(scoped);
-    } catch (err) {
-      toastError(err, "Failed to load metadata audit trail.");
-      setError("Failed to load metadata audit trail. Please try again.");
-      setLogs([]);
-    }
+/** Recorded changes to one game, newest first. */
+export function MetadataAuditTrail({ entryId, currentUserId }: { entryId: string; currentUserId?: string }) {
+  const { data, error, reload } = useApi(async () => {
+    const logs = await adminApi.getAuditLogs({ entity: "ArchiveEntry", limit: AUDIT_LIMIT });
+    return logs
+      .filter((log) => log.entity_id === entryId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
   }, [entryId]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const renderBody = () => {
-    if (error) {
-      return (
-        <div className="space-y-2">
-          <p className="text-sm text-red-600">{error}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-border"
-            onClick={load}
-          >
-            <RefreshCw className="w-4 h-4" />
-            Retry
-          </Button>
-        </div>
-      );
-    }
-    if (logs === null) {
-      return (
-        <div className="space-y-3">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3" />
-        </div>
-      );
-    }
-    if (logs.length === 0) {
-      return (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <History className="w-6 h-6" />
-            </EmptyMedia>
-            <EmptyTitle>No metadata changes recorded</EmptyTitle>
-            <EmptyDescription>
-              Metadata edits and refreshes for this entry appear here.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      );
-    }
+  if (error) {
     return (
-      <ol className="relative space-y-6 pl-6">
-        <span
-          aria-hidden="true"
-          className="absolute left-[0.3125rem] top-2 bottom-2 w-px bg-border"
-        />
-        {logs.map((log) => (
-          <li key={log.id} className="relative">
-            <span
-              aria-hidden="true"
-              className={cn(
-                "absolute -left-6 top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-background",
-                dotClass(log.action),
-              )}
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                variant="outline"
-                className="bg-accent/10 text-accent border-accent/30"
-              >
-                {log.action}
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {formatTimestamp(log.created_at)}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                by {log.user_id ?? "system"}
-              </span>
-            </div>
-            {log.details && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {log.details}
-              </p>
-            )}
-          </li>
-        ))}
-      </ol>
+      <div className="flex flex-wrap items-center gap-3 py-6 text-sm text-ash">
+        The history could not be loaded.
+        <Button variant="outline" size="sm" onClick={reload}>
+          Retry
+        </Button>
+      </div>
     );
-  };
+  }
+  if (!data) {
+    return (
+      <div className="space-y-4 py-2" aria-hidden="true">
+        <Skeleton className="h-5 w-64" />
+        <Skeleton className="h-5 w-52" />
+        <Skeleton className="h-5 w-72" />
+      </div>
+    );
+  }
+  if (data.length === 0) {
+    return <p className="py-6 text-sm text-ash">No changes recorded for this game yet.</p>;
+  }
 
   return (
-    <Card className="border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <History className="w-5 h-5" />
-          Metadata Audit Trail
-        </CardTitle>
-        <CardDescription>
-          Chronological metadata changes recorded for this entry
-        </CardDescription>
-      </CardHeader>
-      <CardContent>{renderBody()}</CardContent>
-    </Card>
+    <ol className="relative space-y-5 border-l border-seam pl-6">
+      {data.map((log) => (
+        <li key={log.id} className="relative">
+          <span aria-hidden="true" className="absolute -left-[1.6rem] top-1.5 size-2 rounded-full bg-violet-lit ring-4 ring-night" />
+          <p className="font-medium text-parchment">{auditActionLabel(log.action)}</p>
+          {log.details && <p className="mt-0.5 text-sm text-parchment/80">{log.details}</p>}
+          <p className="mt-0.5 text-xs text-ash">
+            <time dateTime={log.created_at}>{new Date(log.created_at).toLocaleString()}</time> by{" "}
+            <span title={log.user_id ?? undefined}>{actor(log.user_id, currentUserId)}</span>
+          </p>
+        </li>
+      ))}
+    </ol>
   );
 }

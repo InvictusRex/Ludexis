@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Globe, ImagePlus, Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
 import { archiveApi, artworkApi } from "@/lib/api";
 import type { ArchiveEntry, ArtworkType } from "@/lib/types";
-import { mediaUrl } from "@/lib/media";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { cn } from "@/lib/utils";
+import { Logo, Poster, Shot } from "@/components/media/art";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,260 +16,291 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const ENTRY_ARTWORK_TYPES: ArtworkType[] = ["cover", "banner", "logo"];
+type EntryArtwork = Exclude<ArtworkType, "screenshot">;
 
-const TYPE_META: Record<ArtworkType, string> = {
-  cover: "Cover",
-  banner: "Banner",
-  logo: "Logo",
-  screenshot: "Screenshot",
+const ARTWORK: { type: EntryArtwork; label: string; hint: string }[] = [
+  { type: "cover", label: "Cover", hint: "Portrait, 2:3" },
+  { type: "banner", label: "Banner", hint: "Wide backdrop for the game page" },
+  { type: "logo", label: "Logo", hint: "Title art on a transparent background" },
+];
+
+const PATH: Record<EntryArtwork, "cover_path" | "banner_path" | "logo_path"> = {
+  cover: "cover_path",
+  banner: "banner_path",
+  logo: "logo_path",
 };
-
-function entryPath(entry: ArchiveEntry, type: ArtworkType): string | undefined {
-  switch (type) {
-    case "cover":
-      return entry.cover_path;
-    case "banner":
-      return entry.banner_path;
-    case "logo":
-      return entry.logo_path;
-    default:
-      return undefined;
-  }
-}
 
 interface ArtworkManagementDialogProps {
   entry: ArchiveEntry;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called with the refreshed game after any upload, replace or delete. */
+  onChanged?: (entry: ArchiveEntry) => void;
 }
 
-export function ArtworkManagementDialog({
-  entry,
-  open,
-  onOpenChange,
-}: ArtworkManagementDialogProps) {
+function Preview({ type, path, label }: { type: EntryArtwork; path?: string; label: string }) {
+  const alt = `${label} preview`;
+  if (!path) {
+    return (
+      <div className="grid h-16 w-24 place-items-center rounded-md border border-dashed border-seam text-ash">
+        <ImagePlus className="size-5" />
+      </div>
+    );
+  }
+  if (type === "cover") {
+    return (
+      <div className="flex h-16 w-24 justify-center">
+        <Poster path={path} alt={alt} className="w-[2.7rem] rounded" />
+      </div>
+    );
+  }
+  if (type === "banner") {
+    return <Shot path={path} alt={alt} className="h-16 w-24 rounded" />;
+  }
+  return (
+    <div className="grid h-16 w-24 place-items-center rounded-md bg-night p-1.5">
+      <Logo path={path} alt={alt} className="max-h-full max-w-full object-center drop-shadow-none" fallback={null} />
+    </div>
+  );
+}
+
+const CANDIDATE_SHAPE: Record<EntryArtwork, string> = {
+  cover: "aspect-[2/3]",
+  banner: "aspect-video",
+  logo: "aspect-video bg-night",
+};
+
+/** Images the game's matched sources offer for one slot; picking one downloads it on the server. */
+function CandidatePicker({
+  type,
+  urls,
+  disabled,
+  onPick,
+}: {
+  type: EntryArtwork;
+  urls: string[] | null;
+  disabled: boolean;
+  onPick: (url: string) => void;
+}) {
+  if (urls === null) {
+    return (
+      <p className="flex w-full items-center gap-2 py-2 text-sm text-ash">
+        <Loader2 className="size-4 animate-spin" /> Looking up the matched sources…
+      </p>
+    );
+  }
+  if (urls.length === 0) {
+    return <p className="w-full py-2 text-sm text-ash">The matched sources offer no {type} for this game. Identify it first, or upload one.</p>;
+  }
+  return (
+    <ul className={cn("grid w-full gap-2", type === "cover" ? "grid-cols-4 sm:grid-cols-6" : "grid-cols-2 sm:grid-cols-3")}>
+      {urls.map((url) => (
+        <li key={url}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick(url)}
+            aria-label={`Use this ${type}`}
+            className={cn(
+              "relative block w-full overflow-hidden rounded-md bg-stone outline-none transition hover:ring-2 hover:ring-violet-lit focus-visible:ring-2 focus-visible:ring-violet-lit disabled:opacity-50",
+              CANDIDATE_SHAPE[type],
+            )}
+          >
+            <img
+              src={url}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              className={cn("absolute inset-0 size-full object-center", type === "logo" ? "object-contain p-1" : "object-cover")}
+            />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function ArtworkManagementDialog({ entry, open, onOpenChange, onChanged }: ArtworkManagementDialogProps) {
   const [current, setCurrent] = useState<ArchiveEntry>(entry);
   const [busy, setBusy] = useState<ArtworkType | null>(null);
-  const fileInputs = useRef<Record<ArtworkType, HTMLInputElement | null>>({
-    cover: null,
-    banner: null,
-    logo: null,
-    screenshot: null,
-  });
+  const [browsing, setBrowsing] = useState<EntryArtwork | null>(null);
+  const [candidates, setCandidates] = useState<string[] | null>(null);
+  const fileInputs = useRef<Partial<Record<ArtworkType, HTMLInputElement | null>>>({});
 
   useEffect(() => {
     if (open) {
       setCurrent(entry);
       setBusy(null);
+      setBrowsing(null);
     }
   }, [open, entry]);
 
-  const refreshEntry = async () => {
+  const browse = async (type: EntryArtwork) => {
+    if (browsing === type) {
+      setBrowsing(null);
+      return;
+    }
+    setBrowsing(type);
+    setCandidates(null);
     try {
+      setCandidates(await artworkApi.candidates(entry.id, type));
+    } catch (error) {
+      toastError(error, "The matched sources could not be searched");
+      setCandidates([]);
+    }
+  };
+
+  const run = async (type: ArtworkType, action: () => Promise<unknown>, done: string, failed: string) => {
+    setBusy(type);
+    try {
+      await action();
+      toastSuccess(done);
       const refreshed = await archiveApi.getById(entry.id);
       setCurrent(refreshed);
+      onChanged?.(refreshed);
     } catch (error) {
-      toastError(error, "Failed to refresh artwork");
-    }
-  };
-
-  const handleUpload = async (type: ArtworkType, file: File | null) => {
-    if (!file) {
-      return;
-    }
-    setBusy(type);
-    try {
-      await artworkApi.upload({
-        archive_entry_id: entry.id,
-        artwork_type: type,
-        file,
-      });
-      toastSuccess(`${TYPE_META[type]} uploaded`);
-      await refreshEntry();
-    } catch (error) {
-      toastError(error, `Failed to upload ${TYPE_META[type].toLowerCase()}`);
+      toastError(error, failed);
     } finally {
       setBusy(null);
     }
   };
 
-  const handleReplace = async (type: ArtworkType, file: File | null) => {
-    if (!file) {
-      return;
-    }
-    setBusy(type);
-    try {
-      await artworkApi.replace({
-        archive_entry_id: entry.id,
-        artwork_type: type,
-        file,
-      });
-      toastSuccess(`${TYPE_META[type]} replaced`);
-      await refreshEntry();
-    } catch (error) {
-      toastError(error, `Failed to replace ${TYPE_META[type].toLowerCase()}`);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleDelete = async (type: ArtworkType) => {
-    setBusy(type);
-    try {
-      await artworkApi.remove(entry.id, type);
-      toastSuccess(`${TYPE_META[type]} deleted`);
-      await refreshEntry();
-    } catch (error) {
-      toastError(error, `Failed to delete ${TYPE_META[type].toLowerCase()}`);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleFileSelected = (type: ArtworkType, file: File | null) => {
-    if (entryPath(current, type)) {
-      handleReplace(type, file);
+  const handleFile = (type: ArtworkType, file: File | null) => {
+    if (!file) return;
+    const input = { archive_entry_id: entry.id, artwork_type: type, file };
+    const label = type === "screenshot" ? "Screenshot" : ARTWORK.find((art) => art.type === type)!.label;
+    if (type !== "screenshot" && current[PATH[type]]) {
+      run(type, () => artworkApi.replace(input), `${label} replaced`, `The ${label.toLowerCase()} could not be replaced`);
     } else {
-      handleUpload(type, file);
+      run(type, () => artworkApi.upload(input), `${label} uploaded`, `The ${label.toLowerCase()} could not be uploaded`);
     }
   };
 
-  const triggerFile = (type: ArtworkType) => {
-    fileInputs.current[type]?.click();
-  };
-
-  const renderFileInput = (type: ArtworkType) => (
+  const fileInput = (type: ArtworkType, label: string) => (
     <input
-      ref={(el) => {
-        fileInputs.current[type] = el;
+      ref={(element) => {
+        fileInputs.current[type] = element;
       }}
       type="file"
       accept="image/*"
-      aria-label={`${TYPE_META[type]} file`}
+      aria-label={`${label} file`}
       className="hidden"
       disabled={busy !== null}
-      onChange={(e) => {
-        handleFileSelected(type, e.target.files?.[0] ?? null);
-        e.target.value = "";
+      onChange={(event) => {
+        handleFile(type, event.target.files?.[0] ?? null);
+        event.target.value = "";
       }}
     />
   );
 
+  const spinner = (type: ArtworkType, icon: React.ReactNode) => (busy === type ? <Loader2 className="animate-spin" /> : icon);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Manage Artwork</DialogTitle>
-          <DialogDescription>
-            Upload, replace, or delete artwork for {current.title}
-          </DialogDescription>
+          <DialogTitle>Manage artwork</DialogTitle>
+          <DialogDescription>Upload, replace or remove the artwork for {current.title}.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3">
-          {ENTRY_ARTWORK_TYPES.map((type) => {
-            const path = entryPath(current, type);
+        <ul className="divide-y divide-seam">
+          {ARTWORK.map(({ type, label, hint }) => {
+            const path = current[PATH[type]];
             return (
-              <div
-                key={type}
-                className="flex items-center gap-4 rounded-md border border-border p-3"
-              >
-                {path ? (
-                  <>
-                    <img
-                      src={mediaUrl(path)}
-                      alt={`${TYPE_META[type]} preview`}
-                      className="h-16 w-24 rounded-md border border-border object-cover"
-                    />
-                    <div className="flex flex-col gap-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {TYPE_META[type]}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          aria-label={`Replace ${TYPE_META[type].toLowerCase()}`}
-                          className="gap-2 border-border"
-                          disabled={busy !== null}
-                          onClick={() => triggerFile(type)}
-                        >
-                          {busy === type ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-4 h-4" />
-                          )}
-                          Replace
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          aria-label={`Delete ${TYPE_META[type].toLowerCase()}`}
-                          className="gap-2"
-                          disabled={busy !== null}
-                          onClick={() => handleDelete(type)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex h-16 w-24 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
-                      <ImageIcon className="w-5 h-5" />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {TYPE_META[type]}
-                      </span>
+              <li key={type} className="flex flex-wrap items-center gap-4 py-3">
+                <Preview type={type} path={path} label={label} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-parchment">{label}</p>
+                  <p className="text-xs text-ash">{path ? hint : "Missing"}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={browsing === type ? "secondary" : "ghost"}
+                    aria-label={`Find ${label.toLowerCase()} online`}
+                    aria-expanded={browsing === type}
+                    disabled={busy !== null}
+                    onClick={() => browse(type)}
+                  >
+                    <Globe />
+                    Find
+                  </Button>
+                  {path ? (
+                    <>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="gap-2 border-border"
+                        aria-label={`Replace ${label.toLowerCase()}`}
                         disabled={busy !== null}
-                        onClick={() => triggerFile(type)}
+                        onClick={() => fileInputs.current[type]?.click()}
                       >
-                        {busy === type ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Upload className="w-4 h-4" />
-                        )}
-                        Upload {TYPE_META[type]}
+                        {spinner(type, <RefreshCw />)}
+                        Replace
                       </Button>
-                    </div>
-                  </>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label={`Delete ${label.toLowerCase()}`}
+                        className="text-ember hover:text-ember"
+                        disabled={busy !== null}
+                        onClick={() =>
+                          run(
+                            type,
+                            () => artworkApi.remove(entry.id, type),
+                            `${label} deleted`,
+                            `The ${label.toLowerCase()} could not be deleted`,
+                          )
+                        }
+                      >
+                        <Trash2 />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => fileInputs.current[type]?.click()}>
+                      {spinner(type, <Upload />)}
+                      Upload {label.toLowerCase()}
+                    </Button>
+                  )}
+                </div>
+                {fileInput(type, label)}
+                {browsing === type && (
+                  <CandidatePicker
+                    type={type}
+                    urls={candidates}
+                    disabled={busy !== null}
+                    onPick={(url) =>
+                      run(
+                        type,
+                        async () => {
+                          await artworkApi.fromUrl(entry.id, type, url);
+                          setBrowsing(null);
+                        },
+                        `${label} updated`,
+                        `The ${label.toLowerCase()} could not be set`,
+                      )
+                    }
+                  />
                 )}
-                {renderFileInput(type)}
-              </div>
+              </li>
             );
           })}
-          <div className="flex items-center gap-4 rounded-md border border-border p-3">
-            <div className="flex h-16 w-24 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
-              <ImageIcon className="w-5 h-5" />
+          <li className="flex flex-wrap items-center gap-4 py-3">
+            <Preview type="banner" label="Screenshot" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-parchment">Screenshots</p>
+              <p className="text-xs text-ash">Add as many as you like</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-foreground">
-                Screenshot
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-2 border-border"
-                disabled={busy !== null}
-                onClick={() => triggerFile("screenshot")}
-              >
-                {busy === "screenshot" ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4" />
-                )}
-                Upload Screenshot
-              </Button>
-            </div>
-            {renderFileInput("screenshot")}
-          </div>
-        </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy !== null}
+              onClick={() => fileInputs.current.screenshot?.click()}
+            >
+              {spinner("screenshot", <Upload />)}
+              Upload screenshot
+            </Button>
+            {fileInput("screenshot", "Screenshot")}
+          </li>
+        </ul>
       </DialogContent>
     </Dialog>
   );
