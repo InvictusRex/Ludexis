@@ -130,7 +130,7 @@ Load only the file you need.
 
 ## Graph Statistics
 
-Verified at commit `c0b5f19` on 2026-10-06. Regenerate with `validate.py --stats-json`.
+Verified at commit `4d798fc` on 2026-10-06. Regenerate with `validate.py --stats-json`.
 
 | | Count |
 |-|-------|
