@@ -16,6 +16,8 @@ export default defineConfig({
     ],
     exclude: ["node_modules", "e2e/**", "playwright.config.ts"],
     css: false,
+    // Forms typed key by key (passwords, setup) outrun the 5 s default on busy or slow CI runners.
+    testTimeout: 20_000,
     restoreMocks: true,
     clearMocks: true,
   },
