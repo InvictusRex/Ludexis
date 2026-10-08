@@ -30,6 +30,8 @@ export interface ServerSettings {
   igdb_from_env: boolean;
   steamgriddb_configured: boolean;
   steamgriddb_from_env: boolean;
+  vn_sources: boolean;
+  hidden_collections: string[];
 }
 
 export interface ServerSettingsUpdate {
@@ -38,4 +40,6 @@ export interface ServerSettingsUpdate {
   igdb_client_id?: string;
   igdb_client_secret?: string;
   steamgriddb_api_key?: string;
+  vn_sources?: boolean;
+  hidden_collections?: string[];
 }

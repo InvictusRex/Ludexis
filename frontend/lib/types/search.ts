@@ -23,6 +23,8 @@ export interface LibraryQuery {
   metadata_status?: string;
   verification_status?: string;
   group_versions?: boolean;
+  /** Also list games in collections hidden in the server settings. */
+  include_hidden?: boolean;
   sort?: LibrarySort;
   offset?: number;
   limit?: number;
