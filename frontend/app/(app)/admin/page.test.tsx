@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { adminApi, healthApi, jobMonitorApi, jobsApi, scansApi } from "@/lib/api";
+import { adminApi, archiveApi, artworkApi, healthApi, jobMonitorApi, jobsApi, scansApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import DashboardOverview from "./page";
 import type { AdminStats, JobHistory, User } from "@/lib/types";
@@ -20,6 +20,8 @@ vi.mock("@/lib/toast", () => ({
 
 vi.mock("@/lib/api", () => ({
   adminApi: { getStats: vi.fn() },
+  archiveApi: { browse: vi.fn(), getDuplicates: vi.fn() },
+  artworkApi: { getMissing: vi.fn() },
   healthApi: { getHealth: vi.fn(), getDb: vi.fn(), getRedis: vi.fn() },
   jobMonitorApi: { getStats: vi.fn(), getWorkers: vi.fn() },
   jobsApi: { getAll: vi.fn() },
@@ -50,8 +52,12 @@ const running: JobHistory = { id: "job-2", job_type: "METADATA_REFRESH", status:
 
 const admin: User = { id: "admin-1", username: "admin", email: "a@example.com", is_active: true, is_superuser: true };
 
-function setup(user: User = admin) {
+function setup(user: User = admin, toReview = 0) {
   vi.mocked(useAuth).mockReturnValue({ user, loading: false, login: vi.fn(), logout: vi.fn() } as any);
+  // Unmatched and partly matched games each count toReview.
+  vi.mocked(archiveApi.browse).mockResolvedValue({ items: [], total: toReview });
+  vi.mocked(archiveApi.getDuplicates).mockResolvedValue([]);
+  vi.mocked(artworkApi.getMissing).mockResolvedValue([]);
   vi.mocked(adminApi.getStats).mockResolvedValue(stats);
   vi.mocked(healthApi.getHealth).mockResolvedValue({ status: "healthy" });
   vi.mocked(healthApi.getDb).mockResolvedValue({ database: "healthy" });
@@ -75,6 +81,24 @@ describe("DashboardOverview", () => {
     expect(screen.getByText("Games")).toBeInTheDocument();
     expect(screen.getByText("88%")).toBeInTheDocument();
     expect(screen.getByText("30%")).toBeInTheDocument();
+  });
+
+  it("points to games still waiting for review", async () => {
+    setup(admin, 2);
+    const attention = await screen.findByRole("region", { name: "Needs attention" });
+    expect(within(attention).getByRole("link", { name: /4 games to identify/ })).toHaveAttribute(
+      "href",
+      "/admin/metadata?tab=review",
+    );
+    expect(archiveApi.browse).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata_status: "UNMATCHED", review_resolved: false, include_hidden: true }),
+    );
+  });
+
+  it("stays quiet when nothing needs attention", async () => {
+    setup();
+    expect(await screen.findByText("128")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Needs attention" })).not.toBeInTheDocument();
   });
 
   it("reports each service and the workers", async () => {

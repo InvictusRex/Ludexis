@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
-import { adminApi, healthApi, jobMonitorApi, jobsApi, scansApi } from "@/lib/api";
+import { adminApi, archiveApi, artworkApi, healthApi, jobMonitorApi, jobsApi, scansApi } from "@/lib/api";
 import type { AdminStats, HealthStatus, JobHistory, JobMonitorStats, JobMonitorWorker, ScanStatus } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useApi } from "@/hooks/use-api";
 import { can } from "@/lib/permissions";
-import { config } from "@/lib/config";
+import { plural } from "@/lib/format";
+import { loadReviewCount } from "@/hooks/use-review-count";
+import { AlertDot } from "@/components/shell/nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -89,6 +90,8 @@ export default function DashboardOverview() {
         }
       />
 
+      {can(user, "EDIT_METADATA") && <NeedsAttention />}
+
       {isAdmin && (
         <LibraryStats
           stats={server.data?.stats}
@@ -104,6 +107,41 @@ export default function DashboardOverview() {
         <ServerCard health={health.data} server={server.data ?? undefined} isAdmin={isAdmin} />
       </div>
     </div>
+  );
+}
+
+/** What waits for an editor, each opening the matching Metadata tab; only the review queue raises a red dot. */
+function NeedsAttention() {
+  const counts = useApi(async () => {
+    const [review, missing, duplicates] = await Promise.all([
+      loadReviewCount(),
+      // these two endpoints return full lists (no paging or count header); fine at homelab scale.
+      artworkApi.getMissing(),
+      archiveApi.getDuplicates(),
+    ]);
+    return [
+      { href: "/admin/metadata?tab=review", label: `${plural(review, "game")} to identify`, count: review, alert: true },
+      { href: "/admin/metadata?tab=artwork", label: `${plural(missing.length, "game")} missing artwork`, count: missing.length },
+      { href: "/admin/metadata?tab=duplicates", label: plural(duplicates.length, "duplicate group"), count: duplicates.length },
+    ].filter((item) => item.count > 0);
+  }, []);
+
+  if (!counts.data?.length) {
+    return null;
+  }
+  return (
+    <section
+      aria-label="Needs attention"
+      className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-seam bg-vault px-4 py-3 text-sm"
+    >
+      <span className="font-medium text-parchment">Needs attention</span>
+      {counts.data.map((item) => (
+        <Link key={item.href} href={item.href} className="flex items-center gap-2 tabular text-violet-lit hover:text-parchment">
+          {item.alert && <AlertDot />}
+          {item.label}
+        </Link>
+      ))}
+    </section>
   );
 }
 
@@ -326,14 +364,6 @@ function ServerCard({
           </div>
         )}
 
-        {isAdmin && (
-          <Button asChild variant="outline" size="sm" className="w-full">
-            <a href={config.grafanaUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink />
-              Open Grafana
-            </a>
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

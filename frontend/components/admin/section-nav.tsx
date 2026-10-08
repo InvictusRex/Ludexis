@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
+import { useReviewCount } from "@/hooks/use-review-count";
+import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { AlertDot, reviewAlert } from "@/components/shell/nav";
 import type { Section } from "./sections";
 
 function isActive(pathname: string, href: string) {
@@ -12,6 +16,8 @@ function isActive(pathname: string, href: string) {
 /** A tab strip on small screens, a vertical list beside the content on large ones. */
 export function SectionNav({ sections }: { sections: Section[] }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const toReview = reviewAlert(useReviewCount(can(user, "EDIT_METADATA")));
 
   return (
     <nav aria-label="Dashboard sections" className="-mx-(--gutter) lg:mx-0 lg:sticky lg:top-[calc(var(--topbar-h)+1.5rem)] lg:self-start">
@@ -40,6 +46,7 @@ export function SectionNav({ sections }: { sections: Section[] }) {
                 )}
                 <Icon className={cn("size-[18px] shrink-0", active && "text-violet-lit")} />
                 {section.label}
+                {section.href === "/admin/metadata" && toReview && <AlertDot label={toReview} className="lg:ml-auto" />}
               </Link>
             </li>
           );
