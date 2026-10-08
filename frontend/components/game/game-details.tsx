@@ -1,6 +1,7 @@
 import type { ArchiveEntry } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/format";
 import { MetadataMark, VerificationMark } from "@/components/media/status-mark";
+import { libraryHref } from "@/components/library/library-params";
 import { ChipLink } from "./game-hero";
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
@@ -12,14 +13,14 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   );
 }
 
-function Links({ title, items }: { title: string; items: { href: string; name: string }[] }) {
+function Links({ title, items, quiet }: { title: string; items: { href: string; name: string }[]; quiet?: boolean }) {
   if (!items.length) return null;
   return (
     <div>
       <h3 className="mb-2 text-sm font-medium text-ash">{title}</h3>
       <div className="flex flex-wrap gap-2">
         {items.map((item) => (
-          <ChipLink key={item.href} href={item.href}>
+          <ChipLink key={item.href} href={item.href} quiet={quiet}>
             {item.name}
           </ChipLink>
         ))}
@@ -33,20 +34,37 @@ const linksOf = (base: string, items?: { id: string; name: string }[]) =>
 
 export function GameOverview({ entry }: { entry: ArchiveEntry }) {
   const confidence = entry.metadata_confidence;
+  const related = [...(entry.parent_series ? [entry.parent_series] : []), ...(entry.related_entries ?? [])];
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-      <div className="space-y-6">
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div data-mask className="space-y-6">
+        <section aria-labelledby="game-about">
+          <h2 id="game-about" className="mb-3 font-display text-xl font-semibold text-parchment">
+            About
+          </h2>
+          {entry.description ? (
+            <p className="whitespace-pre-line leading-relaxed text-parchment/90">{entry.description}</p>
+          ) : (
+            <p className="text-ash">No description yet. Identifying the game fills one in, or it can be written by hand.</p>
+          )}
+        </section>
         <Links title="Developers" items={linksOf("/developers", entry.developers)} />
         <Links title="Publishers" items={linksOf("/publishers", entry.publishers)} />
         <Links title="Franchise" items={linksOf("/franchises", entry.franchise ? [entry.franchise] : [])} />
         <Links title="Collections" items={linksOf("/collections", entry.collections)} />
-        {!entry.developers?.length && !entry.publishers?.length && !entry.franchise && !entry.collections?.length && (
-          <p className="text-sm text-ash">No developers, publishers or collections linked yet.</p>
-        )}
+        <Links title="Related games" items={related.map((game) => ({ href: `/archive/${game.id}`, name: game.title }))} />
+        <Links title="Genres" items={(entry.genres ?? []).map((genre) => ({ href: libraryHref({ genre }), name: genre }))} />
       </div>
 
-      <dl>
+      <dl className="lg:pt-1">
         <Detail label="Release date">{formatDate(entry.release_date)}</Detail>
+        {(entry.season != null || entry.episode != null) && (
+          <Detail label="Series">
+            {[entry.season != null && `Season ${entry.season}`, entry.episode != null && `Episode ${entry.episode}`]
+              .filter(Boolean)
+              .join(" · ")}
+          </Detail>
+        )}
         {entry.engine && <Detail label="Engine">{entry.engine}</Detail>}
         {entry.version && <Detail label="Version">{entry.version}</Detail>}
         {entry.archive_type && <Detail label="Archive type">{entry.archive_type}</Detail>}

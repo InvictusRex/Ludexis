@@ -19,8 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Longer descriptions start clamped behind a "More" toggle.
-const LONG_DESCRIPTION = 280;
 const TAGS_SHOWN = 12;
 
 export function ChipLink({ href, children, quiet }: { href: string; children: React.ReactNode; quiet?: boolean }) {
@@ -66,9 +64,7 @@ export function GameHero({
   onOpenLocation,
   onDelete,
 }: GameHeroProps) {
-  const [expanded, setExpanded] = useState(false);
   const [allTags, setAllTags] = useState(false);
-  const long = (entry.description?.length ?? 0) > LONG_DESCRIPTION;
   const tags = entry.tags ?? [];
   const shownTags = allTags ? tags : tags.slice(0, TAGS_SHOWN);
   const meta = [
@@ -114,6 +110,16 @@ export function GameHero({
                   <SearchCheck />
                   Identify
                 </Button>
+              </>
+            )}
+            {onOpenLocation && (
+              <Button variant="outline" onClick={onOpenLocation}>
+                <FolderOpen />
+                Open file location
+              </Button>
+            )}
+            {canEdit && (
+              <>
                 <Button variant="outline" onClick={onEdit}>
                   <Pencil />
                   Edit
@@ -139,12 +145,6 @@ export function GameHero({
                     Add to collection
                   </DropdownMenuItem>
                 )}
-                {onOpenLocation && (
-                  <DropdownMenuItem onSelect={onOpenLocation}>
-                    <FolderOpen />
-                    Open file location
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem onSelect={onCopyLink}>
                   <Link2 />
                   Copy link
@@ -163,25 +163,9 @@ export function GameHero({
           </div>
 
           {entry.description && (
-            <div data-mask className="max-w-[70ch]">
-              <p
-                id="game-description"
-                className={cn("whitespace-pre-line leading-relaxed text-parchment/85", long && !expanded && "line-clamp-3")}
-              >
-                {entry.description}
-              </p>
-              {long && (
-                <button
-                  type="button"
-                  aria-expanded={expanded}
-                  aria-controls="game-description"
-                  onClick={() => setExpanded((value) => !value)}
-                  className="mt-1 text-sm font-medium text-violet-lit hover:text-parchment"
-                >
-                  {expanded ? "Less" : "More"}
-                </button>
-              )}
-            </div>
+            <p data-mask className="line-clamp-3 max-w-[70ch] whitespace-pre-line leading-relaxed text-parchment/85">
+              {entry.description}
+            </p>
           )}
 
           {(!!entry.genres?.length || tags.length > 0) && (
