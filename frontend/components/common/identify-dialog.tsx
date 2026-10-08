@@ -7,6 +7,7 @@ import type { ArchiveEntry, MetadataSearchResult } from "@/lib/types";
 import { year } from "@/lib/format";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { useApi } from "@/hooks/use-api";
+import { announceReviewChanged } from "@/hooks/use-review-count";
 import { announceJobsChanged } from "@/components/shell/jobs-indicator";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,6 +91,7 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
       toastSuccess(`Identified as ${identified.entry.title}${versions}. Artwork is downloading in the background.`);
       // Identify starts an artwork job; let the activity indicator pick it up now.
       announceJobsChanged();
+      announceReviewChanged();
       onIdentified(identified.entry);
       onOpenChange(false);
     } catch (error) {

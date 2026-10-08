@@ -61,6 +61,7 @@ export interface ArchiveEntryUpdate {
   engine?: string | null;
   release_date?: string | null;
   storage_device?: string | null;
+  review_resolved?: boolean;
 }
 
 export interface ArchiveEntry {
@@ -106,6 +107,7 @@ export interface ArchiveEntry {
   episode?: number | null;
   season?: number | null;
   is_primary_version?: boolean;
+  review_resolved?: boolean;
   version_count?: number;
   library_id?: string | null;
   relative_path?: string | null;
