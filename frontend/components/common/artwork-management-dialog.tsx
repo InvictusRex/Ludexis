@@ -70,7 +70,25 @@ const CANDIDATE_SHAPE: Record<EntryArtwork, string> = {
   logo: "aspect-video bg-night",
 };
 
-/** Images the game's matched sources offer for one slot; picking one downloads it on the server. */
+const SOURCES: [string, string][] = [
+  ["steamgriddb.com", "SteamGridDB"],
+  ["vndb.org", "VNDB"],
+  ["igdb.com", "IGDB"],
+  ["steamstatic.com", "Steam"],
+  ["steampowered.com", "Steam"],
+];
+const ARTWORK_SOURCES = "VNDB, IGDB, Steam and SteamGridDB";
+
+function sourceOf(url: string) {
+  try {
+    const host = new URL(url).hostname;
+    return SOURCES.find(([domain]) => host === domain || host.endsWith(`.${domain}`))?.[1];
+  } catch {
+    return undefined;
+  }
+}
+
+/** Images the game's matched sources and SteamGridDB offer for one slot; picking one downloads it on the server. */
 function CandidatePicker({
   type,
   urls,
@@ -85,37 +103,49 @@ function CandidatePicker({
   if (urls === null) {
     return (
       <p className="flex w-full items-center gap-2 py-2 text-sm text-ash">
-        <Loader2 className="size-4 animate-spin" /> Looking up the matched sources…
+        <Loader2 className="size-4 animate-spin" /> Looking up {ARTWORK_SOURCES}…
       </p>
     );
   }
   if (urls.length === 0) {
-    return <p className="w-full py-2 text-sm text-ash">The matched sources offer no {type} for this game. Identify it first, or upload one.</p>;
+    return (
+      <p className="w-full py-2 text-sm text-ash">
+        {ARTWORK_SOURCES} offer no {type} for this game. Identify it first, or upload one.
+      </p>
+    );
   }
   return (
     <ul className={cn("grid w-full gap-2", type === "cover" ? "grid-cols-4 sm:grid-cols-6" : "grid-cols-2 sm:grid-cols-3")}>
-      {urls.map((url) => (
-        <li key={url}>
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(url)}
-            aria-label={`Use this ${type}`}
-            className={cn(
-              "relative block w-full overflow-hidden rounded-md bg-stone outline-none transition hover:ring-2 hover:ring-violet-lit focus-visible:ring-2 focus-visible:ring-violet-lit disabled:opacity-50",
-              CANDIDATE_SHAPE[type],
-            )}
-          >
-            <img
-              src={url}
-              alt=""
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              className={cn("absolute inset-0 size-full object-center", type === "logo" ? "object-contain p-1" : "object-cover")}
-            />
-          </button>
-        </li>
-      ))}
+      {urls.map((url) => {
+        const source = sourceOf(url);
+        return (
+          <li key={url}>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onPick(url)}
+              aria-label={source ? `Use this ${type} from ${source}` : `Use this ${type}`}
+              className={cn(
+                "relative block w-full overflow-hidden rounded-md bg-stone outline-none transition hover:ring-2 hover:ring-violet-lit focus-visible:ring-2 focus-visible:ring-violet-lit disabled:opacity-50",
+                CANDIDATE_SHAPE[type],
+              )}
+            >
+              <img
+                src={url}
+                alt=""
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className={cn("absolute inset-0 size-full object-center", type === "logo" ? "object-contain p-1" : "object-cover")}
+              />
+              {source && (
+                <span className="absolute inset-x-0 bottom-0 truncate bg-night/80 px-1 py-0.5 text-[10px] font-medium text-parchment">
+                  {source}
+                </span>
+              )}
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }
