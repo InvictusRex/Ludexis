@@ -192,16 +192,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               })}
             </ul>
           ) : (
-            <div className={cn("relative overflow-hidden px-5 text-center", q ? "py-8" : "py-14")}>
-              {!q && (
-                <img
-                  src="/brand/knight.webp"
-                  alt=""
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-1/2 top-1/2 w-28 -translate-x-1/2 -translate-y-1/2 opacity-[0.07]"
-                />
-              )}
-              <p className="relative text-sm text-ash">
+            <div className="px-5 py-8 text-center">
+              <p className="text-sm text-ash">
                 {q.length === 1 ? "Keep typing…" : "Type a title, a studio, a franchise or a tag."}
               </p>
             </div>

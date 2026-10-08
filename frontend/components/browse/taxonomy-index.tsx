@@ -142,6 +142,12 @@ export function TaxonomyIndex({ kind: key }: { kind: TaxonomyKey }) {
 
   return (
     <Page>
+      <img
+        src="/brand/knight.webp"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none fixed bottom-0 left-[calc(100vw-21.5rem)] hidden w-80 opacity-[0.05] md:block xl:left-[calc(100vw-25.5rem)] xl:w-96"
+      />
       <PageHeader
         title={capitalize(kind.plural)}
         description={list.data && list.data.length > 0 ? plural(list.data.length, kind.singular, kind.plural) : undefined}

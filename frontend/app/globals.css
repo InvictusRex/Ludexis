@@ -44,8 +44,8 @@
   --ring: var(--violet-lit);
   --radius: 0.625rem;
 
-  --sidebar-w: 15rem;
-  --sidebar-w-collapsed: 4.5rem;
+  --sidebar-w: 13rem;
+  --sidebar-w-collapsed: 4rem;
   --topbar-h: 4rem;
   --gutter: 1.25rem;
   --scrim: linear-gradient(to top, var(--night) 0%, rgb(9 8 13 / 0.82) 32%, rgb(9 8 13 / 0.2) 70%, rgb(9 8 13 / 0.35) 100%);
