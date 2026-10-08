@@ -14,7 +14,7 @@ vi.mock("@/lib/toast", () => ({
 vi.mock("@/components/shell/jobs-indicator", () => ({ announceJobsChanged: vi.fn() }));
 
 vi.mock("@/lib/api", () => ({
-  metadataApi: { searchProvider: vi.fn() },
+  metadataApi: { searchProvider: vi.fn(), providers: vi.fn(async () => ["IGDB", "Steam"]) },
   archiveApi: { identify: vi.fn() },
 }));
 
@@ -45,7 +45,7 @@ describe("IdentifyDialog", () => {
 
     expect(await screen.findByText("Quiet Meadow")).toBeInTheDocument();
     expect(screen.getByText("2021")).toBeInTheDocument();
-    expect(metadataApi.searchProvider).toHaveBeenCalledWith("quiet meadow v0.4", "all");
+    expect(metadataApi.searchProvider).toHaveBeenCalledWith("quiet meadow v0.4", "all", "");
 
     fireEvent.click(screen.getByRole("button", { name: "Select Quiet Meadow from VNDB" }));
 
@@ -54,6 +54,19 @@ describe("IdentifyDialog", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(vi.mocked(toastSuccess).mock.calls[0][0]).toContain("and 2 other versions");
     expect(announceJobsChanged).toHaveBeenCalled();
+  });
+
+  it("passes the optional developer and shows each result's developers", async () => {
+    vi.mocked(metadataApi.searchProvider).mockResolvedValue([
+      { provider: "IGDB", provider_id: "7", title: "Quiet Meadow", developers: ["Lantern Works"] },
+    ]);
+    render(<IdentifyDialog entry={entry} open onOpenChange={vi.fn()} onIdentified={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText(/developer/i), { target: { value: "Lantern" } });
+    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+
+    expect(await screen.findByText("Lantern Works")).toBeInTheDocument();
+    expect(metadataApi.searchProvider).toHaveBeenCalledWith("quiet meadow v0.4", "all", "Lantern");
   });
 
   it("says so when nothing is found", async () => {

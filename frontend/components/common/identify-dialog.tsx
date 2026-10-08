@@ -6,6 +6,7 @@ import { archiveApi, metadataApi } from "@/lib/api";
 import type { ArchiveEntry, MetadataSearchResult } from "@/lib/types";
 import { year } from "@/lib/format";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { useApi } from "@/hooks/use-api";
 import { announceJobsChanged } from "@/components/shell/jobs-indicator";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,12 +21,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const PROVIDERS = [
-  { value: "all", label: "All sources" },
-  { value: "VNDB", label: "VNDB" },
-  { value: "IGDB", label: "IGDB" },
-  { value: "Steam", label: "Steam" },
-];
 
 interface IdentifyDialogProps {
   entry: ArchiveEntry;
@@ -56,7 +51,9 @@ function ResultCover({ url }: { url?: string | null }) {
 
 export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: IdentifyDialogProps) {
   const [query, setQuery] = useState(entry.title);
+  const [developer, setDeveloper] = useState("");
   const [provider, setProvider] = useState("all");
+  const providers = useApi(() => metadataApi.providers(), []);
   const [results, setResults] = useState<MetadataSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [applying, setApplying] = useState<string | null>(null);
@@ -64,6 +61,7 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
   useEffect(() => {
     if (open) {
       setQuery(entry.title);
+      setDeveloper("");
       setResults(null);
     }
   }, [open, entry.title]);
@@ -73,7 +71,7 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
     if (!query.trim()) return;
     setSearching(true);
     try {
-      setResults(await metadataApi.searchProvider(query.trim(), provider));
+      setResults(await metadataApi.searchProvider(query.trim(), provider, developer));
     } catch (error) {
       toastError(error, "Search failed");
       setResults([]);
@@ -113,9 +111,22 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
         </DialogHeader>
 
         <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="identify-query">Title</Label>
-            <Input id="identify-query" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <div className="flex-1 space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="identify-query">Title</Label>
+              <Input id="identify-query" value={query} onChange={(event) => setQuery(event.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="identify-developer">
+                Developer <span className="font-normal text-ash">(optional)</span>
+              </Label>
+              <Input
+                id="identify-developer"
+                value={developer}
+                onChange={(event) => setDeveloper(event.target.value)}
+                placeholder="Helps tell apart games with the same name"
+              />
+            </div>
           </div>
           <div className="space-y-2 sm:w-40">
             <Label htmlFor="identify-provider">Source</Label>
@@ -124,9 +135,10 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PROVIDERS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                <SelectItem value="all">All sources</SelectItem>
+                {(providers.data ?? []).map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -159,6 +171,7 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ash">
                         <span className="font-medium text-violet-lit">{result.provider}</span>
                         {result.release_date && <span className="tabular">{year(result.release_date)}</span>}
+                        {!!result.developers?.length && <span className="truncate">{result.developers.join(", ")}</span>}
                         <span className="truncate">#{result.provider_id}</span>
                       </p>
                       {result.summary && <p className="mt-1 line-clamp-2 text-xs text-ash">{result.summary}</p>}

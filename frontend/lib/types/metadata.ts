@@ -14,6 +14,7 @@ export interface MetadataSearchResult {
   release_date?: string | null;
   score?: number | null;
   cover_url?: string | null;
+  developers?: string[];
 }
 
 export interface MetadataDetails {
