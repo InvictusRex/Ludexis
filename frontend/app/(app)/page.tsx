@@ -1,12 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { archiveApi, artworkApi, collectionsApi, franchisesApi } from "@/lib/api";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { archiveApi, collectionsApi, franchisesApi } from "@/lib/api";
 import type { ArchiveEntry, Franchise } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useApi } from "@/hooks/use-api";
-import { can, canSeeDashboard } from "@/lib/permissions";
+import { canSeeDashboard } from "@/lib/permissions";
 import { plural, year } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Page } from "@/components/shell/page";
 import { EmptyState } from "@/components/brand/empty-state";
 import { Logo, Shot } from "@/components/media/art";
@@ -19,13 +22,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SHELF_SIZE = 20;
+const SLIDES = 5;
+const SLIDE_MS = 7000;
 
 const shelf = (query: Parameters<typeof archiveApi.browse>[0]) =>
   archiveApi.browse({ group_versions: true, limit: SHELF_SIZE, ...query });
 
 export default function Home() {
   const { user } = useAuth();
-  const canEdit = can(user, "EDIT_METADATA");
 
   const recent = useApi(() => shelf({ sort: "-created_at" }), []);
   const rediscover = useApi(() => shelf({ sort: "random" }), []);
@@ -80,17 +84,22 @@ export default function Home() {
   }
 
   const items = recent.data.items;
-  const spotlight = items.find((entry) => entry.banner_path) ?? items[0];
+  // The slideshow takes random games, those with banner art first; the rest of the pick fills "Rediscover".
+  const shuffled = rediscover.data?.items ?? (rediscover.error ? items : []);
+  const slides = [...shuffled.filter((entry) => entry.banner_path), ...shuffled.filter((entry) => !entry.banner_path)].slice(
+    0,
+    SLIDES,
+  );
+  const slideIds = new Set(slides.map((entry) => entry.id));
+  const rediscoverItems = shuffled.filter((entry) => !slideIds.has(entry.id));
   const franchiseList = (franchises.data?.items ?? []).filter((franchise) => franchise.entry_count > 0);
 
   return (
     <>
       <h1 className="sr-only">Home</h1>
-      <Spotlight entry={spotlight} />
+      {slides.length > 0 ? <Showcase entries={slides} /> : <HeroSkeleton />}
 
       <div className="pb-16 pt-4">
-        {canEdit && <NeedsAttention />}
-
         <Shelf title="Recently added" href={libraryHref({ sort: "-created_at" })}>
           {items.map((entry) => (
             <PosterCard key={entry.id} entry={entry} />
@@ -98,9 +107,9 @@ export default function Home() {
         </Shelf>
 
         {/* A shuffled pick, so games that left the "Recently added" row come back into view. */}
-        {!!rediscover.data?.items.length && (
+        {rediscoverItems.length > 0 && (
           <Shelf title="Rediscover">
-            {rediscover.data.items.map((entry) => (
+            {rediscoverItems.map((entry) => (
               <PosterCard key={entry.id} entry={entry} />
             ))}
           </Shelf>
@@ -128,10 +137,97 @@ export default function Home() {
   );
 }
 
-function Spotlight({ entry }: { entry: ArchiveEntry }) {
+/** A Steam-style slideshow: advances on its own, holds while hovered or focused, and has arrows, dots and pause. */
+function Showcase({ entries }: { entries: ArchiveEntry[] }) {
+  const [index, setIndex] = useState(0);
+  const [held, setHeld] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const count = entries.length;
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setPaused(true);
+  }, []);
+
+  useEffect(() => {
+    if (paused || held || count < 2) return;
+    const timer = setTimeout(() => setIndex((current) => (current + 1) % count), SLIDE_MS);
+    return () => clearTimeout(timer);
+  }, [index, paused, held, count]);
+
+  const current = Math.min(index, count - 1);
+  const step = (by: number) => setIndex((value) => (value + by + count) % count);
+
+  return (
+    <div
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Featured games"
+      onMouseEnter={() => setHeld(true)}
+      onMouseLeave={() => setHeld(false)}
+      onFocus={() => setHeld(true)}
+      onBlur={(event) => !event.currentTarget.contains(event.relatedTarget) && setHeld(false)}
+    >
+      <Spotlight key={entries[current].id} entry={entries[current]}>
+        {count > 1 && (
+          <>
+            <SlideArrow side="left" onClick={() => step(-1)} />
+            <SlideArrow side="right" onClick={() => step(1)} />
+            <div className="relative mt-6 flex items-center justify-center gap-2">
+              {entries.map((slide, slideIndex) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  onClick={() => setIndex(slideIndex)}
+                  aria-label={`Show game ${slideIndex + 1} of ${count}`}
+                  aria-current={slideIndex === current ? "true" : undefined}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all",
+                    slideIndex === current ? "w-6 bg-parchment" : "w-1.5 bg-parchment/40 hover:bg-parchment/70",
+                  )}
+                />
+              ))}
+              <button
+                type="button"
+                onClick={() => setPaused((value) => !value)}
+                aria-label={paused ? "Play slideshow" : "Pause slideshow"}
+                className="ml-2 grid size-7 place-items-center rounded-full text-parchment/70 hover:bg-night/50 hover:text-parchment"
+              >
+                {paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
+              </button>
+            </div>
+          </>
+        )}
+      </Spotlight>
+    </div>
+  );
+}
+
+function SlideArrow({ side, onClick }: { side: "left" | "right"; onClick: () => void }) {
+  const Icon = side === "left" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={side === "left" ? "Previous game" : "Next game"}
+      className={cn(
+        "absolute top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-night/50 text-parchment backdrop-blur transition-colors hover:bg-night/80",
+        side === "left" ? "left-2 sm:left-4" : "right-2 sm:right-4",
+      )}
+    >
+      <Icon className="size-6" />
+    </button>
+  );
+}
+
+function Spotlight({ entry, children }: { entry: ArchiveEntry; children?: React.ReactNode }) {
   const meta = [year(entry.release_date), ...(entry.genres ?? []).slice(0, 3)].filter(Boolean);
   return (
-    <BackdropHero banner={entry.banner_path} cover={entry.cover_path} size="spotlight">
+    <BackdropHero
+      banner={entry.banner_path}
+      cover={entry.cover_path}
+      size="spotlight"
+      className="animate-in fade-in duration-700 motion-reduce:animate-none"
+    >
       {/* Without banner art the backdrop is only a blur, so the knight keeps watch in the corner. */}
       {!entry.banner_path && (
         <img
@@ -141,8 +237,8 @@ function Spotlight({ entry }: { entry: ArchiveEntry }) {
           className="pointer-events-none absolute bottom-0 right-(--gutter) hidden w-64 opacity-[0.08] md:block lg:w-80"
         />
       )}
-      <div className="relative mx-auto flex max-w-2xl flex-col items-center text-center">
-        <p className="mb-3 text-sm font-medium text-ash">Newly added</p>
+      <div className="relative mx-auto flex max-w-2xl flex-col items-center px-12 text-center">
+        <p className="mb-3 text-sm font-medium text-ash">Featured</p>
         <h2 className="flex justify-center">
           <Logo
             path={entry.logo_path}
@@ -163,6 +259,7 @@ function Spotlight({ entry }: { entry: ArchiveEntry }) {
           <Link href={`/archive/${entry.id}`}>View game</Link>
         </Button>
       </div>
+      {children}
     </BackdropHero>
   );
 }
@@ -181,35 +278,13 @@ function FranchiseCard({ franchise }: { franchise: Franchise }) {
   );
 }
 
-/** Quiet counts for editors, each opening the matching Dashboard tab. */
-function NeedsAttention() {
-  const counts = useApi(async () => {
-    const [unmatched, partial, missing, duplicates] = await Promise.all([
-      archiveApi.browse({ metadata_status: "UNMATCHED", limit: 1 }),
-      archiveApi.browse({ metadata_status: "PARTIAL", limit: 1 }),
-      // these two endpoints return full lists (no paging or count header); fine at homelab scale.
-      artworkApi.getMissing(),
-      archiveApi.getDuplicates(),
-    ]);
-    return [
-      { href: "/admin/metadata?tab=review", label: plural(unmatched.total + partial.total, "game") + " to identify", count: unmatched.total + partial.total },
-      { href: "/admin/metadata?tab=artwork", label: plural(missing.length, "game") + " missing artwork", count: missing.length },
-      { href: "/admin/metadata?tab=duplicates", label: plural(duplicates.length, "duplicate group"), count: duplicates.length },
-    ].filter((item) => item.count > 0);
-  }, []);
-
-  if (!counts.data?.length) {
-    return null;
-  }
+function HeroSkeleton() {
   return (
-    <section aria-label="Needs attention" className="mx-(--gutter) mb-2 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-seam bg-vault px-4 py-3 text-sm">
-      <span className="font-medium text-parchment">Needs attention</span>
-      {counts.data.map((item) => (
-        <Link key={item.href} href={item.href} className="tabular text-violet-lit hover:text-parchment">
-          {item.label}
-        </Link>
-      ))}
-    </section>
+    <div className="-mt-(--topbar-h) flex min-h-[clamp(300px,46vh,480px)] flex-col items-center justify-end gap-4 bg-vault pb-10">
+      <Skeleton className="h-12 w-72 max-w-[80%]" />
+      <Skeleton className="h-4 w-40" />
+      <Skeleton className="h-11 w-32" />
+    </div>
   );
 }
 
@@ -217,11 +292,7 @@ function HomeSkeleton() {
   return (
     <>
       <h1 className="sr-only">Home</h1>
-      <div className="-mt-(--topbar-h) flex min-h-[clamp(300px,46vh,480px)] flex-col items-center justify-end gap-4 bg-vault pb-10">
-        <Skeleton className="h-12 w-72 max-w-[80%]" />
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-11 w-32" />
-      </div>
+      <HeroSkeleton />
       {[0, 1].map((row) => (
         <div key={row} className="px-(--gutter) py-4">
           <Skeleton className="mb-4 h-6 w-44" />
