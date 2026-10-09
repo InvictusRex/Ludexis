@@ -73,6 +73,8 @@ export function ArchiveEditDialog({
   onSaved,
 }: ArchiveEditDialogProps) {
   const [form, setForm] = useState<ArchiveEditForm>(EMPTY_FORM);
+  // Unidentified games count as restricted until identified or cleared here, matching the server's access filter.
+  const restrictedNow = !!entry.restricted || (entry.metadata_status === "UNMATCHED" && !entry.restricted_locked);
   const [restricted, setRestricted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -80,11 +82,11 @@ export function ArchiveEditDialog({
   useEffect(() => {
     if (open) {
       setForm(toForm(entry));
-      setRestricted(!!entry.restricted);
+      setRestricted(restrictedNow);
       setSaveError(null);
       setSaving(false);
     }
-  }, [open, entry]);
+  }, [open, entry, restrictedNow]);
 
   const setField = (field: keyof ArchiveEditForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -103,7 +105,7 @@ export function ArchiveEditDialog({
     setSaveError(null);
     try {
       // Sent only when changed: setting it locks the mark against metadata refreshes.
-      const payload = { ...buildPayload(form), ...(restricted !== !!entry.restricted && { restricted }) };
+      const payload = { ...buildPayload(form), ...(restricted !== restrictedNow && { restricted }) };
       const updated = await archiveApi.update(entry.id, payload);
       toastSuccess("Game updated");
       onSaved(updated);
@@ -181,7 +183,9 @@ export function ArchiveEditDialog({
               </Label>
               <p className="mt-1 text-sm text-ash">
                 Only accounts allowed restricted content see this game.
-                {entry.restricted_locked ? " Set by hand." : " Metadata sources set this from their age ratings."}
+                {entry.restricted_locked
+                  ? " Set by hand."
+                  : " Metadata sources set this from their age ratings; unidentified games stay restricted."}
               </p>
             </div>
             <Switch id="edit-restricted" checked={restricted} onCheckedChange={setRestricted} />
