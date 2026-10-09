@@ -36,5 +36,6 @@ None. Paths stored in `archive_entries.cover_path`/`banner_path`/`logo_path` and
 ## Notes
 - `StorageService.__init__` creates `base_dir` if missing; `backend/main.py` also creates it at import time.
 - `read_media` resolves the requested path and returns 404 if it escapes `media_dir` or is not a file (path traversal guard).
+- Responses carry `Cache-Control: private, no-cache`: covers are rewritten in place (same file name), so browsers must revalidate by ETag (a 304 when unchanged) instead of reusing stale art.
 - `/media/{path:path}` requires an active user via `get_current_active_user` (`backend/main.py`): the `ludexis_access` cookie, which `<img>` requests send automatically, or a Bearer header. No token ever goes into a URL; `mediaUrl()` in `frontend/lib/media.ts` only joins `config.mediaBaseUrl` and the path.
 - `/media` is mounted outside `settings.API_PREFIX`, so the full URL has no `/api` prefix.

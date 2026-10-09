@@ -97,10 +97,10 @@ AuthContext.renewMediaToken()  after login/init and within 5 min of expiry      
 <img src={mediaUrl(entry.cover_path)}>                            frontend/lib/media.ts
   -> "{config.mediaBaseUrl}/{path}"   (/media behind the proxy; the browser sends the ludexis_access cookie)
   GET /media/{path:path}                                          backend/main.py
-  -> read_media(path, current_user=Depends(get_media_user))
+  -> read_media(path, current_user=Depends(get_current_active_user))
        get_current_active_user: Bearer header, else ludexis_access cookie ; 401 otherwise
      resolve under media_dir (= StorageService().base_dir) ; 404 if outside or not a file
-  <- FileResponse
+  <- FileResponse, Cache-Control: private, no-cache (artwork is replaced under the same name; the browser revalidates by ETag)
 ```
 Access tokens are never accepted in the URL.
 

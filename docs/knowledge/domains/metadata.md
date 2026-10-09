@@ -13,7 +13,7 @@ External metadata lookup (VNDB, IGDB, Steam; Manual is a stub), automatic matchi
 | `backend/app/utils/normalization.py` | Company name key | `company_key` (case, leading "The", legal suffixes and punctuation ignored) |
 | `backend/app/providers/metadata_provider.py` | Provider base (ABC) | `MetadataProvider.search`, `get_details`, `download_artwork` |
 | `backend/app/providers/igdb.py` | IGDB provider (priority 10) | `IGDBProvider` |
-| `backend/app/providers/igdb_client.py` | Twitch OAuth + IGDB HTTP | `IGDBClient.get_headers`, `post`, `_refresh_token`, `_ensure_token` |
+| `backend/app/providers/igdb_client.py` | Twitch OAuth (credentials in the form body, never the URL, so request logs stay clean) + IGDB HTTP | `IGDBClient.get_headers`, `post`, `_refresh_token`, `_ensure_token` |
 | `backend/app/providers/steam.py` | Steam provider (priority 20) | `SteamProvider` |
 | `backend/app/providers/vndb.py` | VNDB provider (priority 5) | `VNDBProvider` |
 | `backend/app/providers/manual.py` | Stub (priority 100) | `ManualProvider` |
