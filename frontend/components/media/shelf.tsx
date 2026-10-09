@@ -21,7 +21,7 @@ export function Shelf({ title, href, children, itemClassName = "w-[132px] sm:w-[
     rail.current?.scrollBy({ left: direction * rail.current.clientWidth * 0.85, behavior: "smooth" });
 
   return (
-    <section className="py-4">
+    <section className="py-3">
       <div className="mb-3 flex items-end justify-between gap-4 px-(--gutter)">
         <h2 className="font-display text-lg font-semibold text-parchment">{title}</h2>
         <div className="flex items-center gap-1">

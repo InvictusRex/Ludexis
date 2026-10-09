@@ -12,7 +12,7 @@ import { plural, year } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Page } from "@/components/shell/page";
 import { EmptyState } from "@/components/brand/empty-state";
-import { Logo, Shot } from "@/components/media/art";
+import { Shot } from "@/components/media/art";
 import { BackdropHero } from "@/components/media/backdrop-hero";
 import { PosterCard } from "@/components/media/poster-card";
 import { PosterSkeletons } from "@/components/media/poster-grid";
@@ -91,7 +91,9 @@ export default function Home() {
     SLIDES,
   );
   const slideIds = new Set(slides.map((entry) => entry.id));
-  const rediscoverItems = shuffled.filter((entry) => !slideIds.has(entry.id));
+  const unfeatured = shuffled.filter((entry) => !slideIds.has(entry.id));
+  // A small library (or one narrowed by user access) can fit wholly in the slideshow; then the row repeats the pick.
+  const rediscoverItems = unfeatured.length > 0 ? unfeatured : shuffled;
   const franchiseList = (franchises.data?.items ?? []).filter((franchise) => franchise.entry_count > 0);
 
   return (
@@ -239,22 +241,12 @@ function Spotlight({ entry, children }: { entry: ArchiveEntry; children?: React.
       )}
       <div className="relative mx-auto flex max-w-2xl flex-col items-center px-12 text-center">
         <p className="mb-3 text-sm font-medium text-ash">Featured</p>
-        <h2 className="flex justify-center">
-          <Logo
-            path={entry.logo_path}
-            alt={entry.title}
-            className="h-24 w-auto object-center sm:h-32"
-            fallback={
-              <span className="font-display text-3xl font-semibold leading-tight text-parchment text-balance sm:text-5xl">
-                {entry.title}
-              </span>
-            }
-          />
+        {/* Every block keeps a fixed height (two title lines, one meta line, two description lines), so slides never resize the hero. */}
+        <h2 className="flex h-[2.5em] items-end justify-center font-display text-3xl font-semibold leading-tight text-parchment sm:text-5xl">
+          <span className="line-clamp-2 text-balance">{entry.title}</span>
         </h2>
-        {meta.length > 0 && <p className="mt-3 text-sm text-ash">{meta.join(" · ")}</p>}
-        {entry.description && (
-          <p className="mt-3 line-clamp-2 max-w-[60ch] text-parchment/85">{entry.description}</p>
-        )}
+        <p className="mt-3 h-5 truncate text-sm text-ash">{meta.join(" · ")}</p>
+        <p className="mt-3 line-clamp-2 h-12 max-w-[60ch] text-parchment/85">{entry.description}</p>
         <Button asChild size="lg" className="mt-6">
           <Link href={`/archive/${entry.id}`}>View game</Link>
         </Button>
@@ -294,7 +286,7 @@ function HomeSkeleton() {
       <h1 className="sr-only">Home</h1>
       <HeroSkeleton />
       {[0, 1].map((row) => (
-        <div key={row} className="px-(--gutter) py-4">
+        <div key={row} className="px-(--gutter) py-3">
           <Skeleton className="mb-4 h-6 w-44" />
           <div className="flex gap-4 overflow-hidden sm:gap-5">
             <div className="flex gap-4 [&>*]:w-[132px] [&>*]:shrink-0 sm:gap-5 sm:[&>*]:w-[156px]">
