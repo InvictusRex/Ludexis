@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, Star } from "lucide-react";
 import type { ArchiveEntry } from "@/lib/types";
 import { year } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -41,14 +41,26 @@ export function PosterCard({ entry, selecting, selected, onToggle, loading }: Po
       >
         <Poster path={entry.cover_path} alt={entry.title} loading={loading} />
 
-        {entry.library_status === "OFFLINE" && (
-          <span
-            className="absolute left-2 top-2 rounded-full bg-night/85 px-2 py-0.5 text-xs font-medium text-spark backdrop-blur"
-            title="The drive or folder holding this game is not connected"
-          >
-            Offline
-          </span>
-        )}
+        <div className="absolute left-2 top-2 flex items-center gap-1.5">
+          {entry.is_favorite && (
+            <span title="Favourite" className="grid size-7 place-items-center rounded-full bg-night/80 backdrop-blur">
+              <Star aria-label="Favourite" className="size-4 fill-spark text-spark" />
+            </span>
+          )}
+          {entry.is_completed && (
+            <span title="Completed" className="grid size-7 place-items-center rounded-full bg-moss text-night ring-2 ring-night/60">
+              <Check aria-label="Completed" className="size-4" strokeWidth={3} />
+            </span>
+          )}
+          {entry.library_status === "OFFLINE" && (
+            <span
+              className="rounded-full bg-night/85 px-2 py-0.5 text-xs font-medium text-spark backdrop-blur"
+              title="The drive or folder holding this game is not connected"
+            >
+              Offline
+            </span>
+          )}
+        </div>
         {versions > 1 && (
           <span className="absolute bottom-2 left-2 rounded-full bg-night/85 px-2 py-0.5 text-xs font-medium tabular text-parchment backdrop-blur">
             {versions} versions

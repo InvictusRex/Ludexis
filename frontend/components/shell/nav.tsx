@@ -10,6 +10,7 @@ import {
   Hammer,
   House,
   LibraryBig,
+  Star,
   Tag,
   type LucideIcon,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const MAIN: NavItem[] = [
   { href: "/", label: "Home", icon: House },
   { href: "/library", label: "Library", icon: LibraryBig },
   { href: "/collections", label: "Collections", icon: GalleryVerticalEnd },
+  { href: "/favourites", label: "Favourites", icon: Star },
 ];
 
 const BROWSE: NavItem[] = [

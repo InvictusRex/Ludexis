@@ -51,6 +51,14 @@ export const archiveApi = {
     return apiClient.post<{ path: string; opened: boolean }>(`/archive-entries/${id}/open-location`);
   },
 
+  /** The signed-in user's favourite and completed marks; omitted fields keep their value. */
+  async setFlags(
+    id: string,
+    flags: { is_favorite?: boolean; is_completed?: boolean },
+  ): Promise<{ is_favorite: boolean; is_completed: boolean }> {
+    return apiClient.put<{ is_favorite: boolean; is_completed: boolean }>(`/archive-entries/${id}/flags`, flags);
+  },
+
   async getVersions(id: string): Promise<ArchiveEntry[]> {
     return apiClient.get<ArchiveEntry[]>(`/archive-entries/${id}/versions`);
   },

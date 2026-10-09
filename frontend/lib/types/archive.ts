@@ -114,6 +114,9 @@ export interface ArchiveEntry {
   /** Shown only to users allowed restricted content. */
   restricted?: boolean;
   restricted_locked?: boolean;
+  /** The signed-in user's own marks. */
+  is_favorite?: boolean;
+  is_completed?: boolean;
   library_id?: string | null;
   relative_path?: string | null;
   library_status?: "ONLINE" | "OFFLINE" | null;

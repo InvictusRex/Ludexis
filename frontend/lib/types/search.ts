@@ -23,6 +23,10 @@ export interface LibraryQuery {
   metadata_status?: string;
   verification_status?: string;
   group_versions?: boolean;
+  /** Only games the current user marked favourite. */
+  favorite?: boolean;
+  /** Only games the current user marked completed. */
+  completed?: boolean;
   /** true: games dismissed from the review queue; false: games still waiting in it. */
   review_resolved?: boolean;
   sort?: LibrarySort;

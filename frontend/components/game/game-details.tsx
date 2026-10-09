@@ -3,6 +3,7 @@ import { formatBytes, formatDate } from "@/lib/format";
 import { MetadataMark, VerificationMark } from "@/components/media/status-mark";
 import { libraryHref } from "@/components/library/library-params";
 import { ChipLink } from "./game-hero";
+import { GameMarks } from "./game-marks";
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -48,6 +49,7 @@ export function GameOverview({ entry }: { entry: ArchiveEntry }) {
             <p className="text-ash">No description yet. Identifying the game fills one in, or it can be written by hand.</p>
           )}
         </section>
+        <GameMarks entry={entry} />
         <Links title="Developers" items={linksOf("/developers", entry.developers)} />
         <Links title="Publishers" items={linksOf("/publishers", entry.publishers)} />
         <Links title="Franchise" items={linksOf("/franchises", entry.franchise ? [entry.franchise] : [])} />
