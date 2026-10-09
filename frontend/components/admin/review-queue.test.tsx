@@ -49,7 +49,7 @@ describe("ReviewQueue", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Resolved" }));
     expect(await screen.findByText("No resolved games")).toBeInTheDocument();
-    expect(archiveApi.browse).toHaveBeenCalledWith(expect.objectContaining({ review_resolved: true, include_hidden: true }));
+    expect(archiveApi.browse).toHaveBeenCalledWith(expect.objectContaining({ review_resolved: true }));
     window.removeEventListener("ludexis:review-changed", announced);
   });
 });

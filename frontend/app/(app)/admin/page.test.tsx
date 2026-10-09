@@ -91,7 +91,7 @@ describe("DashboardOverview", () => {
       "/admin/metadata?tab=review",
     );
     expect(archiveApi.browse).toHaveBeenCalledWith(
-      expect.objectContaining({ metadata_status: "UNMATCHED", review_resolved: false, include_hidden: true }),
+      expect.objectContaining({ metadata_status: "UNMATCHED", review_resolved: false }),
     );
   });
 

@@ -62,6 +62,8 @@ export interface ArchiveEntryUpdate {
   release_date?: string | null;
   storage_device?: string | null;
   review_resolved?: boolean;
+  /** Setting it by hand locks it against metadata refreshes. */
+  restricted?: boolean;
 }
 
 export interface ArchiveEntry {
@@ -109,6 +111,9 @@ export interface ArchiveEntry {
   is_primary_version?: boolean;
   review_resolved?: boolean;
   version_count?: number;
+  /** Shown only to users allowed restricted content. */
+  restricted?: boolean;
+  restricted_locked?: boolean;
   library_id?: string | null;
   relative_path?: string | null;
   library_status?: "ONLINE" | "OFFLINE" | null;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, MoreHorizontal, Plus, ShieldCheck, Trash2, UserCheck, UserX } from "lucide-react";
+import { KeyRound, LockKeyhole, MoreHorizontal, Plus, ShieldCheck, Trash2, UserCheck, UserX } from "lucide-react";
 import { rolesApi, usersApi } from "@/lib/api";
 import type { User } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
@@ -21,7 +21,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/brand/empty-state";
 import { Pager, Status, splitPage } from "./common";
-import { CreateUserDialog, ResetPasswordDialog, UserRolesDialog } from "./user-dialogs";
+import { CreateUserDialog, ResetPasswordDialog, UserAccessDialog, UserRolesDialog } from "./user-dialogs";
 
 const PAGE_SIZE = 50;
 
@@ -36,6 +36,7 @@ export function UsersPanel() {
   const [creating, setCreating] = useState(false);
   const [editingRoles, setEditingRoles] = useState<User | null>(null);
   const [resetting, setResetting] = useState<User | null>(null);
+  const [managing, setManaging] = useState<User | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const act = async (target: User, action: () => Promise<unknown>, done: string, failed: string) => {
@@ -126,37 +127,43 @@ export function UsersPanel() {
                       <Status tone={user.is_active ? "ok" : "idle"}>{user.is_active ? "Active" : "Deactivated"}</Status>
                     </TableCell>
                     <TableCell className="pr-5 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${user.username}`} disabled={busyId === user.id}>
-                            <MoreHorizontal />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => setEditingRoles(user)}>
-                            <ShieldCheck />
-                            Change roles
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setResetting(user)}>
-                            <KeyRound />
-                            Reset password
-                          </DropdownMenuItem>
-                          {/* Locking yourself out from here would need another admin to undo. */}
-                          {!isMe && (
-                            <>
-                              <DropdownMenuItem onSelect={() => toggleActive(user)}>
-                                {user.is_active ? <UserX /> : <UserCheck />}
-                                {user.is_active ? "Deactivate" : "Activate"}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem variant="destructive" onSelect={() => remove(user)}>
-                                <Trash2 />
-                                Delete user
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button variant="outline" size="sm" onClick={() => setManaging(user)}>
+                          <LockKeyhole />
+                          Manage access
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${user.username}`} disabled={busyId === user.id}>
+                              <MoreHorizontal />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => setEditingRoles(user)}>
+                              <ShieldCheck />
+                              Change roles
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setResetting(user)}>
+                              <KeyRound />
+                              Reset password
+                            </DropdownMenuItem>
+                            {/* Locking yourself out from here would need another admin to undo. */}
+                            {!isMe && (
+                              <>
+                                <DropdownMenuItem onSelect={() => toggleActive(user)}>
+                                  {user.is_active ? <UserX /> : <UserCheck />}
+                                  {user.is_active ? "Deactivate" : "Activate"}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem variant="destructive" onSelect={() => remove(user)}>
+                                  <Trash2 />
+                                  Delete user
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -176,6 +183,7 @@ export function UsersPanel() {
         onSaved={users.reload}
       />
       <ResetPasswordDialog user={resetting} onOpenChange={(open) => !open && setResetting(null)} />
+      <UserAccessDialog user={managing} onOpenChange={(open) => !open && setManaging(null)} onSaved={users.reload} />
     </div>
   );
 }

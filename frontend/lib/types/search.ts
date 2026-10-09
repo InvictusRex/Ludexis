@@ -23,8 +23,6 @@ export interface LibraryQuery {
   metadata_status?: string;
   verification_status?: string;
   group_versions?: boolean;
-  /** Also list games in collections hidden in the server settings. */
-  include_hidden?: boolean;
   /** true: games dismissed from the review queue; false: games still waiting in it. */
   review_resolved?: boolean;
   sort?: LibrarySort;

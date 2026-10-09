@@ -6,8 +6,8 @@ import type {
 } from "@/lib/types";
 
 export const collectionsApi = {
-  /** includeHidden also lists collections hidden in the server settings. */
-  async getAll(offset = 0, limit = 100, q?: string, includeHidden = false): Promise<Collection[]> {
+  /** all lists every collection, including ones blocked for the current user (needs Manage users). */
+  async getAll(offset = 0, limit = 100, q?: string, all = false): Promise<Collection[]> {
     const params = new URLSearchParams({
       offset: String(offset),
       limit: String(limit),
@@ -15,8 +15,8 @@ export const collectionsApi = {
     if (q?.trim()) {
       params.set("q", q.trim());
     }
-    if (includeHidden) {
-      params.set("include_hidden", "true");
+    if (all) {
+      params.set("all", "true");
     }
     return apiClient.get<Collection[]>(`/collections/?${params.toString()}`);
   },

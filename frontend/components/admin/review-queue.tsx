@@ -36,7 +36,6 @@ const loadQueue = (view: View) =>
       archiveApi.browse({
         metadata_status: status,
         review_resolved: view === "resolved",
-        include_hidden: true,
         sort: "title",
         limit: LIMIT,
       }),

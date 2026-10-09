@@ -6,6 +6,10 @@ export interface User {
   email: string;
   is_active: boolean;
   is_superuser: boolean;
+  /** Sees games marked restricted. */
+  allow_restricted?: boolean;
+  /** Games in these collections are hidden from the user. */
+  blocked_collection_ids?: string[];
   created_at?: string;
   roles?: Array<{ id: string; name: string; permissions?: PermissionRead[] }>;
 }
@@ -26,6 +30,8 @@ export interface UserUpdate {
   is_active?: boolean | null;
   is_superuser?: boolean | null;
   role_ids?: string[] | null;
+  allow_restricted?: boolean | null;
+  blocked_collection_ids?: string[] | null;
 }
 
 export interface PasswordResetRequest {

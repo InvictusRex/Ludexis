@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ArchiveEditForm {
@@ -72,12 +73,14 @@ export function ArchiveEditDialog({
   onSaved,
 }: ArchiveEditDialogProps) {
   const [form, setForm] = useState<ArchiveEditForm>(EMPTY_FORM);
+  const [restricted, setRestricted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setForm(toForm(entry));
+      setRestricted(!!entry.restricted);
       setSaveError(null);
       setSaving(false);
     }
@@ -99,7 +102,9 @@ export function ArchiveEditDialog({
     setSaving(true);
     setSaveError(null);
     try {
-      const updated = await archiveApi.update(entry.id, buildPayload(form));
+      // Sent only when changed: setting it locks the mark against metadata refreshes.
+      const payload = { ...buildPayload(form), ...(restricted !== !!entry.restricted && { restricted }) };
+      const updated = await archiveApi.update(entry.id, payload);
       toastSuccess("Game updated");
       onSaved(updated);
       onOpenChange(false);
@@ -167,6 +172,19 @@ export function ArchiveEditDialog({
                 onChange={(e) => setField("storage_device", e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-seam px-3 py-3">
+            <div>
+              <Label htmlFor="edit-restricted" className="text-parchment">
+                Restricted
+              </Label>
+              <p className="mt-1 text-sm text-ash">
+                Only accounts allowed restricted content see this game.
+                {entry.restricted_locked ? " Set by hand." : " Metadata sources set this from their age ratings."}
+              </p>
+            </div>
+            <Switch id="edit-restricted" checked={restricted} onCheckedChange={setRestricted} />
           </div>
 
           {saveError && (

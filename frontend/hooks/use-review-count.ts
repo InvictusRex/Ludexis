@@ -15,7 +15,7 @@ export function announceReviewChanged() {
 export async function loadReviewCount(): Promise<number> {
   const pages = await Promise.all(
     (["UNMATCHED", "PARTIAL"] as const).map((status) =>
-      archiveApi.browse({ metadata_status: status, review_resolved: false, include_hidden: true, limit: 1 }),
+      archiveApi.browse({ metadata_status: status, review_resolved: false, limit: 1 }),
     ),
   );
   return pages.reduce((sum, page) => sum + page.total, 0);
