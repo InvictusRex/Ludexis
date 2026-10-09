@@ -28,8 +28,8 @@ interface NavItem {
 const MAIN: NavItem[] = [
   { href: "/", label: "Home", icon: House },
   { href: "/library", label: "Library", icon: LibraryBig },
-  { href: "/collections", label: "Collections", icon: GalleryVerticalEnd },
   { href: "/favourites", label: "Favourites", icon: Star },
+  { href: "/collections", label: "Collections", icon: GalleryVerticalEnd },
 ];
 
 const BROWSE: NavItem[] = [

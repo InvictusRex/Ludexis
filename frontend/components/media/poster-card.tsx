@@ -43,13 +43,14 @@ export function PosterCard({ entry, selecting, selected, onToggle, loading }: Po
 
         <div className="absolute left-2 top-2 flex items-center gap-1.5">
           {entry.is_favorite && (
-            <span title="Favourite" className="grid size-7 place-items-center rounded-full bg-night/80 backdrop-blur">
-              <Star aria-label="Favourite" className="size-4 fill-spark text-spark" />
-            </span>
+            <Star
+              aria-label="Favourite"
+              className="size-4 fill-spark text-spark drop-shadow-[0_1px_2px_rgb(0_0_0/0.9)]"
+            />
           )}
           {entry.is_completed && (
-            <span title="Completed" className="grid size-7 place-items-center rounded-full bg-moss text-night ring-2 ring-night/60">
-              <Check aria-label="Completed" className="size-4" strokeWidth={3} />
+            <span title="Completed" className="grid size-3.5 place-items-center rounded-full bg-moss text-night">
+              <Check aria-label="Completed" className="size-2.5" strokeWidth={4} />
             </span>
           )}
           {entry.library_status === "OFFLINE" && (
