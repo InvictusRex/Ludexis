@@ -4,6 +4,11 @@
 {$LUDEXIS_DOMAIN::80} {
 	encode gzip
 
+	# Metrics are for Prometheus inside the stack, not for visitors. (Handle blocks are tried in order.)
+	handle /api/metrics* {
+		respond 404
+	}
+
 	@backend path /api/* /media/* /healthz
 	handle @backend {
 		reverse_proxy backend:8000
