@@ -75,12 +75,12 @@ Paths in frontend IDs are relative to `frontend/` and have no file extension.
 |------|-----------|---------|----------------|
 | `Page` | `page:<route>` | `page:/archive/[id]` | `route`, `is_client`, `auth_guard`, `api_functions_used`, `components_used` |
 | `Layout` | `layout:<route>` | `layout:/` | |
-| `Component` | `comp:<path>` | `comp:components/common/archive-entry-card` | `category` (common/layout/ui/root), `is_client`, `exports`, `has_test` |
+| `Component` | `comp:<path>` |  | `category` (common/layout/ui/root), `is_client`, `exports`, `has_test` |
 | `Hook` | `hook:<path>` | `hook:hooks/use-protected-route` | `exports` |
 | `Context` | `ctx:<path>` | `ctx:contexts/auth-context` | `exports`, `provides` |
 | `ApiModule` | `apimod:<path>` | `apimod:lib/api/archives` | `export_name`, `functions` |
 | `ApiFunction` | `apifn:<path>.<object>.<method>` | `apifn:lib/api/archives.archiveApi.getById` | `http_method`, `client_path`, `backend_route`, `return_type` |
-| `LibUtil` | `lib:<path>` | `lib:lib/pagination` | `exports`, `purpose` |
+| `LibUtil` | `lib:<path>` |  | `exports`, `purpose` |
 | `TypeModule` | `typemod:<path>` | `typemod:lib/types/archive` | `types` |
 | `Type` | `type:<path>.<Name>` | `type:lib/types/archive.ArchiveEntry` | `kind`, `fields` |
 

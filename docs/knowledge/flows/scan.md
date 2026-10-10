@@ -4,9 +4,9 @@ From the admin button to `archive_entries` rows. Domain doc: `docs/knowledge/dom
 
 ## 1. Trigger
 ```
-frontend/app/admin/library/page.tsx -> scansApi.runFull() | scansApi.runIncremental()     frontend/lib/api/scans.ts
+frontend/components/admin/scan-buttons.tsx -> scansApi.runFull() | scansApi.runIncremental()     frontend/lib/api/scans.ts
 frontend/app/admin/page.tsx         -> scansApi.runFull()
-frontend/app/admin/jobs/page.tsx    -> jobsApi.start("LIBRARY_SCAN" | "INCREMENTAL_SCAN")  (same backend path via /api/jobs/start)
+frontend/components/admin/jobs-panel.tsx -> jobsApi.start("LIBRARY_SCAN" | "INCREMENTAL_SCAN")  (same backend path via /api/jobs/start)
   POST /api/scan/full   | POST /api/scan/incremental                    RUN_SCANS
   -> start_full_scan | start_incremental_scan (current_user, db)        backend/app/api/scan.py
      -> JobService.start_job(db, current_user, JobType.LIBRARY_SCAN | JobType.INCREMENTAL_SCAN)
@@ -75,14 +75,14 @@ The enrichment job is described in `docs/knowledge/flows/metadata.md`.
 
 ## 6. Watching progress (frontend)
 ```
-frontend/app/admin/library/page.tsx -> scansApi.getStatus()   GET /api/scan/status
+frontend/app/(app)/admin/page.tsx -> scansApi.getStatus()   GET /api/scan/status
   -> read_scan_status -> JobHistoryRepository.count_by_status(db, [LIBRARY_SCAN, INCREMENTAL_SCAN])
   <- ScanStatus {pending, running, success, failed, canceled, total}
-frontend/app/admin/jobs/page.tsx -> jobsApi.getAll(...)  GET /api/jobs/  (polls every 5 s while active; shows progress and "retry N")
+frontend/components/admin/jobs-panel.tsx -> jobsApi.getAll(...)  GET /api/jobs/  (polls every 5 s while active; shows progress and "retry N")
 ```
 
 ## 7. After the scan
-- Duplicates: `frontend/app/admin/duplicates/page.tsx` -> `archiveApi.getDuplicates()` -> `GET /api/archive-entries/duplicates` -> `ScannerService.find_duplicates(db)` -> `ArchiveEntryRepository.list_with_hashes(db)`, grouped by `file_hash` where count > 1.
+- Duplicates: `frontend/components/admin/duplicates-panel.tsx` (Admin > Metadata, Duplicates tab) -> `archiveApi.getDuplicates()` -> `GET /api/archive-entries/duplicates` -> `ScannerService.find_duplicates(db)` -> `ArchiveEntryRepository.list_with_hashes(db)`, grouped by `file_hash` where count > 1.
 
 ## Entities
-`router:app.api.scan`, `service:app.services.job.JobService`, `service:app.services.scanner.ScannerService`, `service:app.services.enrichment.EnrichmentService`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `class:app.services.scanner.ArchiveScanItem`, `task:app.tasks.scan_tasks.scan_full_task`, `task:app.tasks.scan_tasks.scan_incremental_task`, `repo:app.repositories.archive_entry.ArchiveEntryRepository`, `repo:app.repositories.library.LibraryRepository`, `repo:app.repositories.job_history.JobHistoryRepository`, `module:app.utils.normalization`, `table:archive_entries`, `table:libraries`, `table:job_history`, `page:/admin/library`, `apimod:lib/api/scans`.
+`router:app.api.scan`, `service:app.services.job.JobService`, `service:app.services.scanner.ScannerService`, `service:app.services.enrichment.EnrichmentService`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `class:app.services.scanner.ArchiveScanItem`, `task:app.tasks.scan_tasks.scan_full_task`, `task:app.tasks.scan_tasks.scan_incremental_task`, `repo:app.repositories.archive_entry.ArchiveEntryRepository`, `repo:app.repositories.library.LibraryRepository`, `repo:app.repositories.job_history.JobHistoryRepository`, `module:app.utils.normalization`, `table:archive_entries`, `table:libraries`, `table:job_history`, `apimod:lib/api/scans`.

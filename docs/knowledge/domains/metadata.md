@@ -19,17 +19,17 @@ External metadata lookup (VNDB, IGDB, Steam; Manual is a stub), automatic matchi
 | `backend/app/providers/manual.py` | Stub (priority 100) | `ManualProvider` |
 | `backend/app/tasks/metadata_tasks.py` | Celery tasks | `refresh_metadata_task` |
 | `backend/app/schemas/metadata.py` | Schemas | `MetadataSearchResult`, `MetadataDetails` |
-| `backend/app/models/metadata_source.py` | Model (unused by code) | `MetadataSource` |
 | `backend/app/core/config.py` | Settings | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `IGDB_TOKEN_URL`, `IGDB_API_URL` |
-| `frontend/app/admin/metadata/page.tsx` | Metadata review page | `archiveApi.search`, `metadataApi.search`, `archiveApi.updateMetadata` |
-| `frontend/components/common/metadata-comparison.tsx` | Component | `MetadataComparison` (`metadataApi.search`) |
+| `frontend/app/(app)/admin/metadata/page.tsx` | Metadata review page | `archiveApi.search`, `metadataApi.search`, `archiveApi.updateMetadata` |
 | `frontend/components/common/identify-dialog.tsx` | Identify dialog (detail page, metadata review) | `IdentifyDialog` (`metadataApi.searchProvider`, `archiveApi.identify`) |
-| `frontend/components/common/metadata-history-card.tsx`, `frontend/components/common/metadata-audit-trail.tsx` | Components (audit-log backed) | `MetadataHistoryCard`, `MetadataAuditTrail` |
+|  `frontend/components/common/metadata-audit-trail.tsx` | Components (audit-log backed) | `MetadataHistoryCard`, `MetadataAuditTrail` |
 | `frontend/components/common/provider-source-badge.tsx` | Component | `ProviderSourceBadge` |
 | `frontend/lib/api/metadata.ts` | API module | `metadataApi.search`, `searchProvider`, `getDetails`, `getArtwork` |
 | `frontend/lib/types/metadata.ts` | Types | `MetadataSearchResult`, `MetadataDetails`, `MetadataReviewItem` |
 | `backend/tests/test_metadata.py`, `backend/tests/test_metadata_api.py`, `backend/tests/test_screenshots_api.py` (auto-match confidence), `backend/tests/test_identify.py`, `backend/tests/test_company_names.py` | Backend tests | |
-| `frontend/components/common/identify-dialog.test.tsx`, `frontend/components/common/metadata-comparison.test.tsx`, `frontend/components/common/metadata-history-card.test.tsx`, `frontend/components/common/metadata-audit-trail.test.tsx`, `frontend/components/common/provider-source-badge.test.tsx` | Frontend tests | |
+| `frontend/components/common/identify-dialog.test.tsx`,  `frontend/components/common/metadata-audit-trail.test.tsx`, `frontend/components/common/provider-source-badge.test.tsx` | Frontend tests | |
+| `frontend/components/admin/manual-metadata-dialog.tsx` | Component | `ManualMetadataDialog` |
+| `frontend/hooks/use-review-count.ts` | Hook | `announceReviewChanged`, `loadReviewCount`, `useReviewCount` |
 
 ## Graph IDs
 | Type | ID |
@@ -41,24 +41,24 @@ External metadata lookup (VNDB, IGDB, Steam; Manual is a stub), automatic matchi
 | Task | `task:app.tasks.metadata_tasks.refresh_metadata_task` |
 | Provider | `provider:app.providers.vndb.VNDBProvider` |
 | Repository | `repo:app.repositories.genre.GenreRepository`, `repo:app.repositories.developer.DeveloperRepository`, `repo:app.repositories.publisher.PublisherRepository` |
-| Model | `model:app.models.metadata_source.MetadataSource` |
 | Schema | `schema:app.schemas.metadata.MetadataSearchResult`, `schema:app.schemas.metadata.MetadataDetails` |
 | Module | `module:app.core.dependencies` |
-| Table | `table:metadata_sources`, `table:archive_entries`, `table:genres`, `table:developers`, `table:publishers` |
+| Table | `table:archive_entries`, `table:genres`, `table:developers`, `table:publishers` |
 | Page | `page:/admin/metadata`, `page:/archive/[id]` |
 | APIRoute | `api:POST:/archive-entries/{archive_entry_id}/identify` |
-| Component | `comp:components/common/identify-dialog`, `comp:components/common/metadata-comparison`, `comp:components/common/metadata-history-card`, `comp:components/common/metadata-audit-trail`, `comp:components/common/provider-source-badge` |
+| Component | `comp:components/common/identify-dialog`, `comp:components/common/metadata-audit-trail`, `comp:components/common/provider-source-badge`, `comp:components/admin/manual-metadata-dialog` |
 | ApiModule | `apimod:lib/api/metadata` |
 | TypeModule | `typemod:lib/types/metadata` |
 | TestFile | `test:backend/tests/test_metadata.py`, `test:backend/tests/test_metadata_api.py`, `test:backend/tests/test_identify.py`, `test:backend/tests/test_company_names.py`, `test:frontend/components/common/identify-dialog.test.tsx` |
+| Hook | `hook:hooks/use-review-count` |
 
 ## API Endpoints
 | Method | Full path | Handler | Permission | Frontend caller |
 |---|---|---|---|---|
-| GET | `/api/metadata/search` | `search_metadata` (`backend/app/api/metadata.py`) | authenticated | `apifn:lib/api/metadata.metadataApi.search`, `apifn:lib/api/metadata.metadataApi.searchProvider` |
+| GET | `/api/metadata/search` | `search_metadata` (`backend/app/api/metadata.py`) | authenticated | `apifn:lib/api/metadata.metadataApi.searchProvider` |
 | POST | `/api/archive-entries/{archive_entry_id}/identify` | `identify_archive_entry` (`backend/app/api/archive_entries.py`) | EDIT_METADATA | `apifn:lib/api/archives.archiveApi.identify` |
-| GET | `/api/metadata/details/{provider_name}/{provider_id}` | `read_metadata_details` (`backend/app/api/metadata.py`) | authenticated | `apifn:lib/api/metadata.metadataApi.getDetails` |
-| GET | `/api/metadata/artwork/{provider_name}/{provider_id}` | `read_metadata_artwork` (`backend/app/api/metadata.py`) | authenticated | `apifn:lib/api/metadata.metadataApi.getArtwork` |
+| GET | `/api/metadata/details/{provider_name}/{provider_id}` | `read_metadata_details` (`backend/app/api/metadata.py`) | authenticated |  |
+| GET | `/api/metadata/artwork/{provider_name}/{provider_id}` | `read_metadata_artwork` (`backend/app/api/metadata.py`) | authenticated |  |
 
 ## Tables
 `archive_entries` (description, release_date, last_metadata_refresh, metadata_status/source/confidence), `genres`, `developers`, `publishers`, `archive_entry_genres`, `archive_entry_developers`, `archive_entry_publishers`, `job_history` (refresh job). `metadata_sources` has a model and FK (`archive_entries.metadata_source_id`) but no code reads or writes it.

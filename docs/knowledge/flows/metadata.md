@@ -4,9 +4,8 @@ Domain doc: `docs/knowledge/domains/metadata.md`.
 
 ## 1. Interactive provider search
 ```
-frontend/app/admin/metadata/page.tsx            -> metadataApi.search(query, providerPriority?)
-frontend/components/common/metadata-comparison.tsx -> metadataApi.search(...)        frontend/lib/api/metadata.ts
-  GET /api/metadata/search?q=...&provider_priority=...        authenticated
+frontend/components/common/identify-dialog.tsx -> metadataApi.searchProvider(query, provider)   frontend/lib/api/metadata.ts
+  GET /api/metadata/search?q=...&provider=...  (or provider_priority=... for tools)        authenticated
   -> search_metadata(q, provider_priority, current_user, metadata_service=Depends(get_metadata_service))
                                                                backend/app/api/metadata.py, backend/app/core/dependencies.py
      -> MetadataService.search(q, preferred_providers=provider_priority)   backend/app/services/metadata.py
@@ -24,8 +23,6 @@ frontend/components/common/metadata-comparison.tsx -> metadataApi.search(...)   
   with provider=<name>|all (Identify dialog): MetadataService.search_providers(db, q, provider)
      one named provider, or every provider in the provider_order setting; all results, each with cover_url
 GET /api/metadata/details/{provider_name}/{provider_id} -> read_metadata_details -> MetadataService.get_details  (404 if None)
-GET /api/metadata/artwork/{provider_name}/{provider_id} -> read_metadata_artwork -> MetadataService.download_artwork
-     (every provider returns None -> always 404)
 ```
 
 ## 2. Manual override (admin)
@@ -113,7 +110,7 @@ MetadataService.refresh_archive(db, archive, details=None)
 `ArtworkService._entry_details(entry)` calls `MetadataService.get_merged_details(entry.title, entry.metadata_source, entry.metadata_source_code)`; the `auto_download_*` methods accept these `details` so enrichment fetches them once per entry. Steam supplies `cover_urls` (`library_600x900.jpg`), `banner_urls` (header), `logo_urls` (capsules) and `artwork_urls` (store screenshots). See `docs/knowledge/flows/artwork.md`.
 
 ## 6. History widgets (frontend)
-`MetadataHistoryCard` and `MetadataAuditTrail` on `frontend/app/archive/[id]/page.tsx` call `adminApi.getAuditLogs({entity: "ArchiveEntry"})` -> `GET /api/admin/audit-logs` (`VIEW_AUDIT_LOGS`) and filter by `entity_id` client side.
+`MetadataHistoryCard` and `MetadataAuditTrail` on `frontend/app/(app)/archive/[id]/page.tsx` call `adminApi.getAuditLogs({entity: "ArchiveEntry"})` -> `GET /api/admin/audit-logs` (`VIEW_AUDIT_LOGS`) and filter by `entity_id` client side.
 
 ## Entities
 `router:app.api.metadata`, `module:app.core.dependencies`, `service:app.services.metadata.MetadataService`, `service:app.services.metadata_conflict.MetadataConflictResolver`, `provider:app.providers.igdb.IGDBProvider`, `provider:app.providers.igdb_client.IGDBClient`, `provider:app.providers.steam.SteamProvider`, `provider:app.providers.manual.ManualProvider`, `comp:components/common/identify-dialog`, `api:POST:/archive-entries/{archive_entry_id}/identify`, `service:app.services.enrichment.EnrichmentService`, `service:app.services.artwork.ArtworkService`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `provider:app.providers.vndb.VNDBProvider`, `service:app.services.settings.SettingsService`, `repo:app.repositories.genre.GenreRepository`, `repo:app.repositories.developer.DeveloperRepository`, `repo:app.repositories.publisher.PublisherRepository`, `table:archive_entries`, `table:genres`, `table:archive_entry_genres`, `table:archive_entry_developers`, `table:archive_entry_publishers`, `page:/admin/metadata`, `apimod:lib/api/metadata`.

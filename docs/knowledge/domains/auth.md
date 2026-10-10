@@ -27,11 +27,13 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 | `frontend/lib/api/client.ts` | HTTP client (401 refresh) | `apiClient`, `doRefresh`, `refreshAccessToken` |
 | `frontend/lib/types/auth.ts` | Types | `LoginRequest`, `TokenResponse`, `RefreshRequest`, `LogoutRequest` |
 | `frontend/lib/types/setup.ts` | Types | `SetupStatus` |
-| `frontend/app/auth/login/page.tsx` | Login page | calls `useAuth().login` |
+| `frontend/app/(auth)/auth/login/page.tsx` | Login page | calls `useAuth().login` |
 | `frontend/app/(auth)/auth/setup/page.tsx` | First-run setup for the default administrator | `SetupPage` |
-| `frontend/app/account/page.tsx` | Account page | renders `AccountActivityList`, `EffectivePermissionsPanel` |
+| `frontend/app/(app)/account/page.tsx` | Account page | renders `AccountActivityList`, `EffectivePermissionsPanel` |
 | `backend/tests/test_auth.py`, `backend/tests/test_token_expiration.py` | Backend tests | |
-| `frontend/app/auth/login/page.test.tsx`, `frontend/e2e/tasks.spec.ts`, `backend/tests/test_cookie_auth.py`, `frontend/hooks/use-protected-route.test.ts`, `frontend/lib/api/client.test.ts`, `frontend/e2e/auth.spec.ts` | Frontend tests | |
+| `frontend/app/(auth)/auth/login/page.test.tsx`, `frontend/e2e/tasks.spec.ts`, `backend/tests/test_cookie_auth.py`, `frontend/hooks/use-protected-route.test.ts`, `frontend/lib/api/client.test.ts`, `frontend/e2e/auth.spec.ts` | Frontend tests | |
+| `frontend/components/common/account-security-card.tsx` | Component | `AccountSecurityCard` |
+| `frontend/app/(auth)/layout.tsx` | Layout `/` | `AuthLayout` |
 
 ## Graph IDs
 | Type | ID |
@@ -50,7 +52,9 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 | LibUtil | `lib:lib/auth/session` |
 | Module | `module:app.core.rate_limit` |
 | TypeModule | `typemod:lib/types/auth`, `typemod:lib/types/setup` |
-| TestFile | `test:backend/tests/test_auth.py`, `test:backend/tests/test_token_expiration.py`, `test:frontend/e2e/auth.spec.ts`, `test:frontend/app/auth/login/page.test.tsx` |
+| TestFile | `test:backend/tests/test_auth.py`, `test:backend/tests/test_token_expiration.py`, `test:frontend/e2e/auth.spec.ts` |
+| Component | `comp:components/common/account-security-card` |
+| Layout | `layout:/(auth)` |
 
 ## API Endpoints
 | Method | Full path | Handler | Permission | Frontend caller |

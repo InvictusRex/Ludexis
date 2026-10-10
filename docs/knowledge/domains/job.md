@@ -17,17 +17,16 @@ Background job records (`job_history`) and their Celery tasks: start, cancel, li
 | `backend/app/tasks/scan_tasks.py` | Scanner-backed job tasks | `verify_integrity_task`, `detect_duplicates_task` (plus the scan tasks, see scan domain) |
 | `backend/app/utils/enums.py` | Enums | `JobType`, `JobStatus` |
 | `backend/app/core/config.py` | Settings | `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `JOB_MAX_RETRIES`, `JOB_RETRY_BACKOFF_MAX` |
-| `frontend/app/admin/jobs/page.tsx` | Jobs page | `jobsApi.getAll`, `jobsApi.start`, `jobsApi.cancel` |
-| `frontend/app/admin/page.tsx` | Admin dashboard quick actions | `jobsApi.start`, `scansApi.runFull`, `adminApi.getRecentJobs` |
-| `frontend/app/admin/monitoring/page.tsx` | Monitoring page | `jobMonitorApi.getStats`, `jobMonitorApi.getWorkers`, `healthApi.*`, `scansApi.getStatus` |
-| `frontend/components/common/jobs-report.tsx` | Component | `JobsReport` |
-| `frontend/components/common/background-task-analytics.tsx` | Component | `BackgroundTaskAnalytics` |
-| `frontend/components/common/live-operational-dashboard.tsx` | Component | `LiveOperationalDashboard`, `LIVE_POLL_INTERVAL_MS` |
+| `frontend/app/(app)/admin/page.tsx` | Admin dashboard quick actions | `jobsApi.start`, `scansApi.runFull`, `adminApi.getRecentJobs` |
 | `frontend/lib/api/jobs.ts` | API module | `jobsApi.getAll`, `getById`, `getPending`, `getRunning`, `getCompleted`, `start`, `cancel` |
 | `frontend/lib/api/job-monitor.ts` | API module | `jobMonitorApi.getStats`, `getWorkers` |
 | `frontend/lib/types/jobs.ts` | Types | `JobType`, `JobStatus`, `JobHistory`, `JobHistoryCreate`, `JobMonitorStats`, `JobMonitorWorker`, `ScanStatus` |
 | `backend/tests/test_jobs.py`, `backend/tests/test_scan_jobs_api.py` | Backend tests | |
-| `frontend/components/common/jobs-report.test.tsx`, `frontend/components/common/background-task-analytics.test.tsx`, `frontend/components/common/live-operational-dashboard.test.tsx`, `frontend/e2e/jobs.spec.ts` | Frontend tests | |
+|    `frontend/e2e/jobs.spec.ts` | Frontend tests | |
+| `frontend/components/admin/scheduled-tasks.tsx` | Component | `ScheduledTasks` |
+| `frontend/components/shell/job-labels.ts` | Component | `jobLabel` |
+| `frontend/components/shell/jobs-indicator.tsx` | Component | `announceJobsChanged`, `JobsIndicator` |
+| `frontend/app/(app)/admin/tasks/page.tsx` | Page `/admin/tasks` | `DashboardTasks` |
 
 ## Graph IDs
 | Type | ID |
@@ -41,11 +40,11 @@ Background job records (`job_history`) and their Celery tasks: start, cancel, li
 | DBEnum | `dbenum:job_type`, `dbenum:job_status` |
 | ExternalProvider | `extprov:Celery` |
 | Table | `table:job_history` |
-| Page | `page:/admin/jobs`, `page:/admin`, `page:/admin/monitoring` |
-| Component | `comp:components/common/jobs-report`, `comp:components/common/background-task-analytics`, `comp:components/common/live-operational-dashboard` |
+| Page | `page:/admin`, `page:/admin/tasks` |
 | ApiModule | `apimod:lib/api/jobs`, `apimod:lib/api/job-monitor` |
 | TypeModule | `typemod:lib/types/jobs` |
 | TestFile | `test:backend/tests/test_jobs.py`, `test:backend/tests/test_scan_jobs_api.py`, `test:frontend/e2e/jobs.spec.ts` |
+| Component | `comp:components/admin/scheduled-tasks`, `comp:components/shell/job-labels`, `comp:components/shell/jobs-indicator` |
 
 ## API Endpoints
 | Method | Full path | Handler | Permission | Frontend caller |
@@ -53,7 +52,7 @@ Background job records (`job_history`) and their Celery tasks: start, cancel, li
 | POST | `/api/jobs/start` | `start_job` (`backend/app/api/jobs.py`) | RUN_SCANS | `apifn:lib/api/jobs.jobsApi.start` |
 | POST | `/api/jobs/{job_id}/cancel` | `cancel_job` (`backend/app/api/jobs.py`) | RUN_SCANS | `apifn:lib/api/jobs.jobsApi.cancel` |
 | GET | `/api/jobs/` | `list_jobs` (`backend/app/api/jobs.py`) | authenticated | `apifn:lib/api/jobs.jobsApi.getAll` |
-| GET | `/api/jobs/{job_id}` | `read_job` (`backend/app/api/jobs.py`) | authenticated | `apifn:lib/api/jobs.jobsApi.getById` |
+| GET | `/api/jobs/{job_id}` | `read_job` (`backend/app/api/jobs.py`) | authenticated |  |
 | GET | `/api/job-monitor/workers` | `list_workers` (`backend/app/api/job_monitor.py`) | ACCESS_ADMIN | `apifn:lib/api/job-monitor.jobMonitorApi.getWorkers` |
 | GET | `/api/job-monitor/stats` | `queue_stats` (`backend/app/api/job_monitor.py`) | ACCESS_ADMIN | `apifn:lib/api/job-monitor.jobMonitorApi.getStats` |
 
@@ -62,7 +61,7 @@ Background job records (`job_history`) and their Celery tasks: start, cancel, li
 
 ## Change guide
 - Make a job type run real work: add a Celery task decorated with `@celery_app.task(**JOB_TASK_OPTIONS)` that returns `run_job(self, job_history_id, label, work)` (pattern: `backend/app/tasks/scan_tasks.py`), import it in `backend/app/services/job.py` and add it to the `JobService._select_task` mapping; make sure `backend/app/tasks/celery_app.py` imports the task module.
-- New job type: add to `JobType` in `backend/app/utils/enums.py`, a migration altering the `job_type` PostgreSQL enum in `backend/alembic/versions/`, `JobType` in `frontend/lib/types/jobs.ts`, and `JOB_TYPES` in `frontend/app/admin/jobs/page.tsx`.
+- New job type: add to `JobType` in `backend/app/utils/enums.py`, a migration altering the `job_type` PostgreSQL enum in `backend/alembic/versions/`, `JobType` in `frontend/lib/types/jobs.ts`, and `JOB_TYPES` in `frontend/components/admin/jobs-panel.tsx`.
 - New `JobHistory` field: `backend/app/models/job_history.py`, `JobHistoryBase` in `backend/app/schemas/job_history.py`, migration, `JobHistory` in `frontend/lib/types/jobs.ts`.
 - New monitor metric: `JobMonitorService` (`backend/app/services/job_monitor.py`), route in `backend/app/api/job_monitor.py`, `jobMonitorApi` + `JobMonitorStats`.
 
@@ -70,9 +69,9 @@ Background job records (`job_history`) and their Celery tasks: start, cancel, li
 - `JobService._select_task`: `LIBRARY_SCAN` -> `scan_full_task`, `INCREMENTAL_SCAN` -> `scan_incremental_task`, `METADATA_REFRESH` -> `refresh_metadata_task`, `ARTWORK_REFRESH` -> `validate_artwork_task`, `DUPLICATE_DETECTION` -> `detect_duplicates_task`, `INTEGRITY_VERIFICATION` -> `verify_integrity_task` (a dict lookup; an unmapped type raises `KeyError`).
 - `JobService.cancel_job` revokes the Celery task (`terminate=True`) and sets `CANCELED`; jobs not `PENDING`/`RUNNING` are returned unchanged. Scans and metadata refresh also poll the row for `CANCELED` between items.
 - `JobService.is_cancelled`, `JobHistoryRepository.list_by_status` and `get_by_task_id` have no callers.
-- `JOB_TASK_OPTIONS`: `autoretry_for=(Exception,)`, `retry_backoff=True`, `max_retries=JOB_MAX_RETRIES` (5), `retry_backoff_max=JOB_RETRY_BACKOFF_MAX` (300 s). `run_job` stores `task.request.retries` in `retry_count`, which `frontend/app/admin/jobs/page.tsx` shows as "retry N".
+- `JOB_TASK_OPTIONS`: `autoretry_for=(Exception,)`, `retry_backoff=True`, `max_retries=JOB_MAX_RETRIES` (5), `retry_backoff_max=JOB_RETRY_BACKOFF_MAX` (300 s). `run_job` stores `task.request.retries` in `retry_count`, which `frontend/components/admin/jobs-panel.tsx` shows as "retry N".
 - `start_job(db, user, job_type, details=None, task_kwargs=None)` passes `task_kwargs` to the task (`entry_ids` for enrichment). `active_job` returns a PENDING/RUNNING job of a type; the scheduled tasks use it to avoid overlapping runs.
 - No stale-job recovery: a job left RUNNING by a killed worker stays RUNNING.
 - `GET /api/jobs/` is ordered by `started_at` desc and accepts `job_type`, `status`, `offset`, `limit`.
-- `frontend/app/admin/jobs/page.tsx` polls every 5 s while any job is active; `LiveOperationalDashboard` polls every 10 s.
+- `frontend/components/admin/jobs-panel.tsx` (Admin > Scheduled Tasks, Jobs tab) polls every 5 s while any job is active.
 - `/api/job-monitor/*` return raw dicts (no `response_model`).

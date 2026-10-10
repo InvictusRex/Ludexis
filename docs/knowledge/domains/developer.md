@@ -10,9 +10,8 @@ Game development studios linked to archive entries through `archive_entry_develo
 | `backend/app/repositories/developer.py` | Repository | `DeveloperRepository.get_by_name`, `list_items`, `count`, `count_entries_for_ids`, `count_entries_for_id` |
 | `backend/app/models/developer.py` | Model | `Developer` |
 | `backend/app/schemas/developer.py` | Schemas | `DeveloperCreate`, `DeveloperUpdate`, `DeveloperRead` |
-| `frontend/app/developers/page.tsx` | List page | `developersApi.getAll` |
-| `frontend/app/developers/[id]/page.tsx` | Detail page | `developersApi.getById`, `developersApi.getEntries` |
-| `frontend/components/common/developer-card.tsx` | Component | `DeveloperCard` |
+| `frontend/app/(app)/developers/page.tsx` | List page | `developersApi.getAll` |
+| `frontend/app/(app)/developers/[id]/page.tsx` | Detail page | `developersApi.getById`, `developersApi.getEntries` |
 | `frontend/lib/api/developers.ts` | API module | `developersApi.getAll`, `getById`, `getEntries` |
 | `frontend/lib/types/developer.ts` | Types | `Developer` |
 
@@ -26,7 +25,6 @@ Game development studios linked to archive entries through `archive_entry_develo
 | Schema | `schema:app.schemas.developer.DeveloperCreate`, `schema:app.schemas.developer.DeveloperUpdate`, `schema:app.schemas.developer.DeveloperRead` |
 | Table | `table:developers`, `table:archive_entry_developers` |
 | Page | `page:/developers`, `page:/developers/[id]` |
-| Component | `comp:components/common/developer-card` |
 | ApiModule | `apimod:lib/api/developers` |
 | TypeModule | `typemod:lib/types/developer` |
 
@@ -53,5 +51,5 @@ Game development studios linked to archive entries through `archive_entry_develo
 - Writes require `EDIT_METADATA`; the frontend has no create/update/delete calls for this domain.
 - Tests: no dedicated backend test file.
 - `developersApi.getEntries` delegates to `archiveApi.getByDeveloper` (client-side filter of the first 1000 entries).
-- `frontend/app/archive/[id]/page.tsx` resolves developer names with `developersApi.getById` per id.
+- `frontend/app/(app)/archive/[id]/page.tsx` resolves developer names with `developersApi.getById` per id.
 - `developers.name_key` (unique) holds `company_key(name)`, set by a `@validates("name")` hook; `DeveloperRepository.get_by_name` matches on it, so "SEGA" and "Sega" are one developer. Create and rename return 400 when another developer has the same key.

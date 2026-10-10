@@ -11,14 +11,14 @@ Append-only `audit_logs` rows written by routers through `AuditService`, and rea
 | `backend/app/schemas/audit_log.py` | Schemas | `AuditLogRead`, `AuditLogBase` |
 | `backend/app/utils/audit_actions.py` | Action constants | `AuditAction` |
 | `backend/app/api/admin.py` | Read endpoint (admin domain) | `read_audit_logs` |
-| `frontend/app/admin/audit-logs/page.tsx` | Audit log page | `adminApi.getAuditLogs` |
 | `frontend/components/common/account-activity-list.tsx` | Component | `AccountActivityList` |
-| `frontend/components/common/user-analytics-dashboard.tsx` | Component | `UserAnalyticsDashboard` |
-| `frontend/components/common/metadata-history-card.tsx`, `frontend/components/common/metadata-audit-trail.tsx`, `frontend/components/common/artwork-version-history.tsx` | Components (filter `entity="ArchiveEntry"`) | `MetadataHistoryCard`, `MetadataAuditTrail`, `ArtworkVersionHistory` |
+|  `frontend/components/common/metadata-audit-trail.tsx` | Components (filter `entity="ArchiveEntry"`) | `MetadataHistoryCard`, `MetadataAuditTrail`, `ArtworkVersionHistory` |
 | `frontend/lib/api/admin.ts` | API module | `adminApi.getAuditLogs` |
 | `frontend/lib/types/admin.ts` | Types | `AuditLogRead`, `AuditLogQuery` |
 | `backend/tests/test_admin_api.py` | Backend test (audit-log filters and permission) | |
-| `frontend/components/common/account-activity-list.test.tsx`, `frontend/components/common/user-analytics-dashboard.test.tsx` | Frontend tests | |
+| `frontend/components/common/account-activity-list.test.tsx` | Frontend tests | |
+| `frontend/components/admin/user-dialogs.tsx` | Component | `CreateUserDialog`, `UserRolesDialog`, `ResetPasswordDialog`, `UserAccessDialog` |
+| `frontend/app/(app)/admin/logs/page.tsx` | Page `/admin/logs` | `DashboardLogs` |
 
 ## Graph IDs
 | Type | ID |
@@ -29,10 +29,10 @@ Append-only `audit_logs` rows written by routers through `AuditService`, and rea
 | Schema | `schema:app.schemas.audit_log.AuditLogRead` |
 | Module | `module:app.utils.audit_actions` |
 | Table | `table:audit_logs` |
-| Page | `page:/admin/audit-logs` |
-| Component | `comp:components/common/account-activity-list`, `comp:components/common/user-analytics-dashboard` |
+| Component | `comp:components/common/account-activity-list`, `comp:components/admin/user-dialogs` |
 | ApiFunction | `apifn:lib/api/admin.adminApi.getAuditLogs` |
 | TypeModule | `typemod:lib/types/admin` |
+| Page | `page:/admin/logs` |
 
 ## API Endpoints
 No router of its own. Read path: `GET /api/admin/audit-logs` (`read_audit_logs` in `backend/app/api/admin.py`, permission `VIEW_AUDIT_LOGS`, query `user_id`, `entity`, `action`, `offset`, `limit`; newest first). Frontend caller: `apifn:lib/api/admin.adminApi.getAuditLogs`.
@@ -54,4 +54,4 @@ No router of its own. Read path: `GET /api/admin/audit-logs` (`read_audit_logs` 
 ## Notes
 - No update/delete endpoints exist for audit rows.
 - Not audited: metadata search/details routes (read-only), and jobs queued by the scheduler or by a scan (no user action).
-- `MetadataHistoryCard`, `MetadataAuditTrail` and `ArtworkVersionHistory` render on `frontend/app/archive/[id]/page.tsx` but call an endpoint that requires `VIEW_AUDIT_LOGS`, so users without it get 403 from those widgets.
+- `MetadataHistoryCard`, `MetadataAuditTrail` and `ArtworkVersionHistory` render on `frontend/app/(app)/archive/[id]/page.tsx` but call an endpoint that requires `VIEW_AUDIT_LOGS`, so users without it get 403 from those widgets.

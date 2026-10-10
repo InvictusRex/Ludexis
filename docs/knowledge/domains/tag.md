@@ -10,9 +10,8 @@ Free-form labels (`tags`, with optional `color`) attached to archive entries thr
 | `backend/app/repositories/tag.py` | Repository | `TagRepository.get_by_name`, `list_items`, `count`, `count_entries_for_ids`, `count_entries_for_id` |
 | `backend/app/models/tag.py` | Model | `Tag` |
 | `backend/app/schemas/tag.py` | Schemas | `TagCreate`, `TagUpdate`, `TagRead` |
-| `frontend/app/tags/page.tsx` | List page | `tagsApi.getAll` |
-| `frontend/app/tags/[id]/page.tsx` | Detail page | `tagsApi.getById`, `tagsApi.getEntries`, `tagsApi.getRelatedTags` |
-| `frontend/components/common/tag-card.tsx` | Component | `TagCard` |
+| `frontend/app/(app)/tags/page.tsx` | List page | `tagsApi.getAll` |
+| `frontend/app/(app)/tags/[id]/page.tsx` | Detail page | `tagsApi.getById`, `tagsApi.getEntries`, `tagsApi.getRelatedTags` |
 | `frontend/lib/api/tags.ts` | API module | `tagsApi.getAll`, `getById`, `getEntries`, `getRelatedTags` |
 | `frontend/lib/types/tag.ts` | Types | `Tag` |
 
@@ -26,7 +25,6 @@ Free-form labels (`tags`, with optional `color`) attached to archive entries thr
 | Schema | `schema:app.schemas.tag.TagCreate`, `schema:app.schemas.tag.TagUpdate`, `schema:app.schemas.tag.TagRead` |
 | Table | `table:tags`, `table:archive_entry_tags` |
 | Page | `page:/tags`, `page:/tags/[id]` |
-| Component | `comp:components/common/tag-card` |
 | ApiModule | `apimod:lib/api/tags` |
 | TypeModule | `typemod:lib/types/tag` |
 

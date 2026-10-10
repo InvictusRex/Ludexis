@@ -10,9 +10,8 @@ Game series. Franchises form a tree (`franchises.parent_id`; `child_ids` on `Fra
 | `backend/app/repositories/franchise.py` | Repository | `FranchiseRepository.get_by_name`, `list_items`, `count`, `count_entries_for_ids`, `count_entries_for_id` |
 | `backend/app/models/franchise.py` | Model | `Franchise` |
 | `backend/app/schemas/franchise.py` | Schemas | `FranchiseCreate`, `FranchiseUpdate`, `FranchiseRead` |
-| `frontend/app/franchises/page.tsx` | List page | `franchisesApi.getAll`, `franchisesApi.getEntries` |
-| `frontend/app/franchises/[id]/page.tsx` | Detail page | `franchisesApi.getById`, `franchisesApi.getEntries` |
-| `frontend/components/common/relationship-visualizer.tsx` | Component | `RelationshipVisualizer` |
+| `frontend/app/(app)/franchises/page.tsx` | List page | `franchisesApi.getAll`, `franchisesApi.getEntries` |
+| `frontend/app/(app)/franchises/[id]/page.tsx` | Detail page | `franchisesApi.getById`, `franchisesApi.getEntries` |
 | `frontend/lib/api/franchises.ts` | API module | `franchisesApi.getAll`, `getById`, `getEntries` |
 | `frontend/lib/types/franchise.ts` | Types | `Franchise` |
 
@@ -26,7 +25,6 @@ Game series. Franchises form a tree (`franchises.parent_id`; `child_ids` on `Fra
 | Schema | `schema:app.schemas.franchise.FranchiseCreate`, `schema:app.schemas.franchise.FranchiseUpdate`, `schema:app.schemas.franchise.FranchiseRead` |
 | Table | `table:franchises` |
 | Page | `page:/franchises`, `page:/franchises/[id]` |
-| Component | `comp:components/common/relationship-visualizer` |
 | ApiModule | `apimod:lib/api/franchises` |
 | TypeModule | `typemod:lib/types/franchise` |
 

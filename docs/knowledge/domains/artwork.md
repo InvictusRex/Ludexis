@@ -16,18 +16,15 @@ Cover, banner, logo and screenshot files for archive entries: multipart upload/r
 | `backend/app/tasks/artwork_tasks.py` | Celery tasks | `validate_artwork_task` (mode `validate` or `fill`) |
 | `backend/app/core/config.py` | Settings | `ARTWORK_STORAGE_PATH`, `MAX_ARTWORK_SIZE_MB`, `ALLOWED_ARTWORK_MIME_TYPES` |
 | `backend/app/core/metrics.py` | Counters | `artwork_downloads_total`, `artwork_validation_failures_total`, `artwork_deduplications_total`, `artwork_auto_download_runs_total` |
-| `frontend/app/admin/artwork/page.tsx` | Artwork admin page | `artworkApi.getMissing`, `artworkApi.autoDownload`, `artworkApi.upload`, `archiveApi.getById` |
-| `frontend/app/archive/[id]/page.tsx` | Entry detail (artwork widgets) | renders `ScreenshotGallery`, `ArtworkComparisonDialog`, `ArtworkQualityIndicators`, `ArtworkVersionHistory` |
+| `frontend/app/(app)/archive/[id]/page.tsx` | Entry detail (artwork widgets) | renders `ScreenshotGallery`, `ArtworkComparisonDialog`, `ArtworkQualityIndicators`, `ArtworkVersionHistory` |
 | `frontend/components/common/artwork-management-dialog.tsx` | Component | `ArtworkManagementDialog` (`artworkApi.upload/replace/remove`) |
 | `frontend/components/common/screenshot-gallery.tsx` | Component | `ScreenshotGallery` (`archiveApi.getScreenshots`, `artworkApi.upload/remove`) |
-| `frontend/components/common/artwork-comparison-dialog.tsx` | Component | `ArtworkComparisonDialog`, `buildArtworkOptions` |
-| `frontend/components/common/artwork-quality-indicators.tsx` | Component | `ArtworkQualityIndicators`, `buildQualityChecks` |
-| `frontend/components/common/artwork-version-history.tsx` | Component (audit-log backed) | `ArtworkVersionHistory` |
 | `frontend/lib/api/artwork.ts` | API module (multipart via own `fetch`) | `artworkApi.getMissing`, `upload`, `replace`, `remove`, `autoDownload`; `multipartRequest` |
 | `frontend/lib/media.ts` | Media URL builder | `mediaUrl` |
 | `frontend/lib/types/artwork.ts` | Types | `ArtworkType`, `ArtworkMissingItem`, `ArtworkUploadResponse`, `ArtworkReplaceResponse`, `ArtworkDeleteResponse` |
 | `backend/tests/test_artwork_api.py`, `backend/tests/test_screenshots_api.py` | Backend tests | |
-| `frontend/components/common/artwork-management-dialog.test.tsx`, `frontend/components/common/screenshot-gallery.test.tsx`, `frontend/components/common/artwork-comparison-dialog.test.tsx`, `frontend/components/common/artwork-quality-indicators.test.tsx`, `frontend/components/common/artwork-version-history.test.tsx` | Frontend tests | |
+| `frontend/components/common/artwork-management-dialog.test.tsx`, `frontend/components/common/screenshot-gallery.test.tsx` | Frontend tests | |
+| `frontend/components/admin/missing-artwork.tsx` | Component | `MissingArtwork` |
 
 ## Graph IDs
 | Type | ID |
@@ -40,8 +37,8 @@ Cover, banner, logo and screenshot files for archive entries: multipart upload/r
 | Task | `task:app.tasks.artwork_tasks.validate_artwork_task` |
 | Module | `module:app.utils.artwork` |
 | Table | `table:screenshots`, `table:archive_entries` |
-| Page | `page:/admin/artwork`, `page:/archive/[id]` |
-| Component | `comp:components/common/artwork-management-dialog`, `comp:components/common/screenshot-gallery`, `comp:components/common/artwork-comparison-dialog`, `comp:components/common/artwork-quality-indicators`, `comp:components/common/artwork-version-history` |
+| Page | `page:/archive/[id]` |
+| Component | `comp:components/common/artwork-management-dialog`, `comp:components/common/screenshot-gallery`, `comp:components/admin/missing-artwork` |
 | ApiModule | `apimod:lib/api/artwork` |
 | LibUtil | `lib:lib/media` |
 | TypeModule | `typemod:lib/types/artwork` |

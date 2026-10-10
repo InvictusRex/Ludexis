@@ -1,6 +1,6 @@
 # Flow: Frontend request lifecycle
 
-How a page call travels to the database and back. Example: `frontend/app/collections/[id]/page.tsx` loading a collection.
+How a page call travels to the database and back. Example: `frontend/app/(app)/collections/[id]/page.tsx` loading a collection.
 
 ## 1. Page -> API module
 ```
@@ -11,7 +11,7 @@ frontend/app/collections/[id]/page.tsx   ("use client")
     -> frontend/lib/api/collections.ts
        apiClient.get<Collection>(`/collections/${id}`)
 ```
-API modules export one object per resource (`archiveApi`, `collectionsApi`, `tagsApi`, ...) whose methods build the path (query strings via `URLSearchParams`) and call `apiClient`. Some methods do not hit a dedicated endpoint: `collectionsApi.getEntries`, `developersApi.getEntries`, `publishersApi.getEntries`, `franchisesApi.getEntries`, `tagsApi.getEntries` filter `archiveApi.getAll(0, 1000)` client side; `searchApi.search` fans out to six list calls; `adminApi.getRecentJobs` wraps `jobsApi.getAll`.
+API modules export one object per resource (`archiveApi`, `collectionsApi`, `tagsApi`, ...) whose methods build the path (query strings via `URLSearchParams`) and call `apiClient`. Lists of games (library, search, and the developer, publisher, tag, franchise and collection pages) all go through `archiveApi.browse`, which the server filters and pages.
 
 ## 2. HTTP client (`frontend/lib/api/client.ts`)
 ```
@@ -35,7 +35,7 @@ apiClient.get | getList | post | patch | put | delete (endpoint, body?, auth?)
      request:     204 -> undefined ; else response.json()
      requestList: { items: json, total: Number(X-Total-Count) or items.length }
 ```
-Callers catch the error themselves: many use `toastError(err, "...")` (`frontend/lib/toast.ts`) or `getErrorMessage(err)` (`frontend/lib/errors.ts`); some only `console.error` (e.g. `frontend/app/collections/[id]/page.tsx`).
+Callers catch the error themselves: many use `toastError(err, "...")` (`frontend/lib/toast.ts`) or `getErrorMessage(err)` (`frontend/lib/errors.ts`); some only `console.error` (e.g. `frontend/app/(app)/collections/[id]/page.tsx`).
 Exceptions to this path: `artworkApi.upload`/`replace` use their own `multipartRequest` fetch (no refresh, plain `Error`); `PrometheusMetricsPanel` fetches `/api/metrics` directly; `<img src={mediaUrl(...)}>` loads `/media/...` without auth headers.
 
 ## 3. Backend: router -> service -> repository -> DB

@@ -5,10 +5,10 @@ Status, coverage, known gaps, and findings. Update at the end of every change to
 | | |
 |-|-|
 | Graph version | v2 (schema in `_schema.md`) |
-| Verified at commit | `4d798fc` |
-| Last verified | 2026-10-06 |
+| Verified at commit | `421e9c7` |
+| Last verified | 2026-10-11 |
 | Validator | `python docs/knowledge/queries/validate.py`, must exit 0 |
-| Size | 776 entities, 3,598 relationships |
+| Size | 773 entities, 3,110 relationships |
 
 ---
 
@@ -18,10 +18,10 @@ Status, coverage, known gaps, and findings. Update at the end of every change to
 
 | Part | Stack |
 |------|-------|
-| Backend | Python, FastAPI 0.111, SQLAlchemy 2.0, Pydantic 2.8, Celery 5.4, PostgreSQL 16, Redis |
-| Frontend | Next.js 16.2, React 19, TypeScript 5.7, Tailwind 4, Radix/shadcn UI |
+| Backend | Python, FastAPI 0.143, SQLAlchemy 2.0, Pydantic 2.14, Celery 5.4, PostgreSQL 16, Redis |
+| Frontend | Next.js 16.3, React 19, TypeScript 5.7, Tailwind 4, Radix/shadcn UI |
 | Tests | pytest (backend), Vitest and Playwright (frontend) |
-| Infra | Docker Compose (dev, demo, monitoring), Prometheus, Grafana, GitHub Actions backend CI |
+| Infra | Docker Compose (production with an optional monitoring profile, development, demo), Caddy, Prometheus, Grafana, GitHub Actions (backend and frontend CI, images published after both pass) |
 
 Recent work (from git history): frontend-to-backend integration (real API client, auth flow, admin pages gated on superuser), server-side search and pagination with entry counts, hash-based duplicate detection, auth on the media route, CORS fixes.
 
@@ -39,7 +39,7 @@ Recent work (from git history): frontend-to-backend integration (real API client
 | Frontend pages, layout, components, hooks, context | Yes | Auth guard per page, render tree, API calls |
 | Frontend API client layer | Yes | Every API function mapped to its backend route |
 | Frontend types | Yes | `MIRRORS` edges to backend schemas with field mismatches |
-| Tests | Yes, file level | 32 backend, 51 frontend test files with `TESTS` edges |
+| Tests | Yes, file level | 36 backend, 42 frontend test files |
 | Docker, Compose, monitoring, CI config | No | See `docs/deployment/Deployment.md` (root `docker-compose.yml`, `deploy/Caddyfile`, `.github/workflows/images.yml`) |
 | Individual settings fields usage | No | Fields listed on `module:app.core.config`; use grep for usage (ADR-013) |
 | CSS, static assets, `components.json` | No | Not useful for navigation |
@@ -80,7 +80,7 @@ None open.
 
 - `FLOWS_TO` edges are derived (route -> service -> repository/table) and marked `inferred`.
 - `TESTS` edges for backend API tests come from the routes and classes the tests exercise, so some are indirect.
-- Delegating frontend API functions (for example `searchApi.search`, `*.getEntries`) have `inferred` `CALLS_ENDPOINT` edges to the routes reached through the functions they call.
+- API functions that only wrap other API functions have no `CALLS_ENDPOINT` edge of their own.
 - Line numbers are exact at the verified commit; after code changes rely on the validator's staleness warning.
 
 ---
@@ -101,4 +101,5 @@ None open.
 | 2026-09-27 | Bug fixes `80de6bf`..`7b1ba80`: password reset field, folder hashing in scans, real tasks for `METADATA_REFRESH`/`DUPLICATE_DETECTION`/`INTEGRITY_VERIFICATION` (`run_job` removed; `verify_integrity_task`, `detect_duplicates_task` added), partial `PATCH` for archive entries, `/media` token via query parameter, setup page wired to `setupApi`. Graph and docs patched. |
 | 2026-10-01 | Pipeline and release work: one entry per game folder, per-file scan errors, changed-file updates, move/copy handling, real progress and `retry_count` through the shared `run_job` (`backend/app/tasks/job_runner.py`); scans queue an enrichment job (`EnrichmentService`) that auto-matches across IGDB and Steam (`title_similarity`, 0.85/0.70) and fills missing artwork; nightly refresh covers never-attempted entries; artwork job repairs instead of touching `verification_status`; scoped media tokens replace access tokens in `/media` URLs; `AuditLogService` and `MatchingService` removed and audit gaps filled; taxonomy CRUD UI (`TaxonomyFormDialog`); unused UI primitives and hooks removed; Celery beat in both Compose stacks. Fixed findings removed from this file. Graph and docs patched. |
 | 2026-10-05 | Self-hosted service work: folder-name parser (installments, bracket versions, noise, DLsite codes); `GroupingService` (versions under one primary, auto collections for episodes) with grouped search and a versions endpoint; `VNDBProvider`, provider order setting, tag and franchise import (`tags.origin`); library `status`/`relative_path` with offline detection, reconnect rescans and re-linking; `scheduled_tasks`/`system_settings` with the five-minute `scheduler_tick_task`, admin APIs and the Scheduled Tasks page; httpOnly cookie sessions with CSRF header and login rate limit (media tokens removed); stale-job sweep; auto-download as a job; homelab compose, Caddy proxy, generated JWT secret and image workflow. Four migrations. Fixed findings removed. Graph and docs patched. |
+| 2026-10-11 | Default administrator created on first start and forced to change its password (`users.must_change_password`, `app.services.bootstrap`, `scripts.reset_password`; `/setup/initialize` and `seed_rbac.py` removed); media served only for visible games; user managers cannot grant rights they lack; refresh tokens stored as SHA-256; unused provider artwork endpoint and the `notes`, `ratings`, `metadata_sources` tables removed; FastAPI 0.143 and Next.js 16.3. Graph resynced from the code: frontend route groups, removed and added files, line numbers, test counts; validator module list covers scripts and function-only services, and route-group layouts keep the group in their id. |
 | 2026-10-06 | Company names merged by `company_key` (`name_key` on developers and publishers, migration `b2e7c4a9d156` merges duplicates); every enabled provider supplements the primary match (`_find_same_game`); Identify (`search_providers`, `POST /archive-entries/{id}/identify`, `IdentifyDialog`, artwork job `replace` mode); EPISODE relations for series; reconnected libraries verified at once; `VersionList`; change password and log out everywhere (`users.sessions_revoked_at`, migration `d8f3a1c6e297`, `AccountSecurityCard`); GOG provider removed; HTTPS domain option, health checks, arm64 images and backup docs for the homelab stack. Graph and docs patched. |

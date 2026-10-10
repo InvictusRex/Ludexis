@@ -14,8 +14,7 @@ Walks every enabled library on disk (one entry per archive file or installed gam
 | `backend/app/repositories/library.py` | Library roots | `LibraryRepository.list_active` |
 | `backend/app/schemas/scan.py` | Schema | `ScanStatus` |
 | `backend/app/core/metrics.py` | Counters | `library_scans_total`, `incremental_scans_total` |
-| `frontend/app/admin/library/page.tsx` | Full/incremental scan buttons + status | `scansApi.runFull`, `scansApi.runIncremental`, `scansApi.getStatus` |
-| `frontend/app/admin/page.tsx` | Dashboard "full scan" action | `scansApi.runFull` |
+| `frontend/app/(app)/admin/page.tsx` | Dashboard "full scan" action | `scansApi.runFull` |
 | `frontend/lib/api/scans.ts` | API module | `scansApi.runFull`, `runIncremental`, `getStatus` |
 | `frontend/lib/types/jobs.ts` | Types | `ScanStatus`, `JobHistory` |
 | `backend/tests/test_scanner.py`, `backend/tests/test_scan_jobs_api.py`, `backend/tests/test_normalization.py`, `backend/tests/test_sample_library.py`, `backend/tests/test_e2e.py` | Backend tests (`test_sample_library.py` runs only with `LUDEXIS_SAMPLE_LIBRARY` set to a folder of real archives) | |
@@ -31,7 +30,7 @@ Walks every enabled library on disk (one entry per archive file or installed gam
 | Schema | `schema:app.schemas.scan.ScanStatus` |
 | Module | `module:app.utils.normalization`, `module:app.core.metrics` |
 | Table | `table:archive_entries`, `table:libraries`, `table:job_history` |
-| Page | `page:/admin/library`, `page:/admin` |
+| Page | `page:/admin` |
 | ApiModule | `apimod:lib/api/scans` |
 | TestFile | `test:backend/tests/test_scanner.py`, `test:backend/tests/test_scan_jobs_api.py`, `test:backend/tests/test_normalization.py`, `test:backend/tests/test_sample_library.py` |
 

@@ -13,7 +13,6 @@ Genre labels attached to archive entries through `archive_entry_genres`. Genres 
 | `backend/app/api/search.py` | Filter exposure | `search_archive_entries` (`genre` query param) |
 | `frontend/lib/api/archives.ts` | Sends the filter | `archiveApi.search` (`filters.genres[0]` sent as `genre`) |
 | `frontend/lib/types/search.ts` | Types | `SearchFilters` (`genres`) |
-| `frontend/app/search/page.tsx` | Genre input | `searchApi.search` |
 
 ## Graph IDs
 | Type | ID |
@@ -22,7 +21,6 @@ Genre labels attached to archive entries through `archive_entry_genres`. Genres 
 | Repository | `repo:app.repositories.genre.GenreRepository` |
 | Table | `table:genres`, `table:archive_entry_genres` |
 | Service (writer) | `service:app.services.metadata.MetadataService` |
-| Page | `page:/search` |
 | TypeModule | `typemod:lib/types/search` |
 
 ## API Endpoints
@@ -36,5 +34,5 @@ None. Genres are only usable as the `genre` filter of `GET /api/search/` (exact 
 - Change how provider genres map to rows: `MetadataService._sync_genres` clears the entry's genres on every refresh and re-links them by name, creating missing `Genre` rows.
 
 ## Notes
-- `ArchiveEntryRead` does not include genres, so the frontend never displays them (`frontend/app/archive/[id]/page.tsx` has a comment saying genres are omitted).
+- `ArchiveEntryRead` does not include genres, so the frontend never displays them (`frontend/app/(app)/archive/[id]/page.tsx` has a comment saying genres are omitted).
 - The filter is an exact, case-sensitive name match: `ArchiveEntry.genres.any(Genre.name == genre)`.

@@ -375,12 +375,20 @@ def check_enums():
             err(c, f"stale DBEnum {e.get('id')} (python_class {name} not in enums.py)")
 
 
+def module_files():
+    """Python files tracked as Module entities (class files are covered by the class checks)."""
+    files = [f for d in ("core", "utils", "db") for f in sorted((APP / d).glob("*.py"))]
+    files += [f for f in sorted((APP / "services").glob("*.py"))
+              if not any(isinstance(n, ast.ClassDef) for n in ast.parse(read(f)).body)]  # function-only services
+    files += [f for f in sorted((BE / "scripts").glob("*.py")) if f.name != "__init__.py"]
+    files += [f for f in (BE / "main.py", BE / "alembic/env.py", BE / "tests/conftest.py") if f.exists()]
+    files += [f for f in sorted((BE / "tests").rglob("test_*.py")) if not count_tests(f)]  # helpers named test_*
+    return files
+
+
 def check_modules():
     c = "modules"
-    files = [f for d in ("core", "utils", "db") for f in sorted((APP / d).glob("*.py"))]
-    files += [f for f in (BE / "main.py", BE / "seed_rbac.py", BE / "scripts/seed_demo.py",
-                          BE / "alembic/env.py", BE / "tests/conftest.py") if f.exists()]
-    files += [f for f in sorted((BE / "tests").rglob("test_*.py")) if not count_tests(f)]  # helpers named test_*
+    files = module_files()
     truth = {f"module:{mod_of(f)}": (rel(f), None) for f in files}
     compare(c, truth, ["module"])
     for f in files:
@@ -447,13 +455,20 @@ def route_of(p):
     return "/" + "/".join(parts)
 
 
+def layout_of(p):
+    # Route groups such as (app) and (auth) each have a layout for the same URL, so they keep the group in the id.
+    return "/" + "/".join(p.parent.relative_to(FE / "app").parts)
+
+
 def check_fe_files():
     """Every page/layout/component/hook/context/lib file has exactly the entity kinds the contract allows."""
     c = "fe_files"
     accept = {}
     for p in fe_sources("app"):
-        if p.stem in ("page", "layout"):
-            accept[p] = [f"{p.stem}:{route_of(p)}"]
+        if p.stem == "page":
+            accept[p] = [f"page:{route_of(p)}"]
+        elif p.stem == "layout":
+            accept[p] = [f"layout:{layout_of(p)}"]
     for p in fe_sources("components"):
         accept[p] = [f"comp:{fpath(p)}", f"hook:{fpath(p)}"]
     for p in fe_sources("hooks"):

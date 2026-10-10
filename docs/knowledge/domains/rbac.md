@@ -18,13 +18,14 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 | `backend/app/schemas/user.py` | Schemas | `UserCreate`, `UserUpdate`, `UserRead` |
 | `backend/app/schemas/role.py` | Schemas | `RoleCreate`, `RoleUpdate`, `RoleRead` |
 | `backend/app/schemas/permission.py` | Schemas | `PermissionCreate`, `PermissionRead` |
-| `frontend/app/admin/users/page.tsx` | User admin page | `usersApi.*`, `rolesApi.getAll` |
-| `frontend/app/admin/permissions/page.tsx` | Role/permission admin page | `rolesApi.getAll/create/remove`, `permissionsApi.getAll`, `adminApi.getPermissionReport` |
+| `frontend/app/(app)/admin/users/page.tsx` | User admin page | `usersApi.*`, `rolesApi.getAll` |
 | `frontend/components/common/effective-permissions-panel.tsx` | Component | `EffectivePermissionsPanel` |
 | `frontend/lib/api/users.ts`, `frontend/lib/api/roles.ts`, `frontend/lib/api/permissions.ts` | API modules | `usersApi`, `rolesApi`, `permissionsApi` |
 | `frontend/lib/types/user.ts`, `frontend/lib/types/role.ts`, `frontend/lib/types/permission.ts` | Types | `User`, `UserCreate`, `UserUpdate`, `PasswordResetRequest`, `RoleRead`, `RoleCreate`, `RoleUpdate`, `PermissionRead`, `PermissionCreate` |
 | `backend/tests/test_rbac.py`, `backend/tests/test_permissions.py`, `backend/tests/test_users_api.py` | Backend tests | |
 | `frontend/components/common/effective-permissions-panel.test.tsx` | Frontend test | |
+| `frontend/components/admin/users-panel.tsx` | Component | `UsersPanel` |
+| `frontend/lib/permissions.ts` | Utility | `can`, `canSeeDashboard` |
 
 ## Graph IDs
 | Type | ID |
@@ -33,21 +34,22 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 | Repository | `repo:app.repositories.user.UserRepository`, `repo:app.repositories.role.RoleRepository`, `repo:app.repositories.permission.PermissionRepository` |
 | Model | `model:app.models.role.Role`, `model:app.models.permission.Permission` |
 | Schema | `schema:app.schemas.user.UserCreate`, `schema:app.schemas.user.UserUpdate`, `schema:app.schemas.user.UserRead`, `schema:app.schemas.role.RoleRead`, `schema:app.schemas.permission.PermissionRead` |
-| DBEnum | `dbenum:permission_name`, `dbenum:role_name` (Python-only enums, see Notes) |
+| DBEnum | `dbenum:permission_name` (Python-only enums, see Notes) |
 | Module | `module:app.core.auth`, `module:app.utils.enums`, `module:app.services.bootstrap` |
 | Table | `table:users`, `table:roles`, `table:permissions`, `table:user_roles`, `table:role_permissions` |
-| Page | `page:/admin/users`, `page:/admin/permissions` |
-| Component | `comp:components/common/effective-permissions-panel` |
+| Page | `page:/admin/users` |
+| Component | `comp:components/common/effective-permissions-panel`, `comp:components/admin/users-panel` |
 | ApiModule | `apimod:lib/api/users`, `apimod:lib/api/roles`, `apimod:lib/api/permissions` |
 | TypeModule | `typemod:lib/types/user`, `typemod:lib/types/role`, `typemod:lib/types/permission` |
 | TestFile | `test:backend/tests/test_rbac.py`, `test:backend/tests/test_permissions.py`, `test:backend/tests/test_users_api.py` |
+| LibUtil | `lib:lib/permissions` |
 
 ## API Endpoints
 | Method | Full path | Handler | Permission | Frontend caller |
 |---|---|---|---|---|
 | GET | `/api/users/` | `list_users` (`backend/app/api/users.py`) | MANAGE_USERS | `apifn:lib/api/users.usersApi.getAll` |
 | POST | `/api/users/` | `create_user` (`backend/app/api/users.py`) | MANAGE_USERS once any user exists (open before) | `apifn:lib/api/users.usersApi.create` |
-| GET | `/api/users/{user_id}` | `read_user` (`backend/app/api/users.py`) | MANAGE_USERS | `apifn:lib/api/users.usersApi.getById` |
+| GET | `/api/users/{user_id}` | `read_user` (`backend/app/api/users.py`) | MANAGE_USERS |  |
 | PATCH | `/api/users/{user_id}` | `update_user` (`backend/app/api/users.py`) | MANAGE_USERS | `apifn:lib/api/users.usersApi.update` |
 | DELETE | `/api/users/{user_id}` | `delete_user` (`backend/app/api/users.py`) | MANAGE_USERS | `apifn:lib/api/users.usersApi.remove` |
 | POST | `/api/users/{user_id}/activate` | `activate_user` (`backend/app/api/users.py`) | MANAGE_USERS | `apifn:lib/api/users.usersApi.activate` |
@@ -55,12 +57,12 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 | POST | `/api/users/{user_id}/reset-password` | `reset_password` (`backend/app/api/users.py`) | MANAGE_USERS | `apifn:lib/api/users.usersApi.resetPassword` |
 | GET | `/api/roles/` | `list_roles` (`backend/app/api/roles.py`) | MANAGE_USERS | `apifn:lib/api/roles.rolesApi.getAll` |
 | POST | `/api/roles/` | `create_role` (`backend/app/api/roles.py`) | MANAGE_USERS | `apifn:lib/api/roles.rolesApi.create` |
-| GET | `/api/roles/{role_id}` | `read_role` (`backend/app/api/roles.py`) | MANAGE_USERS | `apifn:lib/api/roles.rolesApi.getById` |
+| GET | `/api/roles/{role_id}` | `read_role` (`backend/app/api/roles.py`) | MANAGE_USERS |  |
 | PATCH | `/api/roles/{role_id}` | `update_role` (`backend/app/api/roles.py`) | MANAGE_USERS | `apifn:lib/api/roles.rolesApi.update` |
 | DELETE | `/api/roles/{role_id}` | `delete_role` (`backend/app/api/roles.py`) | MANAGE_USERS | `apifn:lib/api/roles.rolesApi.remove` |
 | GET | `/api/permissions/` | `list_permissions` (`backend/app/api/permissions.py`) | MANAGE_USERS | `apifn:lib/api/permissions.permissionsApi.getAll` |
-| POST | `/api/permissions/` | `create_permission` (`backend/app/api/permissions.py`) | MANAGE_USERS | `apifn:lib/api/permissions.permissionsApi.create` |
-| GET | `/api/permissions/{permission_id}` | `read_permission` (`backend/app/api/permissions.py`) | MANAGE_USERS | `apifn:lib/api/permissions.permissionsApi.getById` |
+| POST | `/api/permissions/` | `create_permission` (`backend/app/api/permissions.py`) | MANAGE_USERS |  |
+| GET | `/api/permissions/{permission_id}` | `read_permission` (`backend/app/api/permissions.py`) | MANAGE_USERS |  |
 
 ## Permission enforcement map
 | Permission | Enforced on |
@@ -78,8 +80,8 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 
 ## Change guide
 - New permission: add a member to `PermissionName` in `backend/app/utils/enums.py`, add it to role defaults in `seed_roles` (`backend/app/services/bootstrap.py`), then guard routes with `Depends(require_permission(PermissionName.NEW))`.
-- New role field: `backend/app/models/role.py`, `backend/app/schemas/role.py`, migration in `backend/alembic/versions/`, `frontend/lib/types/role.ts`, form in `frontend/app/admin/permissions/page.tsx`.
-- New user admin action: handler in `backend/app/api/users.py` (log with `AuditLogService.log` + an `AuditAction` constant in `backend/app/utils/audit_actions.py`), method on `usersApi` in `frontend/lib/api/users.ts`, button in `frontend/app/admin/users/page.tsx`.
+- New role field: `backend/app/models/role.py`, `backend/app/schemas/role.py`, migration in `backend/alembic/versions/`, `frontend/lib/types/role.ts`, form in `frontend/components/admin/roles-panel.tsx`.
+- New user admin action: handler in `backend/app/api/users.py` (log with `AuditLogService.log` + an `AuditAction` constant in `backend/app/utils/audit_actions.py`), method on `usersApi` in `frontend/lib/api/users.ts`, button in `frontend/app/(app)/admin/users/page.tsx`.
 
 ## Notes
 - `ensure_permission` builds the set of permission names across all roles of the user; `is_superuser` short-circuits.

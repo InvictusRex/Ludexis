@@ -64,25 +64,26 @@ Each domain file lists its backend and frontend files, graph IDs, endpoints (wit
 
 ```
 Ludexis/
-├── backend/                     FastAPI 0.111 + SQLAlchemy 2.0 + Celery 5.4 + PostgreSQL + Redis
+├── backend/                     FastAPI 0.143 + SQLAlchemy 2.0 + Celery 5.4 + PostgreSQL + Redis
 │   ├── main.py                  app factory, CORS, /media, /healthz, /api/metrics
-│   ├── app/api/                 21 routers, 93 routes under /api (+3 in main.py)
-│   ├── app/services/            20 services (+ ArchiveScanItem helper class)
+│   ├── app/api/                 22 routers, 100 routes under /api (+3 in main.py)
+│   ├── app/services/            22 services, bootstrap (first-start admin) (+ ArchiveScanItem helper class)
 │   ├── app/repositories/        15 repositories + BaseRepository
 │   ├── app/models/              18 models + association_tables.py (27 tables)
-│   ├── app/schemas/             20 modules, 67 Pydantic schemas
-│   ├── app/tasks/               celery_app + scan/metadata/artwork tasks (8 tasks)
+│   ├── app/schemas/             22 modules, 79 Pydantic schemas
+│   ├── app/tasks/               celery_app + scan/metadata/artwork/scheduler tasks (7 tasks)
 │   ├── app/providers/           MetadataProvider base, VNDB, IGDB (+client), Steam, Manual
 │   ├── app/core/ app/utils/ app/db/   config, auth/permissions, security, logging, metrics, enums, helpers
-│   ├── alembic/versions/        1 baseline migration (ecabaf1d5dab)
-│   └── tests/                   20 pytest files
-├── frontend/                    Next.js 16 + React 19 + TypeScript 5.7 + Tailwind 4
-│   ├── app/                     32 pages + root layout
-│   ├── components/              89 components (29 common, 3 layout, 54 ui, 3 root)
-│   ├── hooks/ contexts/         hooks (incl. use-protected-route), auth-context
-│   ├── lib/api/                 21 API modules, 88 API functions (+ client.ts)
-│   ├── lib/types/               20 type modules, 58 exported types
-│   └── e2e/                     Playwright specs (+ 39 vitest files beside the code)
+│   ├── alembic/versions/        12 migrations from the baseline ecabaf1d5dab
+│   ├── scripts/                 seed_demo, reset_password
+│   └── tests/                   36 pytest files
+├── frontend/                    Next.js 16.3 + React 19 + TypeScript 5.7 + Tailwind 4
+│   ├── app/                     24 pages; root, (app), (auth) and admin layouts
+│   ├── components/              77 components in admin, brand, browse, common, game, library, media, shell, ui
+│   ├── hooks/ contexts/         use-api, use-protected-route, use-review-count; auth-context
+│   ├── lib/api/                 21 API modules, 89 API functions (+ client.ts)
+│   ├── lib/types/               20 type modules, 63 exported types
+│   └── e2e/                     7 Playwright specs (+ 35 vitest files beside the code)
 └── docs/knowledge/              this graph
 ```
 

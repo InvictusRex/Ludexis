@@ -10,8 +10,8 @@ Game publishers linked to archive entries through `archive_entry_publishers`. Al
 | `backend/app/repositories/publisher.py` | Repository | `PublisherRepository.get_by_name`, `list_items`, `count`, `count_entries_for_ids`, `count_entries_for_id` |
 | `backend/app/models/publisher.py` | Model | `Publisher` |
 | `backend/app/schemas/publisher.py` | Schemas | `PublisherCreate`, `PublisherUpdate`, `PublisherRead` |
-| `frontend/app/publishers/page.tsx` | List page | `publishersApi.getAll` |
-| `frontend/app/publishers/[id]/page.tsx` | Detail page | `publishersApi.getById`, `publishersApi.getEntries` |
+| `frontend/app/(app)/publishers/page.tsx` | List page | `publishersApi.getAll` |
+| `frontend/app/(app)/publishers/[id]/page.tsx` | Detail page | `publishersApi.getById`, `publishersApi.getEntries` |
 | `frontend/lib/api/publishers.ts` | API module | `publishersApi.getAll`, `getById`, `getEntries` |
 | `frontend/lib/types/publisher.ts` | Types | `Publisher` |
 
@@ -51,6 +51,6 @@ Game publishers linked to archive entries through `archive_entry_publishers`. Al
 - Writes require `EDIT_METADATA`; the frontend has no create/update/delete calls for this domain.
 - Tests: no dedicated backend test file.
 - `publishersApi.getEntries` delegates to `archiveApi.getByPublisher` (client-side filter of the first 1000 entries).
-- There is no publisher card component; `frontend/app/publishers/page.tsx` renders its own markup.
-- `frontend/app/archive/[id]/page.tsx` resolves publisher names with `publishersApi.getById` per id.
+- There is no publisher card component; `frontend/app/(app)/publishers/page.tsx` renders its own markup.
+- `frontend/app/(app)/archive/[id]/page.tsx` resolves publisher names with `publishersApi.getById` per id.
 - `publishers.name_key` (unique) holds `company_key(name)`, set by a `@validates("name")` hook; `PublisherRepository.get_by_name` matches on it, so "SEGA" and "Sega" are one publisher. Create and rename return 400 when another publisher has the same key.

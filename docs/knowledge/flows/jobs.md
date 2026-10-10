@@ -13,7 +13,7 @@ Job creation, task selection, execution, cancellation, scheduling and monitoring
 
 ## 1. Start a job
 ```
-frontend/app/admin/jobs/page.tsx  (start button, JOB_TYPES select)
+frontend/components/admin/jobs-panel.tsx  (start button, JOB_TYPES select)
 frontend/app/admin/page.tsx       (quick actions: jobsApi.start("METADATA_REFRESH"), jobsApi.start("INTEGRITY_VERIFICATION"))
   -> jobsApi.start(jobType)                                  frontend/lib/api/jobs.ts
      POST /api/jobs/start {job_type}                         RUN_SCANS
@@ -58,7 +58,7 @@ Every job task is `@celery_app.task(**JOB_TASK_OPTIONS)` and delegates the lifec
 
 ## 3. Cancel
 ```
-frontend/app/admin/jobs/page.tsx -> jobsApi.cancel(jobId)
+frontend/components/admin/jobs-panel.tsx -> jobsApi.cancel(jobId)
   POST /api/jobs/{job_id}/cancel                              RUN_SCANS
   -> cancel_job(job_id, ...)                                  backend/app/api/jobs.py
      -> JobService.cancel_job(db, job_id)                     404 if None
@@ -86,10 +86,9 @@ Scheduled jobs have `user_id = NULL`; "Run now" (`POST /api/admin/scheduled-task
 ```
 jobsApi.getAll(jobType?, status?, offset, limit)  GET /api/jobs/?job_type&status&offset&limit
   -> list_jobs -> JobService.list_jobs -> JobHistoryRepository.list_items   (ORDER BY started_at DESC)
-  callers: frontend/app/admin/jobs/page.tsx (polls every 5 s while a job is PENDING/RUNNING),
-           JobsReport, BackgroundTaskAnalytics (limit 500), adminApi.getRecentJobs (limit 10),
-           frontend/app/admin/analytics/page.tsx
-jobsApi.getById(id)  GET /api/jobs/{job_id} -> JobService.get_job -> JobHistoryRepository.get
+  callers: frontend/components/admin/jobs-panel.tsx (polls every 5 s while a job is PENDING/RUNNING),
+           the dashboard home (frontend/app/(app)/admin/page.tsx)
+GET /api/jobs/{job_id} -> JobService.get_job -> JobHistoryRepository.get   (no frontend caller)
 scansApi.getStatus() GET /api/scan/status   -> JobHistoryRepository.count_by_status(db, [LIBRARY_SCAN, INCREMENTAL_SCAN])
 jobMonitorApi.getStats()   GET /api/job-monitor/stats   (ACCESS_ADMIN) -> JobMonitorService.stats()
                              -> celery_app.control.inspect(): ping(), active(), reserved()
@@ -100,4 +99,4 @@ jobMonitorApi.getWorkers() GET /api/job-monitor/workers (ACCESS_ADMIN) -> JobMon
 ```
 
 ## Entities
-`router:app.api.jobs`, `router:app.api.job_monitor`, `service:app.services.job.JobService`, `service:app.services.job_monitor.JobMonitorService`, `repo:app.repositories.job_history.JobHistoryRepository`, `model:app.models.job_history.JobHistory`, `task:app.tasks.scan_tasks.scan_full_task`, `task:app.tasks.scan_tasks.scan_incremental_task`, `task:app.tasks.scan_tasks.verify_integrity_task`, `task:app.tasks.scan_tasks.detect_duplicates_task`, `task:app.tasks.artwork_tasks.validate_artwork_task`, `task:app.tasks.scheduler_tasks.scheduler_tick_task`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `service:app.services.scheduler.SchedulerService`, `table:job_history`, `extprov:Celery`, `page:/admin/jobs`, `apimod:lib/api/jobs`, `apimod:lib/api/job-monitor`.
+`router:app.api.jobs`, `router:app.api.job_monitor`, `service:app.services.job.JobService`, `service:app.services.job_monitor.JobMonitorService`, `repo:app.repositories.job_history.JobHistoryRepository`, `model:app.models.job_history.JobHistory`, `task:app.tasks.scan_tasks.scan_full_task`, `task:app.tasks.scan_tasks.scan_incremental_task`, `task:app.tasks.scan_tasks.verify_integrity_task`, `task:app.tasks.scan_tasks.detect_duplicates_task`, `task:app.tasks.artwork_tasks.validate_artwork_task`, `task:app.tasks.scheduler_tasks.scheduler_tick_task`, `task:app.tasks.metadata_tasks.refresh_metadata_task`, `service:app.services.scheduler.SchedulerService`, `table:job_history`, `extprov:Celery`, `apimod:lib/api/jobs`, `apimod:lib/api/job-monitor`.
