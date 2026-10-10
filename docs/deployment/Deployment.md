@@ -63,7 +63,7 @@ The frontend image is built with relative `/api` and `/media` URLs, so it works 
 | `caddy_data` | HTTPS certificates. |
 | `prometheus_data`, `grafana_data` | Monitoring profile only. |
 
-Games are mounted read-only and never modified.
+Games are mounted read-only and never modified; the backend (uid 1000) needs read access to them.
 
 ## Health checks
 
@@ -128,7 +128,9 @@ The demo seeds an `admin` account (password `DEMO_ADMIN_PASSWORD`, default `Admi
 
 ## Images
 
-`.github/workflows/images.yml` builds `ludexis-backend` and `ludexis-frontend` for `linux/amd64` and `linux/arm64` on every push to `main` (tags `main` and `latest`) and on `v*` tags (`1.2.3`, `1.2`). The frontend's build stages run on the build machine's architecture; only the copy-only runtime stage is per platform.
+`.github/workflows/images.yml` runs the backend and frontend test workflows, and only when both pass builds `ludexis-backend` and `ludexis-frontend` for `linux/amd64` and `linux/arm64`: on every push to `main` (tags `main` and `latest`) and on `v*` tags (`1.2.3`, `1.2`). The frontend's build stages run on the build machine's architecture; only the copy-only runtime stage is per platform.
+
+Both images run unprivileged: the backend as `ludexis` (uid 1000), the frontend as `node`. A new `ludexis_data` volume starts out owned by uid 1000; the games folder only needs to be readable by it.
 
 ## Troubleshooting
 
