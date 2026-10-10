@@ -1,18 +1,13 @@
 name: Frontend CI
 
 on:
-  # Pull requests run on their own trigger; pushes are checked on main only, so a PR branch is not tested twice.
-  push:
-    branches:
-      - main
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-ci.yml"
-
   pull_request:
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
+
+  # Pushes to main and release tags run these checks from the image workflow, before anything is published.
+  workflow_call:
 
 jobs:
   test-frontend:

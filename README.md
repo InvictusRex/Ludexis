@@ -414,7 +414,7 @@ Both listen on localhost only (5432 and 6379).
 cd backend
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scriptsctivate
-pip install -r ../requirements.txt
+pip install -r ../requirements-dev.txt
 cp .env.example .env
 alembic upgrade head
 ```
