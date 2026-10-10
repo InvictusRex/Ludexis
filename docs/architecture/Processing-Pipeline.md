@@ -1913,7 +1913,7 @@ Event-driven processing would further decouple subsystems while improving extens
 
 ### Advanced Monitoring
 
-Prometheus metrics (`/api/metrics`) and a Prometheus, Grafana and node-exporter stack in `backend/docker-compose.yml` already exist. Potential enhancements include:
+Prometheus metrics (`/api/metrics`) and a Prometheus, Grafana and node-exporter profile in the root `docker-compose.yml` already exist. Potential enhancements include:
 
 - Distributed tracing
 - Structured observability pipelines

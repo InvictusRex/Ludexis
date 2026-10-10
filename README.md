@@ -23,7 +23,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12+-6D3DF5?logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/FastAPI-0.115+-6D3DF5?logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.111-6D3DF5?logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/PostgreSQL-16+-6D3DF5?logo=postgresql&logoColor=white" />
   <img src="https://img.shields.io/badge/Redis-7+-6D3DF5?logo=redis&logoColor=white" />
   <img src="https://img.shields.io/badge/Celery-5.4+-6D3DF5?logo=celery&logoColor=white" />
@@ -213,9 +213,7 @@ flowchart TB
     A --> H[Infrastructure Metrics]
 ```
 
-Infrastructure monitoring is provided through Node Exporter by default, with optional Windows Exporter support available for native Windows host telemetry.
-
-These capabilities allow administrators to monitor system health, workload activity, and resource utilization without requiring additional monitoring infrastructure.
+Prometheus, Grafana and Node Exporter ship as an optional profile of the Compose stack, so monitoring costs nothing until it is switched on.
 
 ---
 
@@ -283,29 +281,6 @@ When a library scan is initiated, Ludexis discovers archive files and folders, e
 
 This workflow allows large collections to be cataloged with minimal manual effort while still supporting manual curation when required.
 
-## Screenshots
-
-Frontend development is currently in progress.
-
-Screenshots and usage demonstrations will be added as the user interface matures.
-
-<!-- > Screenshots will be added as the frontend matures.
-
-### Dashboard
-
-![Dashboard Placeholder](docs/assets/dashboard-placeholder.png)
-
-### Archive Entry
-
-![Archive Entry Placeholder](docs/assets/archive-placeholder.png)
-
-### Metadata Search
-
-![Metadata Search Placeholder](docs/assets/metadata-placeholder.png)
--->
-
----
-
 ## Quick Start
 
 Ludexis runs as one Docker Compose stack: the web app, API, background worker, scheduler, PostgreSQL, Redis and a small proxy that serves everything on a single port.
@@ -341,7 +316,13 @@ Or clone the repository and run the same commands from its root; `docker compose
 docker compose up -d
 ```
 
-Open `http://<host>:8420`. The setup wizard creates the administrator, adds `/games` as the first library, optionally stores IGDB credentials and starts the first scan.
+Open `http://<host>:8420` and sign in with the default account:
+
+| Username | Password |
+| -------- | -------- |
+| `admin`  | `admin`  |
+
+Ludexis then asks for a new password (and optionally a different username and email) before anything else is available, adds `/games` as the first library, optionally stores IGDB credentials and starts the first scan. Until the password is changed the API refuses every other request for that account. To start with different credentials, set `DEFAULT_ADMIN_USERNAME` and `DEFAULT_ADMIN_PASSWORD` in `.env` before the first start. Locked out later? `docker compose exec backend python -m scripts.reset_password <username>` puts the default password back and asks for a new one at the next sign-in.
 
 The JWT signing secret is generated on first start and kept in the `ludexis_data` volume; set `JWT_SECRET_KEY` only if you want to manage it yourself.
 
@@ -401,190 +382,44 @@ docker compose up -d
 
 Your games themselves are never modified, so they need no backup from Ludexis.
 
-### Initial Configuration
+## Monitoring
 
-After deployment, create the initial administrator account and configure the archive libraries that Ludexis should manage.
-
-A typical setup workflow consists of:
-
-```mermaid
-flowchart LR
-
-    A[Deploy Platform]
-    --> B[Create Administrator]
-
-    B --> C[Configure Libraries]
-
-    C --> D[Run Initial Scan]
-
-    D --> E[Metadata Enrichment]
-
-    E --> F[Artwork Acquisition]
-
-    F --> G[Searchable Archive]
-```
-
-Once the first scan completes, archive entries become available for metadata enrichment, artwork acquisition, search, categorization, and collection management.
-
----
-
-## Monitoring & Observability
-
-Ludexis includes a built-in observability stack for monitoring application health, infrastructure performance, and background processing activity.
-
-### Prometheus Metrics
-
-The backend exposes Prometheus-compatible metrics through:
-
-```text
-/api/metrics
-```
-
-Metrics currently include:
-
-- Authentication activity
-- Library scans
-- Incremental scans
-- Metadata searches
-- Artwork operations
-- Background job execution
-
-### Grafana Dashboards
-
-Grafana dashboards can be used to visualize:
-
-- User activity
-- Scan throughput
-- Metadata operations
-- Artwork processing
-- API metrics
-- Infrastructure performance
-
-### Infrastructure Monitoring
-
-By default, Ludexis deploys Node Exporter to provide host-level metrics including:
-
-- CPU utilization
-- Memory usage
-- Disk consumption
-- Network statistics
-
----
-
-## Optional Windows Exporter
-
-Node Exporter provides cross-platform metrics and is enabled by default.
-
-Users requiring native Windows performance counters may additionally enable Windows Exporter:
+The backend exposes Prometheus metrics at `/api/metrics` inside the stack (the proxy does not serve them to visitors): sign-ins, scans, metadata searches, artwork operations and background jobs. To collect and chart them, start the optional monitoring profile:
 
 ```bash
-docker compose --profile windows_exporter up -d
+docker compose --profile monitoring up -d
 ```
 
-This exposes Windows-specific metrics while preserving the default monitoring stack.
-
----
-
-## First-Time Setup
-
-After deployment:
-
-1. Open Swagger UI.
-
-```text
-http://localhost:8000/docs
-```
-
-2. Run the initial setup endpoint.
-
-3. Create the administrator account.
-
-4. Login and obtain an access token.
-
-5. Configure one or more game libraries.
-
-6. Start the first library scan.
-
-7. Begin metadata enrichment and artwork acquisition.
+This adds Prometheus, Node Exporter (CPU, memory, disk and network of the host) and Grafana on port 3000 (`GRAFANA_PORT`). Grafana asks you to replace its `admin`/`admin` sign-in the first time; in Grafana add a Prometheus data source with the URL `http://prometheus:9090`.
 
 ---
 
 ## Developer Setup
 
-Ludexis supports a contributor-focused development workflow that separates application execution from infrastructure services. During development, PostgreSQL, Redis, Prometheus, Grafana, and exporter services run through Docker while the FastAPI backend and Celery workers execute directly on the host machine for improved debugging, hot reload support, and IDE integration.
+During development PostgreSQL and Redis run in Docker, while the FastAPI backend, the Celery worker and beat, and the Next.js dev server run on the host for hot reload and debugging.
 
-### Clone the Repository
+### Start PostgreSQL and Redis
 
 ```bash
 git clone https://github.com/InvictusRex/Ludexis.git
-
-cd Ludexis/backend
+cd Ludexis
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-### Create a Virtual Environment
+Both listen on localhost only (5432 and 6379).
+
+### Backend environment
 
 ```bash
+cd backend
 python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scriptsctivate
+pip install -r ../requirements.txt
+cp .env.example .env
+alembic upgrade head
 ```
 
-### Activate the Environment
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Linux/macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Configure Environment Variables
-
-Linux: Create a local environment file and configure the required values.
-
-```bash
-cp .env.docker .env
-```
-
-Windows: Create a local `.env` file using `.env.docker` as a template and update any required credentials before starting development.
-
-At minimum, the following values should be reviewed before development:
-
-```env
-DATABASE_URL=
-REDIS_URL=
-CELERY_BROKER_URL=
-CELERY_RESULT_BACKEND=
-
-JWT_SECRET_KEY=   # at least 32 characters: openssl rand -hex 32
-
-TWITCH_CLIENT_ID=
-TWITCH_CLIENT_SECRET=
-STEAMGRIDDB_API_KEY=
-```
-
-### Start Development Infrastructure
-
-```bash
-docker compose -f dev/docker-compose.infra.yml up -d
-```
-
-Optional Windows host metrics can be enabled using:
-
-```bash
-docker compose -f dev/docker-compose.infra.yml --profile windows_exporter up -d
-```
-
-This command launches PostgreSQL, Redis, Prometheus, Grafana, and Node Exporter, providing all supporting infrastructure required for local development.
+`.env.example` already points at the development database and Redis on localhost. Add `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` for IGDB and `STEAMGRIDDB_API_KEY` if you want those sources. The JWT secret is generated into `backend/config/` on first start.
 
 ### Start the Backend
 
@@ -592,7 +427,7 @@ This command launches PostgreSQL, Redis, Prometheus, Grafana, and Node Exporter,
 uvicorn main:app --reload
 ```
 
-The API will be available at:
+On first start against an empty database the default `admin`/`admin` account is created. The API will be available at:
 
 ```text
 http://localhost:8000
@@ -628,16 +463,14 @@ celery -A app.tasks.celery_app beat --loglevel=info
 pytest
 ```
 
-### Development Monitoring
+### Frontend
 
-The observability stack remains available during development.
-
-| Service    | URL                   |
-| ---------- | --------------------- |
-| Prometheus | http://localhost:9090 |
-| Grafana    | http://localhost:3000 |
-
-This setup mirrors the workflow used during active Ludexis development and provides full access to monitoring, debugging, and testing capabilities while maintaining a lightweight local development environment.
+```bash
+cd frontend
+cp .env.example .env.local
+npm ci
+npm run dev
+```
 
 ---
 
@@ -651,7 +484,7 @@ Detailed documentation is organized within the `docs/` directory.
 | `docs/api/`          | REST API reference and integration guidance                                                       |
 | `docs/deployment/`   | Deployment, infrastructure, and operational documentation                                         |
 | `docs/integrations/` | cURL, Python, and JavaScript integration examples                                                 |
-| `docs/backlog/`      | Project backlogs, development milestones, and future planning                                     |
+| `docs/backlogs/`     | Project backlogs, development milestones, and future planning                                     |
 
 The README focuses on installation, configuration, and day-to-day usage. Detailed technical documentation, architectural decisions, deployment guidance, and implementation references are maintained separately within the documentation directory.
 
@@ -662,8 +495,8 @@ The README focuses on installation, configuration, and day-to-day usage. Detaile
 Ludexis is under active development. Current development status, completed milestones, planned features, and future objectives are maintained in:
 
 ```text
-docs/backlog/Frontend_Backlog.md
-docs/backlog/Backend_Backlog.md
+docs/backlogs/Frontend-Backlog.md
+docs/backlogs/Backend-Backlog.md
 ```
 
 For architectural and implementation details, refer to the documentation contained within the `docs/architecture/`, `docs/api/`, and `docs/deployment/` directories.

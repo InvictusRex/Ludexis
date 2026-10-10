@@ -6,7 +6,7 @@ TypeScript.
 
 ## Requirements
 
-- Node.js 20+ (pnpm, npm, or yarn)
+- Node.js 20+ and npm
 - A running [Ludexis backend](../backend) exposing the REST API (default
   `http://localhost:8000`)
 
@@ -71,16 +71,10 @@ e2e/              Playwright end-to-end and visual regression tests
 ## Docker Deployment
 
 The `Dockerfile` produces a standalone Next.js image served by its own Node
-server. The API base URL is baked at build time:
-
-```bash
-docker build \
-  --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000/api \
-  --build-arg NEXT_PUBLIC_MEDIA_URL=http://localhost:8000/media \
-  -t ludexis-frontend ./frontend
-
-docker run -p 3000:3000 ludexis-frontend
-```
+server. It is built with relative `/api` and `/media` URLs for the proxy of the
+production stack (`docker-compose.yml` at the repository root); pass
+`--build-arg NEXT_PUBLIC_API_URL=...` and `NEXT_PUBLIC_MEDIA_URL=...` only when
+the API lives on another origin.
 
 For the full stack (backend + database + frontend, pre-seeded with a demo
 dataset), run from the repository root:
@@ -90,7 +84,7 @@ docker compose -f docker-compose.demo.yml up -d --build
 ```
 
 Then open [http://localhost:3000](http://localhost:3000) and log in with
-`admin` / `admin`.
+`admin` / `Admin123!` (or `DEMO_ADMIN_PASSWORD`).
 
 ## Troubleshooting
 

@@ -123,10 +123,8 @@ backend/
 ├── tests/
 │
 ├── main.py
-├── docker-compose.yml
 ├── Dockerfile
-├── alembic.ini
-└── seed_rbac.py
+└── alembic.ini
 ```
 
 `requirements.txt` lives at the repository root, not under `backend/`.
@@ -3150,7 +3148,7 @@ without requiring significant changes to application logic.
 
 #### Observability Improvements
 
-Prometheus metrics and Grafana dashboards already exist (`backend/docker-compose.yml`). Potential future enhancements include:
+Prometheus metrics and an optional Prometheus, Grafana and Node Exporter profile already exist (`docker compose --profile monitoring up -d`). Potential future enhancements include:
 
 - Structured tracing
 - Centralized log aggregation
