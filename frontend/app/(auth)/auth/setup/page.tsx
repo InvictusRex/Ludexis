@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { getErrorMessage } from "@/lib/errors";
+import { authApi } from "@/lib/api/auth";
 import { librariesApi } from "@/lib/api/libraries";
-import { setupApi } from "@/lib/api/setup";
 import { scansApi } from "@/lib/api/scans";
 import { systemApi } from "@/lib/api/system";
+import { usersApi } from "@/lib/api/users";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +18,9 @@ import { AuthBrand } from "../auth-brand";
 
 const STEPS = [
   {
-    label: "Administrator",
-    title: "Create the first administrator account",
-    description: "This account manages libraries, users and server settings.",
+    label: "Account",
+    title: "Secure the administrator account",
+    description: "The default password is public. Choose your own sign-in and a new password before going further.",
   },
   {
     label: "Library",
@@ -29,7 +30,7 @@ const STEPS = [
   {
     label: "Review",
     title: "Review and finish",
-    description: "Ludexis creates your account and library, then starts the first scan.",
+    description: "Ludexis saves your account and library, then starts the first scan.",
   },
 ];
 
@@ -49,7 +50,7 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
 
 export default function SetupPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -65,17 +66,25 @@ export default function SetupPage() {
   const [igdbClientSecret, setIgdbClientSecret] = useState("");
 
   const [error, setError] = useState("");
-  const [adminCreated, setAdminCreated] = useState(false);
+  const [passwordChanged, setPasswordChanged] = useState(false);
   const [completed, setCompleted] = useState(false);
 
+  // First-run setup belongs to the default administrator, signed in with the default password.
   useEffect(() => {
-    setupApi
-      .getStatus()
-      .then((status) => {
-        if (status.initialized) router.replace("/auth/login");
-      })
-      .catch(() => setError("Could not reach the server"));
-  }, [router]);
+    if (authLoading) return;
+    if (!user) {
+      router.replace("/auth/login");
+    } else if (!user.must_change_password && !passwordChanged) {
+      router.replace("/");
+    }
+  }, [authLoading, passwordChanged, router, user]);
+
+  useEffect(() => {
+    if (user) {
+      setAdminUsername((value) => value || user.username);
+      setAdminEmail((value) => value || user.email);
+    }
+  }, [user]);
 
   const handleCreateAdmin = (event: React.FormEvent) => {
     event.preventDefault();
@@ -88,8 +97,8 @@ export default function SetupPage() {
       setError("Passwords do not match");
       return;
     }
-    if (adminPassword.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (adminPassword.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
     setStep(2);
@@ -110,18 +119,21 @@ export default function SetupPage() {
     setError("");
     setLoading(true);
     try {
-      // A retry after a failed library step must not re-initialize (the backend returns 409).
-      if (!adminCreated) {
-        await setupApi.initialize({ username: adminUsername, email: adminEmail, password: adminPassword });
-        setAdminCreated(true);
+      // A retry after a failed library step must not change the password again (it now needs the current one).
+      if (!passwordChanged) {
+        await authApi.changePassword("", adminPassword);
+        setPasswordChanged(true);
       }
-      await login(adminUsername, adminPassword);
+      if (user && (adminUsername !== user.username || adminEmail !== user.email)) {
+        await usersApi.update(user.id, { username: adminUsername, email: adminEmail });
+      }
       await librariesApi.create({ name: libraryName, path: libraryPath });
       if (igdbClientId.trim() && igdbClientSecret) {
         await systemApi.updateSettings({ igdb_client_id: igdbClientId.trim(), igdb_client_secret: igdbClientSecret });
       }
       // The first scan starts right away; later scans follow the nightly schedule.
       await scansApi.runFull().catch(() => undefined);
+      await refreshUser();
       setCompleted(true);
       router.push("/");
     } catch (err) {
@@ -210,7 +222,7 @@ export default function SetupPage() {
                   />
                 </Field>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field id="password" label="Password" hint="At least 6 characters">
+                  <Field id="password" label="New password" hint="At least 8 characters">
                     <Input
                       id="password"
                       type="password"
@@ -298,7 +310,7 @@ export default function SetupPage() {
                     size="lg"
                     className="flex-1"
                     onClick={() => setStep(1)}
-                    disabled={loading || adminCreated}
+                    disabled={loading || passwordChanged}
                   >
                     Back
                   </Button>

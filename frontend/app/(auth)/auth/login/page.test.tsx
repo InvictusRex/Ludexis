@@ -21,7 +21,7 @@ vi.mock("@/lib/api/setup", () => ({
 }));
 
 const mockAuth = (login = vi.fn(), user: User | null = null) => {
-  vi.mocked(useAuth).mockReturnValue({ user, loading: false, login, logout: vi.fn() });
+  vi.mocked(useAuth).mockReturnValue({ user, loading: false, login, logout: vi.fn(), refreshUser: vi.fn() });
 };
 
 describe("LoginPage", () => {
@@ -47,7 +47,7 @@ describe("LoginPage", () => {
   });
 
   it("signs in with the typed credentials and goes home", async () => {
-    const login = vi.fn().mockResolvedValue(undefined);
+    const login = vi.fn().mockResolvedValue({ id: "u1", username: "admin", must_change_password: false });
     mockAuth(login);
     const user = userEvent.setup();
 
@@ -88,11 +88,25 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText("Password")).toHaveAttribute("type", "password");
   });
 
-  it("sends a fresh server to setup", async () => {
-    vi.mocked(setupApi.getStatus).mockResolvedValue({ initialized: false });
+  it("names the default account until its password is changed", async () => {
+    vi.mocked(setupApi.getStatus).mockResolvedValue({ initialized: true, default_login: "admin" });
     mockAuth();
 
     render(<LoginPage />);
+
+    expect(await screen.findByText(/First sign-in/)).toHaveTextContent("You will choose a new password next");
+  });
+
+  it("sends the default administrator to first-run setup after signing in", async () => {
+    const login = vi.fn().mockResolvedValue({ id: "u1", username: "admin", must_change_password: true });
+    mockAuth(login);
+    const user = userEvent.setup();
+
+    render(<LoginPage />);
+
+    await user.type(screen.getByLabelText("Username"), "admin");
+    await user.type(screen.getByLabelText("Password"), "admin");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/auth/setup"));
   });

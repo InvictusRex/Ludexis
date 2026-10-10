@@ -16,6 +16,7 @@ const mockUser = (overrides: Partial<User>) =>
     loading: false,
     login: vi.fn(),
     logout: vi.fn(),
+    refreshUser: vi.fn(),
   });
 
 const item = (label: string) => screen.getByText(label).closest("li");

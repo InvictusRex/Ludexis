@@ -11,6 +11,8 @@ export interface User {
   /** Games in these collections are hidden from the user. */
   blocked_collection_ids?: string[];
   created_at?: string;
+  /** The default administrator must choose a new password before anything else. */
+  must_change_password?: boolean;
   roles?: Array<{ id: string; name: string; permissions?: PermissionRead[] }>;
 }
 

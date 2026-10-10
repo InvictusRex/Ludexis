@@ -31,10 +31,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/auth/login");
+    } else if (user?.must_change_password) {
+      // The default administrator's password is public; first-run setup replaces it.
+      router.replace("/auth/setup");
     }
   }, [loading, router, user]);
 
-  if (loading || !user) {
+  if (loading || !user || user.must_change_password) {
     return <BootScreen />;
   }
 

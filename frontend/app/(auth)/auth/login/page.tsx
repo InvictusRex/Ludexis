@@ -19,30 +19,29 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [defaultLogin, setDefaultLogin] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      router.replace("/");
+      router.replace(user.must_change_password ? "/auth/setup" : "/");
     }
   }, [router, user]);
 
-  // A fresh server has no accounts yet, so there is nothing to sign in to.
+  // A fresh server has only the default administrator; say how to sign in until its password is changed.
   useEffect(() => {
     setupApi
       .getStatus()
-      .then((status) => {
-        if (!status.initialized) router.replace("/auth/setup");
-      })
+      .then((status) => setDefaultLogin(status.default_login ?? null))
       .catch(() => undefined);
-  }, [router]);
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setError("");
     try {
-      await login(username, password);
-      router.replace("/");
+      const signedIn = await login(username, password);
+      router.replace(signedIn.must_change_password ? "/auth/setup" : "/");
     } catch (err) {
       setError(getErrorMessage(err, "Could not sign in"));
       setSubmitting(false);
@@ -57,6 +56,14 @@ export default function LoginPage() {
         <h2 id="sign-in-heading" className="text-xl font-semibold text-parchment">
           Sign in to your archive
         </h2>
+
+        {defaultLogin && (
+          <p className="mt-3 rounded-lg border border-violet/40 bg-violet/10 px-3 py-2 text-sm text-parchment">
+            First sign-in: use <span className="font-mono">{defaultLogin}</span> with the default password{" "}
+            <span className="font-mono">admin</span> (or the one set in DEFAULT_ADMIN_PASSWORD). You will choose a new
+            password next.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-5" aria-busy={submitting}>
           <div className="space-y-2">

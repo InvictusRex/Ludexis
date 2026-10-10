@@ -19,9 +19,12 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
 
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<User>;
 
   logout: () => Promise<void>;
+
+  /** Reloads the signed-in user, e.g. after the first-run password change. */
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -59,6 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(username: string, password: string) {
     await authApi.login({ username, password });
+    const signedIn = await authApi.getCurrentUser();
+    setUser(signedIn);
+    return signedIn;
+  }
+
+  async function refreshUser() {
     setUser(await authApi.getCurrentUser());
   }
 
@@ -81,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         login,
         logout,
+        refreshUser,
       }}
     >
       {children}
