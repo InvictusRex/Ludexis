@@ -23,7 +23,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12+-6D3DF5?logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/FastAPI-0.111-6D3DF5?logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.143-6D3DF5?logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/PostgreSQL-16+-6D3DF5?logo=postgresql&logoColor=white" />
   <img src="https://img.shields.io/badge/Redis-7+-6D3DF5?logo=redis&logoColor=white" />
   <img src="https://img.shields.io/badge/Celery-5.4+-6D3DF5?logo=celery&logoColor=white" />
