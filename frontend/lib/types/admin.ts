@@ -20,8 +20,6 @@ export interface AuditLogRead {
   created_at: string;
 }
 
-export type PermissionReport = Record<string, string[]>;
-
 export interface AuditLogQuery {
   user_id?: string;
   entity?: string;

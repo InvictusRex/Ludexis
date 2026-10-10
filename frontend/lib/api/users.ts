@@ -7,10 +7,6 @@ export const usersApi = {
     return apiClient.get<User[]>(`/users/${qs}`);
   },
 
-  async getById(id: string): Promise<User> {
-    return apiClient.get<User>(`/users/${id}`);
-  },
-
   async create(data: UserCreate): Promise<User> {
     return apiClient.post<User>("/users/", data);
   },

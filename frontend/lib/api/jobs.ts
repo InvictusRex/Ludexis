@@ -17,22 +17,6 @@ export const jobsApi = {
     return apiClient.get<JobHistory[]>(`/jobs/?${params.toString()}`);
   },
 
-  async getById(id: string): Promise<JobHistory> {
-    return apiClient.get<JobHistory>(`/jobs/${id}`);
-  },
-
-  async getPending(offset = 0, limit = 100): Promise<JobHistory[]> {
-    return jobsApi.getAll(undefined, "PENDING", offset, limit);
-  },
-
-  async getRunning(offset = 0, limit = 100): Promise<JobHistory[]> {
-    return jobsApi.getAll(undefined, "RUNNING", offset, limit);
-  },
-
-  async getCompleted(offset = 0, limit = 100): Promise<JobHistory[]> {
-    return jobsApi.getAll(undefined, "SUCCESS", offset, limit);
-  },
-
   async start(jobType: JobType): Promise<JobHistory> {
     const payload: JobHistoryCreate = { job_type: jobType };
     return apiClient.post<JobHistory>("/jobs/start", payload);

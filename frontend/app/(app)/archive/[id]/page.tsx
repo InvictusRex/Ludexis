@@ -21,7 +21,7 @@ import { VersionList } from "@/components/common/version-list";
 import { GameFiles, GameOverview } from "@/components/game/game-details";
 import { GameHero } from "@/components/game/game-hero";
 import { AddToCollectionDialog } from "@/components/library/add-to-collection-dialog";
-import { ConfirmDialog } from "@/components/library/confirm-dialog";
+import { ConfirmDialog } from "@/components/browse/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

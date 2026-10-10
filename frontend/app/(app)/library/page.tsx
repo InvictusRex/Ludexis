@@ -26,7 +26,7 @@ import { PosterCard } from "@/components/media/poster-card";
 import { PosterGrid, PosterSkeletons } from "@/components/media/poster-grid";
 import { BulkActionBar } from "@/components/common/bulk-action-bar";
 import { AddToCollectionDialog } from "@/components/library/add-to-collection-dialog";
-import { ConfirmDialog } from "@/components/library/confirm-dialog";
+import { ConfirmDialog } from "@/components/browse/confirm-dialog";
 import { FilterSheetContent, filterChipLabel, type LibraryFilters } from "@/components/library/library-filters";
 import {
   FILTER_KEYS,

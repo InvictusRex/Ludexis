@@ -35,7 +35,3 @@ export interface UserUpdate {
   allow_restricted?: boolean | null;
   blocked_collection_ids?: string[] | null;
 }
-
-export interface PasswordResetRequest {
-  password: string;
-}

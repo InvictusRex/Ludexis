@@ -5,13 +5,9 @@ import type {
   AuditLogQuery,
   AuditLogRead,
   JobHistory,
-  PermissionReport,
 } from "@/lib/types";
 
 export const adminApi = {
-  async getRecentJobs(): Promise<JobHistory[]> {
-    return jobsApi.getAll(undefined, undefined, 0, 10);
-  },
 
   async getStats(): Promise<AdminStats> {
     return apiClient.get<AdminStats>("/admin/stats");
@@ -29,7 +25,4 @@ export const adminApi = {
     return apiClient.get<AuditLogRead[]>(`/admin/audit-logs?${params}`);
   },
 
-  async getPermissionReport(): Promise<PermissionReport> {
-    return apiClient.get<PermissionReport>("/admin/permission-report");
-  },
 };

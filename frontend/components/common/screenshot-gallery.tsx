@@ -7,7 +7,7 @@ import { artworkApi } from "@/lib/api";
 import type { Screenshot } from "@/lib/types";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { Shot } from "@/components/media/art";
-import { ConfirmDialog } from "@/components/library/confirm-dialog";
+import { ConfirmDialog } from "@/components/browse/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 

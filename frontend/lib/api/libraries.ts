@@ -7,10 +7,6 @@ export const librariesApi = {
     return apiClient.get<LibraryRead[]>(`/libraries/${qs}`);
   },
 
-  async getById(id: string): Promise<LibraryRead> {
-    return apiClient.get<LibraryRead>(`/libraries/${id}`);
-  },
-
   async create(data: LibraryCreate): Promise<LibraryRead> {
     return apiClient.post<LibraryRead>("/libraries/", data);
   },

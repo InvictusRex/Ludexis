@@ -13,10 +13,6 @@ export interface IdentifyResult {
 }
 
 export const archiveApi = {
-  async getAll(offset = 0, limit = 100): Promise<ArchiveEntry[]> {
-    const qs = `?offset=${offset}&limit=${limit}`;
-    return apiClient.get<ArchiveEntry[]>(`/archive-entries/${qs}`);
-  },
 
   // One page of the library, filtered and sorted on the server; total comes from X-Total-Count.
   async browse(query: LibraryQuery = {}): Promise<{ items: ArchiveEntry[]; total: number }> {

@@ -11,16 +11,6 @@ export type VerificationStatus =
   | "CORRUPTED"
   | "UNKNOWN";
 
-export type RelationshipType =
-  | "FRANCHISE"
-  | "SEQUEL"
-  | "PREQUEL"
-  | "SPINOFF"
-  | "COLLECTION"
-  | "EPISODE"
-  | "REMASTER"
-  | "RELATED";
-
 export interface ArchiveEntryReference {
   id: string;
   title: string;

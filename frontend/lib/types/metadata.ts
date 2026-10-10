@@ -1,11 +1,3 @@
-export interface MetadataReviewItem {
-  id: string;
-  entry_id: string;
-  notes?: string;
-  suggested_title?: string;
-  created_at?: string;
-}
-
 export interface MetadataSearchResult {
   provider: string;
   provider_id: string;

@@ -6,10 +6,6 @@ export const rolesApi = {
     return apiClient.get<RoleRead[]>("/roles/");
   },
 
-  async getById(id: string): Promise<RoleRead> {
-    return apiClient.get<RoleRead>(`/roles/${id}`);
-  },
-
   async create(data: RoleCreate): Promise<RoleRead> {
     return apiClient.post<RoleRead>("/roles/", data);
   },
