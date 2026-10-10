@@ -1,7 +1,10 @@
 name: Backend CI
 
 on:
+  # Pull requests run on their own trigger; pushes are checked on main only, so a PR branch is not tested twice.
   push:
+    branches:
+      - main
     paths:
       - "backend/**"
       - "requirements.txt"

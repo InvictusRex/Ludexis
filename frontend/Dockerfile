@@ -1,10 +1,13 @@
-FROM node:20-alpine AS deps
+# The build stages run on the CI machine's own architecture: building Next.js under arm64 emulation crashes
+# (SIGILL) and is slow. The output is plain JavaScript, so only the runtime stage is per platform.
+# (The traced sharp binary matches the build machine, but sharp never loads: images are unoptimized.)
+FROM --platform=$BUILDPLATFORM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
+COPY package.json package-lock.json ./
 # Build tooling (Tailwind, TypeScript) is needed to build; only the standalone output reaches the runtime image.
 RUN npm ci
 
-FROM node:20-alpine AS build
+FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -21,8 +24,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/public ./public
+USER node
 EXPOSE 3000
 CMD ["node", "server.js"]
