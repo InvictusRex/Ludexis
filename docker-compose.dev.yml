@@ -1,0 +1,41 @@
+# Development services: PostgreSQL and Redis on their usual ports. The backend, worker, beat and the
+# Next.js dev server run on the host (see README → Local Development).
+#
+#   docker compose -f docker-compose.dev.yml up -d
+
+name: ludexis-dev
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ludexis
+      POSTGRES_PASSWORD: ludexis
+      POSTGRES_DB: ludexis
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      # Loopback only, on IPv4 and IPv6: "localhost" may resolve to ::1 first.
+      - "127.0.0.1:5432:5432"
+      - "[::1]:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ludexis"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+      - "[::1]:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

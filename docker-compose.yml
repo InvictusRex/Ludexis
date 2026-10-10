@@ -3,7 +3,9 @@
 #   cp .env.example .env      # set GAMES_PATH (and TZ)
 #   docker compose up -d
 #
-# Then open http://<host>:8420 and create the administrator account.
+# Then open http://<host>:8420 and sign in as admin / admin. Ludexis asks for a new password straight away,
+# then for the games folder (/games) and starts the first scan.
+# Optional Prometheus and Grafana: docker compose --profile monitoring up -d (Grafana on port 3000).
 # For HTTPS, point a domain at this host and set LUDEXIS_DOMAIN, LUDEXIS_PORT=80 and LUDEXIS_HTTPS_PORT=443.
 # Images come from GHCR; add --build to build them from this checkout instead.
 
@@ -26,6 +28,9 @@ x-backend: &backend
     TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}
     STEAMGRIDDB_API_KEY: ${STEAMGRIDDB_API_KEY:-}
     CORS_ORIGINS: ${CORS_ORIGINS:-}
+    # The account created on first start; it must choose a new password at its first sign-in.
+    DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:-admin}
+    DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin}
     # Scheduled tasks run in this time zone.
     TZ: ${TZ:-UTC}
   volumes:
@@ -132,7 +137,36 @@ services:
       backend:
         condition: service_healthy
 
+  # Optional monitoring (docker compose --profile monitoring up -d). Grafana asks to change admin/admin on first sign-in.
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: [monitoring]
+    restart: unless-stopped
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    profiles: [monitoring]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    profiles: [monitoring]
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   db_data:
   ludexis_data:
   caddy_data:
+  prometheus_data:
+  grafana_data:

@@ -6,3 +6,11 @@ docs
 backend/.venv
 backend/artwork
 backend/.pytest_cache
+# Local configuration, secrets and runtime files never go into an image.
+**/.env
+**/.env.*
+!**/.env.example
+backend/config
+backend/celerybeat-schedule*
+artwork
+**/.pytest_cache
