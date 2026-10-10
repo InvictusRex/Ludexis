@@ -27,7 +27,7 @@ Read-only routes use `Depends(get_current_active_user)` (any authenticated activ
 | VIEW_AUDIT_LOGS | GET `/api/admin/audit-logs` |
 
 ## 3. Seeded roles
-`seed_roles` in `backend/app/api/setup.py` and `backend/seed_rbac.py` define the same defaults:
+`seed_roles` in `backend/app/services/bootstrap.py` defines the defaults (seeded on first start):
 
 | Role (`RoleName`) | Permissions |
 |---|---|
@@ -40,13 +40,12 @@ Read-only routes use `Depends(get_current_active_user)` (any authenticated activ
 ```
 frontend/app/admin/users/page.tsx -> usersApi.create(data)       frontend/lib/api/users.ts
   POST /api/users/
-  -> create_user(data: UserCreate, current_user=Depends(_require_manage_users_if_initialized))   backend/app/api/users.py
-     _require_manage_users_if_initialized: UserRepository.has_any(db) false -> allow anonymous;
-                                           else get_optional_current_user + ensure_permission(MANAGE_USERS)
+  -> create_user(data: UserCreate, current_user=Depends(require_permission(MANAGE_USERS)))   backend/app/api/users.py
+     password 8-256 characters (422 otherwise); is_superuser=True only by a superuser (403)
      -> UserRepository.get_by_username / get_by_email      400 on conflict
      -> hash_password(data.password)                       backend/app/core/security.py
-     -> UserRepository.create(db, {...})                   first user forced active + superuser
-     -> only if users already existed and data.role_ids:
+     -> UserRepository.create(db, {...})
+     -> if data.role_ids:
         _load_roles(db, data.role_ids) -> RoleRepository.get per id (404 if missing); commit
      -> AuditService.log(action=CREATE_USER) ; AuditService.log(action=ASSIGN_ROLE) per role
   <- UserRead

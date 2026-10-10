@@ -228,9 +228,6 @@
 {"source_id": "apifn:lib/api/setup.setupApi.getStatus", "target_id": "domain:auth", "type": "BELONGS_TO", "source_file": "frontend/lib/api/setup.ts", "source_line": 5, "confidence": 1.0, "inferred": false}
 {"source_id": "apifn:lib/api/setup.setupApi.getStatus", "target_id": "layer:frontend-api", "type": "BELONGS_TO", "source_file": "frontend/lib/api/setup.ts", "source_line": 5, "confidence": 1.0, "inferred": false}
 {"source_id": "apifn:lib/api/setup.setupApi.getStatus", "target_id": "api:GET:/setup/status", "type": "CALLS_ENDPOINT", "source_file": "frontend/lib/api/setup.ts", "source_line": 6, "confidence": 1.0, "inferred": false}
-{"source_id": "apifn:lib/api/setup.setupApi.initialize", "target_id": "domain:auth", "type": "BELONGS_TO", "source_file": "frontend/lib/api/setup.ts", "source_line": 9, "confidence": 1.0, "inferred": false}
-{"source_id": "apifn:lib/api/setup.setupApi.initialize", "target_id": "layer:frontend-api", "type": "BELONGS_TO", "source_file": "frontend/lib/api/setup.ts", "source_line": 9, "confidence": 1.0, "inferred": false}
-{"source_id": "apifn:lib/api/setup.setupApi.initialize", "target_id": "api:POST:/setup/initialize", "type": "CALLS_ENDPOINT", "source_file": "frontend/lib/api/setup.ts", "source_line": 10, "confidence": 1.0, "inferred": false}
 {"source_id": "apifn:lib/api/tags.tagsApi.getAll", "target_id": "domain:tag", "type": "BELONGS_TO", "source_file": "frontend/lib/api/tags.ts", "source_line": 6, "confidence": 1.0, "inferred": false}
 {"source_id": "apifn:lib/api/tags.tagsApi.getAll", "target_id": "layer:frontend-api", "type": "BELONGS_TO", "source_file": "frontend/lib/api/tags.ts", "source_line": 6, "confidence": 1.0, "inferred": false}
 {"source_id": "apifn:lib/api/tags.tagsApi.getAll", "target_id": "api:GET:/tags/", "type": "CALLS_ENDPOINT", "source_file": "frontend/lib/api/tags.ts", "source_line": 18, "confidence": 1.0, "inferred": false}
@@ -428,7 +425,6 @@
 {"source_id": "apimod:lib/api/setup", "target_id": "domain:auth", "type": "BELONGS_TO", "source_file": "frontend/lib/api/setup.ts", "source_line": 1, "confidence": 1.0, "inferred": false}
 {"source_id": "apimod:lib/api/setup", "target_id": "layer:frontend-api", "type": "BELONGS_TO", "source_file": "frontend/lib/api/setup.ts", "source_line": 1, "confidence": 1.0, "inferred": false}
 {"source_id": "apimod:lib/api/setup", "target_id": "apifn:lib/api/setup.setupApi.getStatus", "type": "CONTAINS", "source_file": "frontend/lib/api/setup.ts", "source_line": 5, "confidence": 1.0, "inferred": false}
-{"source_id": "apimod:lib/api/setup", "target_id": "apifn:lib/api/setup.setupApi.initialize", "type": "CONTAINS", "source_file": "frontend/lib/api/setup.ts", "source_line": 9, "confidence": 1.0, "inferred": false}
 {"source_id": "apimod:lib/api/setup", "target_id": "typemod:lib/types/index", "type": "IMPORTS", "source_file": "frontend/lib/api/setup.ts", "source_line": 2, "confidence": 1.0, "inferred": false, "description": "type-only import SetupStatus, UserCreate"}
 {"source_id": "apimod:lib/api/setup", "target_id": "apimod:lib/api/client", "type": "USES_CLIENT", "source_file": "frontend/lib/api/setup.ts", "source_line": 1, "confidence": 1.0, "inferred": false, "description": "imports apiClient"}
 {"source_id": "apimod:lib/api/tags", "target_id": "domain:tag", "type": "BELONGS_TO", "source_file": "frontend/lib/api/tags.ts", "source_line": 1, "confidence": 1.0, "inferred": false}

@@ -6,10 +6,12 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 | File | Role | Key symbols |
 |---|---|---|
 | `backend/app/api/auth.py` | Router `/auth` | `login`, `refresh`, `logout`, `read_current_user`, `token_login` |
-| `backend/app/api/setup.py` | Router `/setup` (first run) | `setup_status`, `initialize_system`, `seed_permissions`, `seed_roles` |
+| `backend/app/api/setup.py` | Router `/setup` (first run) | `setup_status` |
+| `backend/app/services/bootstrap.py` | First-start seeding | `seed_permissions`, `seed_roles`, `ensure_default_admin` |
+| `backend/scripts/reset_password.py` | Server-side password reset | `main` |
 | `backend/app/services/auth.py` | Service | `AuthService.authenticate`, `create_tokens`, `refresh_tokens`, `logout` |
 | `backend/app/core/security.py` | JWT + bcrypt helpers | `create_access_token`, `create_refresh_token`, `verify_token`, `hash_password`, `verify_password` |
-| `backend/app/core/auth.py` | FastAPI auth dependencies | `oauth2_scheme`, `get_current_user`, `get_optional_current_user`, `get_current_active_user` |
+| `backend/app/core/auth.py` | FastAPI auth dependencies | `oauth2_scheme`, `get_current_user`, `get_current_active_user`, `PASSWORD_CHANGE_PATHS` |
 | `backend/app/repositories/refresh_token.py` | Repository | `RefreshTokenRepository.get_by_token` |
 | `backend/app/repositories/user.py` | Repository (shared with rbac) | `UserRepository.get_by_username`, `has_any`, `get_by_email` |
 | `backend/app/models/refresh_token.py` | Model | `RefreshToken` |
@@ -21,12 +23,12 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 | `frontend/lib/auth/session.ts` | session-ended events (tokens live in httpOnly cookies) | `endSession`, `onSessionEnded` |
 | `backend/app/core/rate_limit.py` | failed-login limiter | `LoginRateLimiter` |
 | `frontend/lib/api/auth.ts` | API module | `authApi.login`, `refresh`, `logout`, `getCurrentUser` |
-| `frontend/lib/api/setup.ts` | API module | `setupApi.getStatus`, `initialize` |
+| `frontend/lib/api/setup.ts` | API module | `setupApi.getStatus` |
 | `frontend/lib/api/client.ts` | HTTP client (401 refresh) | `apiClient`, `doRefresh`, `refreshAccessToken` |
 | `frontend/lib/types/auth.ts` | Types | `LoginRequest`, `TokenResponse`, `RefreshRequest`, `LogoutRequest` |
 | `frontend/lib/types/setup.ts` | Types | `SetupStatus` |
 | `frontend/app/auth/login/page.tsx` | Login page | calls `useAuth().login` |
-| `frontend/app/auth/setup/page.tsx` | Setup page (stub, see Notes) | none |
+| `frontend/app/(auth)/auth/setup/page.tsx` | First-run setup for the default administrator | `SetupPage` |
 | `frontend/app/account/page.tsx` | Account page | renders `AccountActivityList`, `EffectivePermissionsPanel` |
 | `backend/tests/test_auth.py`, `backend/tests/test_token_expiration.py` | Backend tests | |
 | `frontend/app/auth/login/page.test.tsx`, `frontend/e2e/tasks.spec.ts`, `backend/tests/test_cookie_auth.py`, `frontend/hooks/use-protected-route.test.ts`, `frontend/lib/api/client.test.ts`, `frontend/e2e/auth.spec.ts` | Frontend tests | |
@@ -61,10 +63,9 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 | POST | `/api/auth/logout-all` | `logout_all` (`backend/app/api/auth.py`) | authenticated | `apifn:lib/api/auth.authApi.logoutAll` |
 | POST | `/api/auth/token` | `token_login` (`backend/app/api/auth.py`) | public | none |
 | GET | `/api/setup/status` | `setup_status` (`backend/app/api/setup.py`) | public | `apifn:lib/api/setup.setupApi.getStatus` |
-| POST | `/api/setup/initialize` | `initialize_system` (`backend/app/api/setup.py`) | public | `apifn:lib/api/setup.setupApi.initialize` |
 
 ## Tables
-`users` (read), `refresh_tokens` (insert on issue, `revoked` flag on rotate/logout), `audit_logs` (login/refresh/logout events), `permissions`, `roles`, `role_permissions`, `user_roles` (seeded by `POST /api/setup/initialize`).
+`users` (read), `refresh_tokens` (insert on issue, `revoked` flag on rotate/logout), `audit_logs` (login/refresh/logout events), `permissions`, `roles`, `role_permissions`, `user_roles` (seeded by `ensure_default_admin` on first start).
 
 ## Change guide
 - New token claim: `backend/app/core/security.py` (`create_access_token`), read it in `backend/app/core/auth.py`; the browser never reads tokens (httpOnly cookies).
@@ -78,11 +79,13 @@ Username/password login, JWT access + refresh tokens (refresh tokens persisted a
 - `AuthService.refresh_tokens` revokes the presented refresh token and issues a new pair (rotation). Reusing a revoked token returns 401.
 - `POST /api/auth/token` is the OAuth2 form endpoint used by `oauth2_scheme` (`tokenUrl="/api/auth/token"`); the frontend uses `POST /api/auth/login` (JSON).
 - `get_current_user` rejects inactive users with 401; `login` returns 400 for inactive users after a correct password.
-- `frontend/app/auth/setup/page.tsx` redirects to `/auth/login` when `setupApi.getStatus` reports `initialized`; its last step calls `setupApi.initialize`, then `AuthContext.login`, then `librariesApi.create`, and does not re-initialize on retry after a failed library step. `authApi.refresh` is not called anywhere (the client refreshes with its own `fetch` in `doRefresh`).
-- `POST /api/setup/initialize` returns 409 once any user exists; it seeds the 7 permissions and 4 roles (`RoleName`) and makes the user a superuser with the Administrator role.
+- First start: the FastAPI lifespan in `backend/main.py` calls `ensure_default_admin`; on a database without users it seeds the 7 permissions and 4 roles and creates `DEFAULT_ADMIN_USERNAME`/`DEFAULT_ADMIN_PASSWORD` (default `admin`/`admin`) as a superuser Administrator with `users.must_change_password = true`.
+- While `must_change_password` is set, `get_current_active_user` returns 403 for every path except `PASSWORD_CHANGE_PATHS` (`/api/auth/change-password`, `/api/auth/logout-all`); `/api/auth/me` (plain `get_current_user`) still answers. `GET /api/setup/status` returns `default_login` (the username) while the default administrator has the flag, and the login page shows it. The frontend sends a flagged user to `/auth/setup` (login page and `AppShell`); its last step calls `authApi.changePassword("", new)` (no current password needed while flagged), `usersApi.update` when the username or email changed, `librariesApi.create`, the IGDB settings, `scansApi.runFull`, then `AuthContext.refreshUser`.
+- `python -m scripts.reset_password <username>` sets the default password again, reactivates the account, sets the flag and ends its sessions. `authApi.refresh` is not called anywhere (the client refreshes with its own `fetch` in `doRefresh`).
+- Deleted (soft) or deactivated users: `_user_from_token` and `AuthService.refresh_tokens` use `UserRepository.get_active` and reject them; `delete_user` also ends their sessions.
 - `useRequireAdmin` checks `user.is_superuser`, not permissions.
 - Browser sessions use httpOnly cookies set by `POST /api/auth/login` and `/auth/refresh` (`set_auth_cookies` in `backend/app/core/auth.py`): `ludexis_access` (path `/`, access lifetime) and `ludexis_refresh` (path `/api/auth`, refresh lifetime), `SameSite=Lax`, `Secure` over HTTPS. `get_current_user` accepts the Authorization header first, then the cookie; cookie-authenticated POST/PUT/PATCH/DELETE must send `X-Requested-With` (`require_csrf_header`), which `apiClient` always sends.
 - A cookie refresh (no body) renews the cookies and returns no tokens in the body; `/auth/token` and body refreshes still return tokens for tooling. `/auth/logout` revokes the body or cookie refresh token and clears both cookies.
 - `LoginRateLimiter` (Redis key `login-failures:<username>:<ip>`): 5 failures within 15 minutes return 429 with `Retry-After`, even for the right password; a success clears the counter; if Redis is down logins are not limited.
 - Ending sessions (`AuthService.end_sessions`): sets `users.sessions_revoked_at` and revokes every refresh token of the user; `_user_from_token` rejects access tokens whose `iat` is older (401 "Session ended"), so stolen access tokens stop working at once instead of after 15 minutes.
-- `POST /api/auth/change-password` checks the current password (failures count against the login rate limiter for that username and address), requires 8+ characters, ends every session, then issues new tokens and cookies for the caller (tokens in the body only for Authorization-header callers). `POST /api/auth/logout-all` ends every session including the caller's and clears the cookies. Both are on the account page (`AccountSecurityCard`).
+- `POST /api/auth/change-password` checks the current password (failures count against the login rate limiter for that username and address), requires 8+ characters and a password different from the current one, clears `must_change_password`, ends every session, then issues new tokens and cookies for the caller (tokens in the body only for Authorization-header callers). `POST /api/auth/logout-all` ends every session including the caller's and clears the cookies. Both are on the account page (`AccountSecurityCard`).

@@ -88,17 +88,18 @@ frontend/components/layout/header.tsx -> useAuth().logout()
   -> clearTokens(); user=null   (errors from the request are ignored)
 ```
 
-## 6. First-run setup (backend only)
+## 6. First start and first sign-in
 ```
-GET /api/setup/status  -> setup_status()       -> UserRepository.has_any(db) -> {initialized}
-POST /api/setup/initialize (UserCreate)
-  -> initialize_system(data, db)               backend/app/api/setup.py
-     -> UserRepository.has_any -> 409 if true
-     -> UserRepository.get_by_username / get_by_email -> 400 on conflict
-     -> seed_permissions(db) ; seed_roles(db, permissions)
-     -> hash_password ; UserRepository.create(... is_superuser=True) ; append Administrator role
+uvicorn start -> lifespan (backend/main.py) -> ensure_default_admin(db)      backend/app/services/bootstrap.py
+  -> UserRepository.has_any -> return if true
+  -> seed_permissions ; seed_roles ; User(DEFAULT_ADMIN_*, is_superuser, must_change_password=True)
+GET /api/setup/status -> setup_status() -> {initialized, default_login}
+LoginPage -> AuthContext.login -> user.must_change_password -> /auth/setup
+  any other API call -> get_current_active_user -> 403 "Change the default password first"
+SetupPage finish -> POST /api/auth/change-password {new_password} -> flag cleared, sessions ended, new cookies
+                 -> PATCH /api/users/{id} (username/email) -> POST /api/libraries/ -> PATCH /api/admin/settings (IGDB)
+                 -> POST /api/scan/full -> AuthContext.refreshUser -> /
 ```
-The frontend setup page (`frontend/app/auth/setup/page.tsx`) does not call these endpoints; `setupApi` is unused.
 
 ## Entities
-`router:app.api.auth`, `router:app.api.setup`, `service:app.services.auth.AuthService`, `service:app.services.audit.AuditService`, `repo:app.repositories.user.UserRepository`, `repo:app.repositories.refresh_token.RefreshTokenRepository`, `module:app.core.security`, `module:app.core.auth`, `table:users`, `table:refresh_tokens`, `table:audit_logs`, `ctx:contexts/auth-context`, `hook:hooks/use-protected-route`, `apimod:lib/api/auth`, `apimod:lib/api/client`, `lib:lib/auth/session`, `module:app.core.rate_limit`, `page:/auth/login`.
+`router:app.api.auth`, `router:app.api.setup`, `module:app.services.bootstrap`, `service:app.services.auth.AuthService`, `service:app.services.audit.AuditService`, `repo:app.repositories.user.UserRepository`, `repo:app.repositories.refresh_token.RefreshTokenRepository`, `module:app.core.security`, `module:app.core.auth`, `table:users`, `table:refresh_tokens`, `table:audit_logs`, `ctx:contexts/auth-context`, `hook:hooks/use-protected-route`, `apimod:lib/api/auth`, `apimod:lib/api/client`, `lib:lib/auth/session`, `module:app.core.rate_limit`, `page:/auth/login`.

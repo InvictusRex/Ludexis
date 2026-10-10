@@ -60,7 +60,7 @@ Writes follow the same shape with `Depends(require_permission(PermissionName.X))
 |---|---|
 | `backend/app/api/users.py` | `UserRepository`, `RoleRepository` (no service) |
 | `backend/app/api/roles.py`, `backend/app/api/permissions.py` | `RoleRepository`, `PermissionRepository` |
-| `backend/app/api/setup.py` | `UserRepository` plus raw `db.query(Permission/Role)` in `seed_permissions`/`seed_roles` |
+| `backend/app/api/setup.py` | `UserRepository` |
 | `backend/app/api/auth.py` | `RefreshTokenRepository` (besides `AuthService`) |
 | `backend/app/api/scan.py` | `JobHistoryRepository.count_by_status` |
 | `backend/app/api/admin.py` | `RoleRepository.list_items` |

@@ -5,7 +5,7 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 ## Files
 | File | Role | Key symbols |
 |---|---|---|
-| `backend/app/api/users.py` | Router `/users` | `list_users`, `create_user`, `read_user`, `update_user`, `delete_user`, `activate_user`, `deactivate_user`, `reset_password`, `_require_manage_users_if_initialized`, `_load_roles`, `_get_user_or_404` |
+| `backend/app/api/users.py` | Router `/users` | `list_users`, `create_user`, `read_user`, `update_user`, `delete_user`, `activate_user`, `deactivate_user`, `reset_password`, `_load_roles`, `_get_user_or_404` |
 | `backend/app/api/roles.py` | Router `/roles` | `list_roles`, `create_role`, `read_role`, `update_role`, `delete_role`, `_load_permissions` |
 | `backend/app/api/permissions.py` | Router `/permissions` | `list_permissions`, `create_permission`, `read_permission` |
 | `backend/app/core/auth.py` | Enforcement | `ensure_permission`, `require_permission` |
@@ -18,7 +18,6 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 | `backend/app/schemas/user.py` | Schemas | `UserCreate`, `UserUpdate`, `UserRead` |
 | `backend/app/schemas/role.py` | Schemas | `RoleCreate`, `RoleUpdate`, `RoleRead` |
 | `backend/app/schemas/permission.py` | Schemas | `PermissionCreate`, `PermissionRead` |
-| `backend/seed_rbac.py` | Standalone seed script | seeds permissions + roles |
 | `frontend/app/admin/users/page.tsx` | User admin page | `usersApi.*`, `rolesApi.getAll` |
 | `frontend/app/admin/permissions/page.tsx` | Role/permission admin page | `rolesApi.getAll/create/remove`, `permissionsApi.getAll`, `adminApi.getPermissionReport` |
 | `frontend/components/common/effective-permissions-panel.tsx` | Component | `EffectivePermissionsPanel` |
@@ -35,7 +34,7 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 | Model | `model:app.models.role.Role`, `model:app.models.permission.Permission` |
 | Schema | `schema:app.schemas.user.UserCreate`, `schema:app.schemas.user.UserUpdate`, `schema:app.schemas.user.UserRead`, `schema:app.schemas.role.RoleRead`, `schema:app.schemas.permission.PermissionRead` |
 | DBEnum | `dbenum:permission_name`, `dbenum:role_name` (Python-only enums, see Notes) |
-| Module | `module:app.core.auth`, `module:app.utils.enums`, `module:seed_rbac` |
+| Module | `module:app.core.auth`, `module:app.utils.enums`, `module:app.services.bootstrap` |
 | Table | `table:users`, `table:roles`, `table:permissions`, `table:user_roles`, `table:role_permissions` |
 | Page | `page:/admin/users`, `page:/admin/permissions` |
 | Component | `comp:components/common/effective-permissions-panel` |
@@ -78,7 +77,7 @@ Users, roles and permissions. A user holds roles (`user_roles`), a role holds pe
 `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `audit_logs` (user/role changes).
 
 ## Change guide
-- New permission: add a member to `PermissionName` in `backend/app/utils/enums.py`, add it to role defaults in `seed_roles` (`backend/app/api/setup.py`) and `backend/seed_rbac.py`, then guard routes with `Depends(require_permission(PermissionName.NEW))`.
+- New permission: add a member to `PermissionName` in `backend/app/utils/enums.py`, add it to role defaults in `seed_roles` (`backend/app/services/bootstrap.py`), then guard routes with `Depends(require_permission(PermissionName.NEW))`.
 - New role field: `backend/app/models/role.py`, `backend/app/schemas/role.py`, migration in `backend/alembic/versions/`, `frontend/lib/types/role.ts`, form in `frontend/app/admin/permissions/page.tsx`.
 - New user admin action: handler in `backend/app/api/users.py` (log with `AuditLogService.log` + an `AuditAction` constant in `backend/app/utils/audit_actions.py`), method on `usersApi` in `frontend/lib/api/users.ts`, button in `frontend/app/admin/users/page.tsx`.
 
