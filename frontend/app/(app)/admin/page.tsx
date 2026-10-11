@@ -35,24 +35,20 @@ async function loadHealth() {
 }
 
 interface ServerInfo {
-  stats?: AdminStats;
   queue?: JobMonitorStats;
   workers?: JobMonitorWorker;
   scans?: ScanStatus;
 }
 
+// Asking the workers waits on Celery replies, so it loads apart from the library totals.
 async function loadServer(): Promise<ServerInfo> {
-  const [stats, queue, workers, scans] = await Promise.allSettled([
-    adminApi.getStats(),
+  const [queue, workers, scans] = await Promise.allSettled([
     jobMonitorApi.getStats(),
     jobMonitorApi.getWorkers(),
     scansApi.getStatus(),
   ]);
   const ok = <T,>(result: PromiseSettledResult<T>) => (result.status === "fulfilled" ? result.value : undefined);
-  if (stats.status === "rejected") {
-    throw stats.reason;
-  }
-  return { stats: stats.value, queue: ok(queue), workers: ok(workers), scans: ok(scans) };
+  return { queue: ok(queue), workers: ok(workers), scans: ok(scans) };
 }
 
 async function loadJobs() {
@@ -69,6 +65,7 @@ export default function DashboardOverview() {
   const canScan = can(user, "RUN_SCANS");
 
   const health = useApi(loadHealth, []);
+  const stats = useApi(() => (isAdmin ? adminApi.getStats() : Promise.resolve(null)), [isAdmin]);
   const server = useApi(() => (isAdmin ? loadServer() : Promise.resolve(null)), [isAdmin]);
   const jobs = useApi(loadJobs, []);
 
@@ -94,10 +91,10 @@ export default function DashboardOverview() {
 
       {isAdmin && (
         <LibraryStats
-          stats={server.data?.stats}
-          loading={server.loading}
-          failed={Boolean(server.error)}
-          onRetry={server.reload}
+          stats={stats.data ?? undefined}
+          loading={stats.loading}
+          failed={Boolean(stats.error)}
+          onRetry={stats.reload}
           canReview={can(user, "EDIT_METADATA")}
         />
       )}

@@ -83,6 +83,15 @@ describe("DashboardOverview", () => {
     expect(screen.getByText("30%")).toBeInTheDocument();
   });
 
+  it("shows library totals without waiting for the workers to answer", async () => {
+    setup();
+    vi.mocked(jobMonitorApi.getStats).mockReturnValue(new Promise(() => {}));
+    vi.mocked(jobMonitorApi.getWorkers).mockReturnValue(new Promise(() => {}));
+    cleanup();
+    render(<DashboardOverview />);
+    expect(await screen.findByText("128")).toBeInTheDocument();
+  });
+
   it("points to games still waiting for review", async () => {
     setup(admin, 2);
     const attention = await screen.findByRole("region", { name: "Needs attention" });
