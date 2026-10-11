@@ -98,9 +98,9 @@ describe("DashboardTasks", () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
     vi.mocked(jobsApi.cancel).mockResolvedValue(job);
     renderPage();
-    expect(await screen.findByText("Full library scan")).toBeInTheDocument();
+    // The job name is also a filter option, so wait for the row's own button rather than the text.
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
     expect(jobsApi.getAll).toHaveBeenCalledWith(undefined, undefined, 0, 26);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(jobsApi.cancel).toHaveBeenCalledWith("job-1"));
     vi.unstubAllGlobals();
   });
