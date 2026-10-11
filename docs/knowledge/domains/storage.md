@@ -36,6 +36,7 @@ None. Paths stored in `archive_entries.cover_path`/`banner_path`/`logo_path` and
 ## Notes
 - `StorageService.__init__` creates `base_dir` if missing; `backend/main.py` also creates it at import time.
 - `read_media` resolves the requested path and returns 404 if it escapes `media_dir` or is not a file (path traversal guard).
-- Responses carry `Cache-Control: private, no-cache`: covers are rewritten in place (same file name), so browsers must revalidate by ETag (a 304 when unchanged) instead of reusing stale art.
+- `StorageService.save` passes every file through `optimize_artwork` (`backend/app/utils/artwork.py`): banners, screenshots and franchise images become WebP q85 (banners at most 1920 px wide), logos lossless WebP, covers keep their bytes; the name gets a version from the contents (`covers/<id>.v<10 hex>.jpg`). `save` returns that stored path, so callers must use it. Art saved before this is converted by `ArtworkService.optimize_stored_artwork` in the artwork validation job; the old files are left to `garbage_collect_artwork`.
+- Versioned names never change contents, so they are sent with `Cache-Control: private, max-age=31536000, immutable`; any other name gets `private, no-cache` (revalidated by ETag).
 - `/media/{path:path}` requires an active user via `get_current_active_user` (`backend/main.py`): the `ludexis_access` cookie, which `<img>` requests send automatically, or a Bearer header. No token ever goes into a URL; `mediaUrl()` in `frontend/lib/media.ts` only joins `config.mediaBaseUrl` and the path.
 - `/media` is mounted outside `settings.API_PREFIX`, so the full URL has no `/api` prefix.

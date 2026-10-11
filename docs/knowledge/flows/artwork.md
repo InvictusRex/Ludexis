@@ -93,14 +93,13 @@ Not wired to any route or task: `deduplicate_artwork` (SHA-256 via `_file_sha256
 
 ## 6. Serving files
 ```
-AuthContext.renewMediaToken()  after login/init and within 5 min of expiry      frontend/contexts/auth-context.tsx
 <img src={mediaUrl(entry.cover_path)}>                            frontend/lib/media.ts
   -> "{config.mediaBaseUrl}/{path}"   (/media behind the proxy; the browser sends the ludexis_access cookie)
   GET /media/{path:path}                                          backend/main.py
   -> read_media(path, current_user=Depends(get_current_active_user))
        get_current_active_user: Bearer header, else ludexis_access cookie ; 401 otherwise
      resolve under media_dir (= StorageService().base_dir) ; 404 if outside or not a file
-  <- FileResponse, Cache-Control: private, no-cache (artwork is replaced under the same name; the browser revalidates by ETag)
+  <- FileResponse, Cache-Control: private, max-age=31536000, immutable for versioned names (is_versioned), else private, no-cache
 ```
 Access tokens are never accepted in the URL.
 
