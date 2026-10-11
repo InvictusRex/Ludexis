@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { developersApi } from "@/lib/api";
+import { developersApi, franchisesApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { TaxonomyIndex } from "./taxonomy-index";
 
@@ -10,7 +10,7 @@ vi.mock("@/contexts/auth-context", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/api", () => ({
   developersApi: { getAll: vi.fn() },
   publishersApi: {},
-  franchisesApi: {},
+  franchisesApi: { getAll: vi.fn() },
   tagsApi: {},
 }));
 
@@ -42,6 +42,23 @@ describe("TaxonomyIndex", () => {
     expect(links.map((link) => link.textContent)).toEqual(["Bethesda0 games", "Black Lime Games2 games"]);
     expect(links[1]).toHaveAttribute("href", "/developers/d1");
     expect(screen.getByText("3 developers")).toBeInTheDocument();
+  });
+
+  it("shows franchises as image cards, A–Z, without a jump bar", async () => {
+    setup(false);
+    cleanup();
+    vi.mocked(franchisesApi.getAll).mockResolvedValue({
+      items: [
+        { id: "f2", name: "Skybound Saga", entry_count: 4, image_path: "banners/sky.jpg" },
+        { id: "f1", name: "Iron Tide", entry_count: 2, image_path: null },
+      ],
+      total: 2,
+    });
+    render(<TaxonomyIndex kind="franchises" />);
+
+    const cards = await screen.findAllByRole("link", { name: /games$/ });
+    expect(cards.map((card) => card.getAttribute("href"))).toEqual(["/franchises/f1", "/franchises/f2"]);
+    expect(screen.queryByRole("navigation", { name: "Jump to letter" })).not.toBeInTheDocument();
   });
 
   it("enables only the letters that have entries in the jump bar", async () => {

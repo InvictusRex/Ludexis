@@ -33,4 +33,23 @@ export const franchisesApi = {
     return apiClient.delete<void>(`/franchises/${id}`);
   },
 
+  /** Images to choose from: stored paths of its games' art, and SteamGridDB URLs. */
+  async imageCandidates(id: string): Promise<string[]> {
+    return apiClient.get<string[]>(`/franchises/${id}/image-candidates`);
+  },
+
+  async chooseImage(id: string, source: string): Promise<Franchise> {
+    return apiClient.put<Franchise>(`/franchises/${id}/image`, { source });
+  },
+
+  async uploadImage(id: string, file: File): Promise<Franchise> {
+    const form = new FormData();
+    form.set("file", file);
+    return apiClient.post<Franchise>(`/franchises/${id}/image`, form);
+  },
+
+  /** Back to the automatic image. */
+  async resetImage(id: string): Promise<Franchise> {
+    return apiClient.delete<Franchise>(`/franchises/${id}/image`);
+  },
 };

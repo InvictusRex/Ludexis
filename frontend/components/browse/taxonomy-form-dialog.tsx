@@ -49,10 +49,7 @@ export const TAXONOMY_FIELDS = {
   ],
   developers: [DESCRIPTION_FIELD, WEBSITE_FIELD],
   publishers: [DESCRIPTION_FIELD, WEBSITE_FIELD],
-  franchises: [
-    DESCRIPTION_FIELD,
-    { key: "banner_path", label: "Banner image", placeholder: "Path or URL" },
-  ],
+  franchises: [DESCRIPTION_FIELD],
 } as const satisfies Record<string, readonly TaxonomyField<string>[]>;
 
 interface TaxonomyFormDialogProps<K extends string> {

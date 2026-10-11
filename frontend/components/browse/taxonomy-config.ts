@@ -11,6 +11,7 @@ export type TaxonomyItem = {
   description?: string | null;
   website?: string | null;
   color?: string | null;
+  image_path?: string | null;
   entry_count: number;
 };
 
@@ -30,6 +31,8 @@ export interface TaxonomyKind {
   sort: LibrarySort;
   /** Short names read better as a cloud of chips than as rows. */
   chips?: boolean;
+  /** Shown as image cards instead of an A–Z list. */
+  cards?: boolean;
   api: {
     getAll(offset: number, limit: number): Promise<{ items: TaxonomyItem[]; total: number }>;
     getById(id: string): Promise<TaxonomyItem>;
@@ -71,6 +74,7 @@ export const TAXONOMIES = {
     permission: "EDIT_METADATA",
     fields: TAXONOMY_FIELDS.franchises,
     sort: "release_date",
+    cards: true,
     api: franchisesApi,
   },
   tags: {

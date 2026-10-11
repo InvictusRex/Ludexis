@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { archiveApi, collectionsApi, franchisesApi } from "@/lib/api";
-import type { ArchiveEntry, Franchise } from "@/lib/types";
+import type { ArchiveEntry } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useApi } from "@/hooks/use-api";
 import { canSeeDashboard } from "@/lib/permissions";
-import { plural, year } from "@/lib/format";
+import { year } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Page } from "@/components/shell/page";
 import { EmptyState } from "@/components/brand/empty-state";
-import { Shot } from "@/components/media/art";
+import { FRANCHISE_CARD_WIDTH, FranchiseCard } from "@/components/browse/franchise-card";
 import { BackdropHero } from "@/components/media/backdrop-hero";
 import { PosterCard } from "@/components/media/poster-card";
 import { PosterSkeletons } from "@/components/media/poster-grid";
@@ -128,7 +128,7 @@ export default function Home() {
         )}
 
         {franchiseList.length > 0 && (
-          <Shelf title="Franchises" href="/franchises" itemClassName="w-[220px] sm:w-[260px]">
+          <Shelf title="Franchises" href="/franchises" itemClassName={FRANCHISE_CARD_WIDTH}>
             {franchiseList.map((franchise) => (
               <FranchiseCard key={franchise.id} franchise={franchise} />
             ))}
@@ -253,20 +253,6 @@ function Spotlight({ entry, children }: { entry: ArchiveEntry; children?: React.
       </div>
       {children}
     </BackdropHero>
-  );
-}
-
-function FranchiseCard({ franchise }: { franchise: Franchise }) {
-  return (
-    <Link href={`/franchises/${franchise.id}`} className="group block rounded-md outline-none">
-      <div className="relative rounded-md transition-shadow group-hover:shadow-[0_0_0_1px_var(--violet-lit)] group-focus-visible:shadow-[0_0_0_2px_var(--violet-lit)]">
-        <Shot path={franchise.banner_path} alt="" className="bg-[radial-gradient(120%_120%_at_30%_20%,rgb(91_53_163/0.45),var(--stone)_70%)]" />
-        <div className="absolute inset-0 flex items-end rounded-md bg-gradient-to-t from-night/90 via-night/30 to-transparent p-3">
-          <span className="line-clamp-2 font-display text-base font-semibold text-parchment">{franchise.name}</span>
-        </div>
-      </div>
-      <p className="mt-2 px-0.5 text-xs tabular text-ash">{plural(franchise.entry_count, "game")}</p>
-    </Link>
   );
 }
 

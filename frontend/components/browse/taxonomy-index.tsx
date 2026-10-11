@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/brand/empty-state";
 import { Page, PageHeader } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FranchiseCard } from "./franchise-card";
 import { TaxonomyFormDialog } from "./taxonomy-form-dialog";
 import {
   LETTERS,
@@ -27,6 +28,9 @@ import {
 } from "./taxonomy-config";
 
 const anchor = (letter: string) => `letter-${letter === "#" ? "0" : letter}`;
+
+// Fixed-width columns, so cards keep the size they have in the home page row.
+const CARD_GRID = "grid grid-cols-[repeat(auto-fill,220px)] gap-x-4 gap-y-6 pt-4 sm:grid-cols-[repeat(auto-fill,260px)] sm:gap-x-5";
 
 /** Every developer (or publisher, franchise, tag) A–Z, with a jump bar and a name filter. */
 export function TaxonomyIndex({ kind: key }: { kind: TaxonomyKey }) {
@@ -63,7 +67,7 @@ export function TaxonomyIndex({ kind: key }: { kind: TaxonomyKey }) {
       />
     );
   } else if (!list.data) {
-    content = <IndexSkeleton />;
+    content = kind.cards ? <CardSkeleton /> : <IndexSkeleton />;
   } else if (list.data.length === 0) {
     content = (
       <EmptyState
@@ -88,6 +92,7 @@ export function TaxonomyIndex({ kind: key }: { kind: TaxonomyKey }) {
               className="pl-9"
             />
           </div>
+          {!kind.cards && (
           <nav aria-label="Jump to letter" className="-mx-1 flex min-w-0 overflow-x-auto px-1">
             {LETTERS.map((letter) =>
               present.has(letter) ? (
@@ -109,6 +114,7 @@ export function TaxonomyIndex({ kind: key }: { kind: TaxonomyKey }) {
               ),
             )}
           </nav>
+          )}
         </div>
 
         {groups.length === 0 ? (
@@ -121,6 +127,14 @@ export function TaxonomyIndex({ kind: key }: { kind: TaxonomyKey }) {
               </Button>
             }
           />
+        ) : kind.cards ? (
+          <ul className={CARD_GRID}>
+            {groups.flatMap(({ items }) => items).map((item) => (
+              <li key={item.id}>
+                <FranchiseCard franchise={item} />
+              </li>
+            ))}
+          </ul>
         ) : (
           groups.map(({ letter, items }) => (
             <section
@@ -215,6 +229,19 @@ function ChipList({ kind, items }: { kind: TaxonomyKind; items: TaxonomyItem[] }
         </li>
       ))}
     </ul>
+  );
+}
+
+function CardSkeleton() {
+  return (
+    <div aria-hidden="true" className={CARD_GRID}>
+      {Array.from({ length: 8 }, (_, index) => (
+        <div key={index}>
+          <div className="aspect-video animate-pulse rounded-md bg-stone" />
+          <div className="mt-2 h-3 w-12 animate-pulse rounded bg-stone" />
+        </div>
+      ))}
+    </div>
   );
 }
 

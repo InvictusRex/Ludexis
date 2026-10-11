@@ -3,18 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, ExternalLink, LibraryBig, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ExternalLink, ImageIcon, LibraryBig, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { useApi } from "@/hooks/use-api";
 import { ApiError } from "@/lib/errors";
 import { plural } from "@/lib/format";
 import { can } from "@/lib/permissions";
+import type { Franchise } from "@/lib/types";
 import { toastSuccess } from "@/lib/toast";
 import { EmptyState } from "@/components/brand/empty-state";
 import { PosterGrid, PosterSkeletons } from "@/components/media/poster-grid";
 import { Page, PageHeader } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "./confirm-dialog";
+import { FranchiseImageDialog } from "./franchise-image-dialog";
 import { GameGrid, useGamePages } from "./game-grid";
 import { TaxonomyFormDialog } from "./taxonomy-form-dialog";
 import { TAXONOMIES, capitalize, type TaxonomyKey, type TaxonomyKind } from "./taxonomy-config";
@@ -27,6 +29,7 @@ export function TaxonomyDetail({ kind: key }: { kind: TaxonomyKey }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [choosingImage, setChoosingImage] = useState(false);
   const item = useApi(() => kind.api.getById(id), [key, id]);
   const games = useGamePages(
     item.data ? { [kind.filter]: item.data.name, group_versions: true, sort: kind.sort } : null,
@@ -128,6 +131,12 @@ export function TaxonomyDetail({ kind: key }: { kind: TaxonomyKey }) {
                   <Pencil />
                   Edit
                 </Button>
+                {key === "franchises" && (
+                  <Button variant="outline" onClick={() => setChoosingImage(true)}>
+                    <ImageIcon />
+                    Image
+                  </Button>
+                )}
                 <Button variant="ghost" onClick={() => setDeleting(true)} className="text-ember hover:text-ember">
                   <Trash2 />
                   Delete
@@ -160,6 +169,14 @@ export function TaxonomyDetail({ kind: key }: { kind: TaxonomyKey }) {
           toastSuccess("Changes saved");
         }}
       />
+      {key === "franchises" && (
+        <FranchiseImageDialog
+          franchise={item.data as Franchise}
+          open={choosingImage}
+          onOpenChange={setChoosingImage}
+          onChanged={item.setData}
+        />
+      )}
       <ConfirmDialog
         open={deleting}
         onOpenChange={setDeleting}
