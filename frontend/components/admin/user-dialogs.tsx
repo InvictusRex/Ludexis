@@ -273,11 +273,13 @@ export function UserAccessDialog({
 }) {
   const collections = useApi(() => (user ? collectionsApi.getAll(0, 500, undefined, true) : Promise.resolve([])), [user]);
   const [allowRestricted, setAllowRestricted] = useState(false);
+  const [restrictedOnly, setRestrictedOnly] = useState(false);
   const [blocked, setBlocked] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setAllowRestricted(user?.allow_restricted ?? false);
+    setRestrictedOnly(user?.restricted_only ?? false);
     setBlocked(user?.blocked_collection_ids ?? []);
   }, [user]);
 
@@ -288,7 +290,11 @@ export function UserAccessDialog({
     if (!user) return;
     setSaving(true);
     try {
-      await usersApi.update(user.id, { allow_restricted: allowRestricted, blocked_collection_ids: blocked });
+      await usersApi.update(user.id, {
+        allow_restricted: allowRestricted,
+        restricted_only: allowRestricted && restrictedOnly,
+        blocked_collection_ids: blocked,
+      });
       toastSuccess(`Access saved for ${user.username}`);
       onOpenChange(false);
       onSaved();
@@ -312,26 +318,24 @@ export function UserAccessDialog({
         <fieldset className="space-y-2">
           <legend className="text-sm font-medium text-parchment">Allow restricted content</legend>
           <p className="text-xs text-ash">
-            Games a metadata source rates 18+, or that an admin marked restricted. Without it, games this user adds are
+            Games a metadata source flags as restricted, or that an admin marked restricted. Without it, games this user adds are
             also never matched against restricted sources such as VNDB.
           </p>
-          <div role="radiogroup" aria-label="Allow restricted content" className="inline-flex rounded-lg border border-seam p-0.5">
-            {[true, false].map((value) => (
-              <button
-                key={String(value)}
-                type="button"
-                role="radio"
-                aria-checked={allowRestricted === value}
-                onClick={() => setAllowRestricted(value)}
-                className={cn(
-                  "h-8 rounded-md px-4 text-sm font-medium transition-colors",
-                  allowRestricted === value ? "bg-violet text-parchment" : "text-ash hover:text-parchment",
-                )}
-              >
-                {value ? "Yes" : "No"}
-              </button>
-            ))}
-          </div>
+          <YesNo label="Allow restricted content" value={allowRestricted} onChange={setAllowRestricted} />
+        </fieldset>
+
+        <fieldset className="space-y-2" disabled={!allowRestricted}>
+          <legend className={cn("text-sm font-medium", allowRestricted ? "text-parchment" : "text-ash")}>
+            Show only restricted content
+          </legend>
+          <p className="text-xs text-ash">
+            Everything else is hidden for this user. Needs restricted content to be allowed.
+          </p>
+          <YesNo
+            label="Show only restricted content"
+            value={allowRestricted && restrictedOnly}
+            onChange={setRestrictedOnly}
+          />
         </fieldset>
 
         <div aria-hidden="true" className="border-t border-seam" />
@@ -387,5 +391,27 @@ export function UserAccessDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function YesNo({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg border border-seam p-0.5">
+      {[true, false].map((option) => (
+        <button
+          key={String(option)}
+          type="button"
+          role="radio"
+          aria-checked={value === option}
+          onClick={() => onChange(option)}
+          className={cn(
+            "h-8 rounded-md px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+            value === option ? "bg-violet text-parchment" : "text-ash hover:text-parchment",
+          )}
+        >
+          {option ? "Yes" : "No"}
+        </button>
+      ))}
+    </div>
   );
 }

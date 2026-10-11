@@ -8,6 +8,8 @@ export interface User {
   is_superuser: boolean;
   /** Sees games marked restricted. */
   allow_restricted?: boolean;
+  /** With allow_restricted, sees restricted games and nothing else. */
+  restricted_only?: boolean;
   /** Games in these collections are hidden from the user. */
   blocked_collection_ids?: string[];
   created_at?: string;
@@ -33,5 +35,6 @@ export interface UserUpdate {
   is_superuser?: boolean | null;
   role_ids?: string[] | null;
   allow_restricted?: boolean | null;
+  restricted_only?: boolean | null;
   blocked_collection_ids?: string[] | null;
 }

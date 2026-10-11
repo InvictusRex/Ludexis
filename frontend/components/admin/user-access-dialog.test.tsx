@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { collectionsApi, usersApi } from "@/lib/api";
 import type { Collection, User } from "@/lib/types";
 import { UserAccessDialog } from "./user-dialogs";
@@ -29,12 +29,20 @@ describe("UserAccessDialog", () => {
     render(<UserAccessDialog user={user} onOpenChange={vi.fn()} onSaved={onSaved} />);
 
     expect(collectionsApi.getAll).toHaveBeenCalledWith(0, 500, undefined, true);
-    fireEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    const only = screen.getByRole("radiogroup", { name: "Show only restricted content" });
+    expect(within(only).getByRole("radio", { name: "Yes" })).toBeDisabled();
+
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Allow restricted content" })).getByRole("radio", { name: "Yes" }));
+    fireEvent.click(within(only).getByRole("radio", { name: "Yes" }));
     fireEvent.click(await screen.findByRole("checkbox", { name: "Backlog" }));
     fireEvent.click(screen.getByRole("button", { name: "Save access" }));
 
     await waitFor(() =>
-      expect(usersApi.update).toHaveBeenCalledWith("u1", { allow_restricted: true, blocked_collection_ids: ["c2"] }),
+      expect(usersApi.update).toHaveBeenCalledWith("u1", {
+        allow_restricted: true,
+        restricted_only: true,
+        blocked_collection_ids: ["c2"],
+      }),
     );
     expect(onSaved).toHaveBeenCalled();
   });
