@@ -6,12 +6,13 @@ From the admin button to `archive_entries` rows. Domain doc: `docs/knowledge/dom
 ```
 frontend/components/admin/scan-buttons.tsx -> scansApi.runFull() | scansApi.runIncremental()     frontend/lib/api/scans.ts
 frontend/app/admin/page.tsx         -> scansApi.runFull()
+frontend/app/(app)/admin/libraries/page.tsx -> scansApi.runIncremental(library.id) (row Scan button) | runFull(library.id) (row menu)
 frontend/components/admin/jobs-panel.tsx -> jobsApi.start("LIBRARY_SCAN" | "INCREMENTAL_SCAN")  (same backend path via /api/jobs/start)
-  POST /api/scan/full   | POST /api/scan/incremental                    RUN_SCANS
+  POST /api/scan/full   | POST /api/scan/incremental  [?library_id=]   RUN_SCANS ; unknown or deleted library -> 404
   -> start_full_scan | start_incremental_scan (current_user, db)        backend/app/api/scan.py
      -> JobService.start_job(db, current_user, JobType.LIBRARY_SCAN | JobType.INCREMENTAL_SCAN)
         -> JobHistoryRepository.create(... PENDING ...)
-        -> scan_full_task | scan_incremental_task .apply_async(args=[job.id])
+        -> scan_full_task | scan_incremental_task .apply_async(args=[job.id], kwargs={library_id} when given)
         -> JobHistoryRepository.update(db, job, {task_id, details})
      -> AuditService.log(db, action=AuditAction.RUN_FULL_SCAN | RUN_INCREMENTAL_SCAN, entity="Scan", user_id=...)
   <- 201 JobHistoryRead (status PENDING)
@@ -19,7 +20,7 @@ frontend/components/admin/jobs-panel.tsx -> jobsApi.start("LIBRARY_SCAN" | "INCR
 
 ## 2. Worker: shared job runner
 ```
-scan_full_task(self, job_history_id) | scan_incremental_task(...)      backend/app/tasks/scan_tasks.py
+scan_full_task(self, job_history_id, library_id=None) | scan_incremental_task(...)      backend/app/tasks/scan_tasks.py
   @celery_app.task(**JOB_TASK_OPTIONS)  bind, autoretry_for=(Exception,), retry_backoff (cap JOB_RETRY_BACKOFF_MAX), max_retries=JOB_MAX_RETRIES
   -> run_job(task, job_history_id, label, work)                         backend/app/tasks/job_runner.py
        job.status RUNNING ; job.retry_count = task.request.retries ; commit
@@ -27,12 +28,13 @@ scan_full_task(self, job_history_id) | scan_incremental_task(...)      backend/a
        stats = work(db, report, job.id)
        stats["cancelled"] -> CANCELED, else SUCCESS ; progress 100 ; result/details = summarize(stats) ; completed_at
        exception -> rollback ; FAILED ; result = error ; re-raise (Celery retries re-run the same row)
-  work = ScannerService.scan_full | scan_incremental(db, job_id=..., on_progress=report), then _queue_enrichment
+  work = ScannerService.scan_full | scan_incremental(db, job_id=..., on_progress=report, library_id=...), then _queue_enrichment
 ```
 
 ## 3. Discovery (`ScannerService._scan`)
 ```
 targets = enabled libraries from LibraryRepository.list_active(db)      (deleted_at IS NULL)
+          with library_id: only that library, enabled or not ; stats["library"] = its name
 items   = ScannerService._discover_items(Path(library.path)) per target  (everything discovered before processing)
   sorted(iterdir()); unreadable directory -> logged, skipped
   file with suffix in SUPPORTED_ARCHIVE_EXTENSIONS (.zip .rar .7z .iso .exe) -> _scan_file(path)
@@ -43,7 +45,9 @@ items   = ScannerService._discover_items(Path(library.path)) per target  (everyt
 incremental only: keep items where _needs_processing(item, {e.file_path: e for e in ArchiveEntryRepository.list_all(db)})
   (path unknown, or file_size / modified_time differ)
 for each item: _job_cancelled -> stats["cancelled"] ; return
-               _process_item(db, item, library_id, stats) ; on_progress(done, total)
+               _process_item(db, item, library.id, stats, on_chunk) ; on_progress(done, total)
+progress units: _progress_weight(item) = 1 + file_size // HASH_CHUNK (1 MiB) ; folders weigh 1
+  on_chunk(n) from _compute_file_hash -> on_progress(start + min(n, weight - 1), total), so a large archive moves the bar while it is hashed
 stats = {created, updated, moved, errors, cancelled, created_ids}
 ```
 

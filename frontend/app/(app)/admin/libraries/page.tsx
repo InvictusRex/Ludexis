@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
-import { librariesApi } from "@/lib/api";
+import { MoreHorizontal, Pencil, Plus, RefreshCw, ScanSearch, Trash2 } from "lucide-react";
+import { librariesApi, scansApi } from "@/lib/api";
 import type { LibraryRead } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useApi } from "@/hooks/use-api";
@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/brand/empty-state";
 import { SectionHeader, Status, dateTime } from "@/components/admin/common";
 import { LibraryDialog } from "@/components/admin/library-dialog";
 import { ScanButtons } from "@/components/admin/scan-buttons";
+import { announceJobsChanged } from "@/components/shell/jobs-indicator";
 
 export default function DashboardLibraries() {
   const { user, loading } = useAuth();
@@ -64,6 +65,19 @@ export default function DashboardLibraries() {
       libraries.reload();
     } catch (error) {
       toastError(error, "Could not remove the library");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const scan = async (library: LibraryRead, kind: "full" | "incremental") => {
+    setBusyId(library.id);
+    try {
+      await (kind === "full" ? scansApi.runFull(library.id) : scansApi.runIncremental(library.id));
+      toastSuccess(kind === "full" ? `Full scan of ${library.name} started` : `Scanning ${library.name} for changes`);
+      announceJobsChanged();
+    } catch (error) {
+      toastError(error, "Could not start the scan");
     } finally {
       setBusyId(null);
     }
@@ -149,7 +163,19 @@ export default function DashboardLibraries() {
                         onCheckedChange={(enabled) => toggle(library, enabled)}
                       />
                     </TableCell>
-                    <TableCell className="pr-5 text-right">
+                    <TableCell className="pr-5 text-right whitespace-nowrap">
+                      {can(user, "RUN_SCANS") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Scan ${library.name} for changes`}
+                          disabled={busyId === library.id}
+                          onClick={() => scan(library, "incremental")}
+                        >
+                          <ScanSearch />
+                          Scan
+                        </Button>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${library.name}`} disabled={busyId === library.id}>
@@ -157,6 +183,12 @@ export default function DashboardLibraries() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {can(user, "RUN_SCANS") && (
+                            <DropdownMenuItem onSelect={() => scan(library, "full")}>
+                              <RefreshCw />
+                              Full scan
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onSelect={() => openDialog(library)}>
                             <Pencil />
                             Edit
