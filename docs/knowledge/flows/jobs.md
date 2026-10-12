@@ -80,6 +80,7 @@ Cooperative checks while running:
                   SchedulerService.run -> JobService.start_job(db, None, job type) ; last_run_at, last_job_id
 worker start  worker_ready -> JobService.fail_stale_jobs(worker_restarted=True): RUNNING rows lost their worker
 ```
+A killed worker's message can be delivered again later; `run_job` returns without running when the row already ended (SUCCESS, FAILED or CANCELED) and the delivery is not a Celery retry (`task.request.retries == 0`), so a job swept as stale or cancelled is never revived.
 Scheduled jobs have `user_id = NULL`; "Run now" (`POST /api/admin/scheduled-tasks/{key}/run`) records the admin. Default rows are created by `SchedulerService.list_tasks` on first use with `last_run_at = now`, so a fresh install does not run every task at once. The library scan task is an incremental scan: offline libraries are skipped and checked again at the next run, and a library that came back gets a full rescan. Beat runs as its own process (`celery -A app.tasks.celery_app beat`); every Compose stack has a `beat` service.
 
 ## 5. List and monitor
