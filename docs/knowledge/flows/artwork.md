@@ -84,6 +84,7 @@ validate_artwork_task -> run_job -> ArtworkService.validate_and_redownload_artwo
   validation = ArtworkService.validate_all_artwork(db)
      for entry in ArchiveEntryRepository.list_active(db, limit=None):
         cover/banner/logo: missing if no path or not StorageService.exists ; corrupt if PIL Image.verify() fails
+        screenshots: missing if any row's file is not StorageService.exists (rows copied without files)
         <- {archive_id, missing_types, corrupt_types, complete}   (verification_status is not touched)
   for broken entries with metadata_source_code and status != UNMATCHED:
      fill_missing_artwork(db, entry, repair=missing + corrupt)
