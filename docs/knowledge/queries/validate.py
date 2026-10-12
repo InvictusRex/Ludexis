@@ -378,8 +378,9 @@ def check_enums():
 def module_files():
     """Python files tracked as Module entities (class files are covered by the class checks)."""
     files = [f for d in ("core", "utils", "db") for f in sorted((APP / d).glob("*.py"))]
-    files += [f for f in sorted((APP / "services").glob("*.py"))
-              if not any(isinstance(n, ast.ClassDef) for n in ast.parse(read(f)).body)]  # function-only services
+    files += [f for d in ("services", "providers") for f in sorted((APP / d).glob("*.py"))
+              if f.name != "__init__.py"
+              and not any(isinstance(n, ast.ClassDef) for n in ast.parse(read(f)).body)]  # function-only services/providers
     files += [f for f in sorted((BE / "scripts").glob("*.py")) if f.name != "__init__.py"]
     files += [f for f in (BE / "main.py", BE / "alembic/env.py", BE / "tests/conftest.py") if f.exists()]
     files += [f for f in sorted((BE / "tests").rglob("test_*.py")) if not count_tests(f)]  # helpers named test_*

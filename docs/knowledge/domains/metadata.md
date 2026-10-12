@@ -16,6 +16,7 @@ External metadata lookup (VNDB, IGDB, Steam; Manual is a stub), automatic matchi
 | `backend/app/providers/igdb_client.py` | Twitch OAuth (credentials in the form body, never the URL, so request logs stay clean) + IGDB HTTP | `IGDBClient.get_headers`, `post`, `_refresh_token`, `_ensure_token` |
 | `backend/app/providers/steam.py` | Steam provider (priority 20) | `SteamProvider` |
 | `backend/app/providers/vndb.py` | VNDB provider (priority 5) | `VNDBProvider` |
+| `backend/app/providers/plugins.py` | Extra providers loaded from `PROVIDER_PLUGINS_DIR` | `load_plugin_providers` |
 | `backend/app/providers/manual.py` | Stub (priority 100) | `ManualProvider` |
 | `backend/app/tasks/metadata_tasks.py` | Celery tasks | `refresh_metadata_task` |
 | `backend/app/schemas/metadata.py` | Schemas | `MetadataSearchResult`, `MetadataDetails` |
@@ -80,6 +81,7 @@ External metadata lookup (VNDB, IGDB, Steam; Manual is a stub), automatic matchi
 - The `metadata_refresh` scheduled task is skipped by the scheduler tick while a `METADATA_REFRESH` job is already `PENDING`/`RUNNING`, and retried at the next tick.
 - `MetadataHistoryCard` / `MetadataAuditTrail` read `GET /api/admin/audit-logs` (requires `VIEW_AUDIT_LOGS`) filtered to `entity="ArchiveEntry"`.
 - Auto-matching tries providers in the `provider_order` setting (default `VNDB, IGDB, Steam`; `SettingsService`), stopping at the first match scoring >= 0.85. A provider left out of the list is disabled. Injected providers (tests) are all tried in priority order.
+- Extra providers: every `MetadataProvider` subclass in a `*.py` module under `PROVIDER_PLUGINS_DIR` is loaded once per process and joins `MetadataService`, the Settings provider list (`match_provider_names()`) and, when it sets `restricted = True`, `restricted_providers()`. It stays off until added to `provider_order`. A module that fails to import is logged and skipped.
 - `VNDBProvider` uses the keyless Kana API with ~1.5 s between requests; after a connection failure it is skipped for 10 minutes so a network that blocks VNDB does not stall matching. Tags: spoiler 0, rating >= 2, top 15; `[url]`/`[b]` markup is stripped from descriptions.
 - Before searching, `auto_match_archive` reuses the source of an already matched sibling version (same `group_key`), so every version of a game shares one match.
 - `refresh_archive` also syncs tags and franchise: `_sync_tags` replaces only tags with `origin="provider"` (user tags stay), `_sync_franchise` sets `franchise_id` from IGDB franchises/collections only when the entry has none. Steam categories (store features) are not imported as tags.

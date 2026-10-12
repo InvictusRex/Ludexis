@@ -51,6 +51,7 @@ The frontend image is built with relative `/api` and `/media` URLs, so it works 
 | `JWT_SECRET_KEY` | generated | Leave empty to generate one into `/data/config/jwt_secret`. If set, at least 32 characters. |
 | `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` | empty | IGDB credentials (also settable in Admin > Settings). |
 | `STEAMGRIDDB_API_KEY` | empty | Community covers, banners and logos. |
+| `PROVIDER_PLUGINS_DIR` | empty | Folder of extra metadata provider modules (`*.py`, each defining a `MetadataProvider` subclass), loaded at startup. Mount it into the backend and worker; a provider is used once added to Admin > Settings > Provider order. |
 | `CORS_ORIGINS` | empty | Only needed when the web app is served from another origin. |
 | `GRAFANA_PORT` / `GRAFANA_ADMIN_PASSWORD` | `3000` / `admin` | Monitoring profile only. |
 
