@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { MetadataDetails, MetadataSearchResult } from "@/lib/types";
+import type { MetadataDetails, MetadataSearchResult, ProviderNotice } from "@/lib/types";
 
 export const metadataApi = {
 
@@ -21,6 +21,11 @@ export const metadataApi = {
   /** The providers matching uses, in their configured order. */
   async providers(): Promise<string[]> {
     return apiClient.get<string[]>("/metadata/providers");
+  },
+
+  /** Current warnings from the providers this account may use. */
+  async notices(): Promise<ProviderNotice[]> {
+    return apiClient.get<ProviderNotice[]>("/metadata/notices");
   },
 
 };

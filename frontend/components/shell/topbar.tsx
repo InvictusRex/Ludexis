@@ -6,10 +6,11 @@ import { Menu, Search } from "lucide-react";
 import { Wordmark } from "@/components/brand/wordmark";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/auth-context";
-import { canSeeDashboard } from "@/lib/permissions";
+import { can, canSeeDashboard } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { JobsIndicator } from "./jobs-indicator";
 import { NavList } from "./nav";
+import { ProviderNotices } from "./provider-notices";
 import { UserMenu } from "./user-menu";
 
 /** Transparent over artwork at the top of a page, frosted once the page scrolls under it. */
@@ -63,6 +64,7 @@ export function Topbar({ onSearch }: { onSearch: () => void }) {
       </button>
 
       <div className="flex items-center gap-1.5 lg:ml-auto">
+        {can(user, "EDIT_METADATA") && <ProviderNotices />}
         {canSeeDashboard(user) && <JobsIndicator />}
         <UserMenu />
       </div>

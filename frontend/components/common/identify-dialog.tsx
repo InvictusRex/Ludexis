@@ -9,6 +9,7 @@ import { toastError, toastSuccess } from "@/lib/toast";
 import { useApi } from "@/hooks/use-api";
 import { announceReviewChanged } from "@/hooks/use-review-count";
 import { announceJobsChanged } from "@/components/shell/jobs-indicator";
+import { announceNoticesChanged } from "@/components/shell/provider-notices";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -78,6 +79,8 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
       setResults([]);
     } finally {
       setSearching(false);
+      // A provider that skipped this search says why in a notice.
+      announceNoticesChanged();
     }
   };
 

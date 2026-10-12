@@ -24,3 +24,10 @@ export interface MetadataDetails {
   logo_urls: string[];
   artwork_urls: string[];
 }
+
+/** A provider's warning about itself, e.g. an expired sign-in or a reached rate limit. */
+export interface ProviderNotice {
+  provider: string;
+  message: string;
+  expires_at?: string | null;
+}

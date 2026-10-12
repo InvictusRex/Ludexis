@@ -17,16 +17,18 @@ External metadata lookup (VNDB, IGDB, Steam; Manual is a stub), automatic matchi
 | `backend/app/providers/steam.py` | Steam provider (priority 20) | `SteamProvider` |
 | `backend/app/providers/vndb.py` | VNDB provider (priority 5) | `VNDBProvider` |
 | `backend/app/providers/plugins.py` | Extra providers loaded from `PROVIDER_PLUGINS_DIR` | `load_plugin_providers` |
+| `backend/app/providers/notices.py` | Provider warnings in Redis (`provider-notice:<name>`, with a TTL) | `set_notice`, `clear_notice`, `get_notices` |
 | `backend/app/providers/manual.py` | Stub (priority 100) | `ManualProvider` |
 | `backend/app/tasks/metadata_tasks.py` | Celery tasks | `refresh_metadata_task` |
-| `backend/app/schemas/metadata.py` | Schemas | `MetadataSearchResult`, `MetadataDetails` |
+| `backend/app/schemas/metadata.py` | Schemas | `MetadataSearchResult`, `MetadataDetails`, `ProviderNotice` |
 | `backend/app/core/config.py` | Settings | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `IGDB_TOKEN_URL`, `IGDB_API_URL` |
 | `frontend/app/(app)/admin/metadata/page.tsx` | Metadata review page | `archiveApi.search`, `metadataApi.search`, `archiveApi.updateMetadata` |
 | `frontend/components/common/identify-dialog.tsx` | Identify dialog (detail page, metadata review) | `IdentifyDialog` (`metadataApi.searchProvider`, `archiveApi.identify`) |
 |  `frontend/components/common/metadata-audit-trail.tsx` | Components (audit-log backed) | `MetadataHistoryCard`, `MetadataAuditTrail` |
 | `frontend/components/common/provider-source-badge.tsx` | Component | `ProviderSourceBadge` |
-| `frontend/lib/api/metadata.ts` | API module | `metadataApi.search`, `searchProvider`, `getDetails`, `getArtwork` |
-| `frontend/lib/types/metadata.ts` | Types | `MetadataSearchResult`, `MetadataDetails`, `MetadataReviewItem` |
+| `frontend/lib/api/metadata.ts` | API module | `metadataApi.search`, `searchProvider`, `getDetails`, `getArtwork`, `notices` |
+| `frontend/lib/types/metadata.ts` | Types | `MetadataSearchResult`, `MetadataDetails`, `MetadataReviewItem`, `ProviderNotice` |
+| `frontend/components/shell/provider-notices.tsx` | Topbar provider warnings | `ProviderNotices`, `announceNoticesChanged` |
 | `backend/tests/test_metadata.py`, `backend/tests/test_metadata_api.py`, `backend/tests/test_screenshots_api.py` (auto-match confidence), `backend/tests/test_identify.py`, `backend/tests/test_company_names.py` | Backend tests | |
 | `frontend/components/common/identify-dialog.test.tsx`,  `frontend/components/common/metadata-audit-trail.test.tsx`, `frontend/components/common/provider-source-badge.test.tsx` | Frontend tests | |
 | `frontend/components/admin/manual-metadata-dialog.tsx` | Component | `ManualMetadataDialog` |
@@ -82,6 +84,7 @@ External metadata lookup (VNDB, IGDB, Steam; Manual is a stub), automatic matchi
 - `MetadataHistoryCard` / `MetadataAuditTrail` read `GET /api/admin/audit-logs` (requires `VIEW_AUDIT_LOGS`) filtered to `entity="ArchiveEntry"`.
 - Auto-matching tries providers in the `provider_order` setting (default `VNDB, IGDB, Steam`; `SettingsService`), stopping at the first match scoring >= 0.85. A provider left out of the list is disabled. Injected providers (tests) are all tried in priority order.
 - Extra providers: every `MetadataProvider` subclass in a `*.py` module under `PROVIDER_PLUGINS_DIR` is loaded once per process and joins `MetadataService`, the Settings provider list (`match_provider_names()`) and, when it sets `restricted = True`, `restricted_providers()`. It stays off until added to `provider_order`. A module that fails to import is logged and skipped.
+- Provider notices: a provider calls `set_notice(name, message, seconds)` (`app.providers.notices`) when it can no longer serve requests normally, e.g. an expired sign-in or a reached rate limit. `GET /api/metadata/notices` lists the notices of the providers in the caller's `match_providers`; `ProviderNotices` in the topbar (users with `EDIT_METADATA`) polls it every 60 s and after each Identify search, toasts each new notice once and lists them until they lapse.
 - `VNDBProvider` uses the keyless Kana API with ~1.5 s between requests; after a connection failure it is skipped for 10 minutes so a network that blocks VNDB does not stall matching. Tags: spoiler 0, rating >= 2, top 15; `[url]`/`[b]` markup is stripped from descriptions.
 - Before searching, `auto_match_archive` reuses the source of an already matched sibling version (same `group_key`), so every version of a game shares one match.
 - `refresh_archive` also syncs tags and franchise: `_sync_tags` replaces only tags with `origin="provider"` (user tags stay), `_sync_franchise` sets `franchise_id` from IGDB franchises/collections only when the entry has none. Steam categories (store features) are not imported as tags.
