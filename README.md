@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/Ludexis.png" width="420" alt="Ludexis">
+  <img src="docs/Ludexis.webp" width="420" alt="Ludexis">
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="Ludexis home page" width="100%">
+  <img src="docs/screenshots/home.webp" alt="Ludexis home page" width="100%">
 </p>
 
 Game launchers expect installed games. Collections of archives, installers, visual novels and backups spread over several drives get no help from them. Ludexis catalogues the files themselves: it scans your libraries, recognises each game, fetches its details and artwork, groups versions together, and serves it all as a browsable web app for you and the people you share it with.
@@ -47,12 +47,12 @@ Game launchers expect installed games. Collections of archives, installers, visu
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/library.png" alt="Library"><p align="center"><sub>Library: filters, sorting and grouped versions</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/game_page.png" alt="Game page"><p align="center"><sub>Game page: details, screenshots, versions, files and history</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/library.webp" alt="Library"><p align="center"><sub>Library: filters, sorting and grouped versions</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/game_page.webp" alt="Game page"><p align="center"><sub>Game page: details, screenshots, versions, files and history</sub></p></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/screenshots/franchise.png" alt="Franchises"><p align="center"><sub>Franchises</sub></p></td>
-    <td width="50%"><img src="docs/screenshots/home.png" alt="Home"><p align="center"><sub>Home: featured games, recently added and rediscover</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/franchise.webp" alt="Franchises"><p align="center"><sub>Franchises</sub></p></td>
+    <td width="50%"><img src="docs/screenshots/home.webp" alt="Home"><p align="center"><sub>Home: featured games, recently added and rediscover</sub></p></td>
   </tr>
 </table>
 
