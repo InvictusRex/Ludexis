@@ -99,6 +99,24 @@ export default function GamePage() {
     }
   };
 
+  // Hiding makes the game restricted content, so it is gone for every account not allowed it.
+  const toggleHidden = async () => {
+    const hide = !entry.restricted;
+    const ids = versions.data?.length ? versions.data.map((version) => version.id) : [entry.id];
+    try {
+      await Promise.all(ids.map((versionId) => archiveApi.update(versionId, { restricted: hide })));
+      if (hide && !user?.allow_restricted) {
+        toastSuccess(`${entry.title} hidden`);
+        router.push("/library");
+        return;
+      }
+      toastSuccess(hide ? `${entry.title} hidden: only accounts allowed restricted content see it` : `${entry.title} unhidden`);
+      reloadAll();
+    } catch (error) {
+      toastError(error, "The game could not be changed");
+    }
+  };
+
   const deleteGame = async () => {
     try {
       await archiveApi.delete(entry.id);
@@ -128,6 +146,7 @@ export default function GamePage() {
         onAddToCollection={canCollect ? open("collection") : undefined}
         onCopyLink={copyLink}
         onOpenLocation={can(user, "ACCESS_ADMIN") ? openLocation : undefined}
+        onToggleHidden={toggleHidden}
         onDelete={open("delete")}
       />
 

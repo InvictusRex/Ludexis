@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Ellipsis, FolderOpen, FolderPlus, Images, Link2, Pencil, SearchCheck, Trash2 } from "lucide-react";
+import { Ellipsis, Eye, EyeOff, FolderOpen, FolderPlus, Images, Link2, Pencil, SearchCheck, Trash2 } from "lucide-react";
 import type { ArchiveEntry } from "@/lib/types";
 import { formatBytes, plural, year } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,8 @@ interface GameHeroProps {
   onCopyLink: () => void;
   /** Shown to administrators: the file manager opens on the machine running the server. */
   onOpenLocation?: () => void;
+  /** Marks every version restricted, or clears it again. */
+  onToggleHidden: () => void;
   onDelete: () => void;
 }
 
@@ -62,6 +64,7 @@ export function GameHero({
   onAddToCollection,
   onCopyLink,
   onOpenLocation,
+  onToggleHidden,
   onDelete,
 }: GameHeroProps) {
   const [allTags, setAllTags] = useState(false);
@@ -149,6 +152,12 @@ export function GameHero({
                   <Link2 />
                   Copy link
                 </DropdownMenuItem>
+                {canEdit && (
+                  <DropdownMenuItem onSelect={onToggleHidden}>
+                    {entry.restricted ? <Eye /> : <EyeOff />}
+                    {entry.restricted ? "Unhide game" : "Hide game"}
+                  </DropdownMenuItem>
+                )}
                 {canEdit && (
                   <>
                     <DropdownMenuSeparator />

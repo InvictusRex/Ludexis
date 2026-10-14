@@ -74,4 +74,5 @@
 - `ArchiveEntryRead` exposes computed `tag_ids`, `developer_ids`, `publisher_ids`, `collection_ids`; genres are not exposed in the schema.
 - Developer, publisher, tag, franchise and collection pages list their games through `archiveApi.browse` with the matching filter; filtering and paging happen on the server.
 - `franchise_entries` is defined but no relationship uses it; franchise membership is `archive_entries.franchise_id`.
+- Hide game (`GameHero` actions menu, `toggleHidden` in `frontend/app/(app)/archive/[id]/page.tsx`) sends `PATCH {restricted}` for every version of the game, which also sets `restricted_locked`, so `entry_filters` drops it for accounts without `allow_restricted` and provider refreshes keep it. Unhide sends `restricted: false` the same way.
 - Archive writes audit through `AuditService.record` with plain strings (`"create"`, `"update"`, `"delete"`, `"MANUAL_METADATA_OVERRIDE"`), not `AuditAction` constants.
