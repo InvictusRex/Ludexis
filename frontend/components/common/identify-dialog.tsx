@@ -11,6 +11,7 @@ import { announceReviewChanged } from "@/hooks/use-review-count";
 import { announceJobsChanged } from "@/components/shell/jobs-indicator";
 import { announceNoticesChanged } from "@/components/shell/provider-notices";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,8 @@ interface IdentifyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onIdentified: (updated: ArchiveEntry) => void;
+  /** Versions of this game in the library, this one included; above one, the match can be applied to all. */
+  versionCount?: number;
 }
 
 /** Provider cover thumbnails are remote URLs, so they load without a referrer and fall back quietly. */
@@ -51,7 +54,7 @@ function ResultCover({ url }: { url?: string | null }) {
   );
 }
 
-export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: IdentifyDialogProps) {
+export function IdentifyDialog({ entry, open, onOpenChange, onIdentified, versionCount = 1 }: IdentifyDialogProps) {
   const [query, setQuery] = useState(entry.title);
   const [developer, setDeveloper] = useState("");
   const [provider, setProvider] = useState("all");
@@ -59,12 +62,15 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
   const [results, setResults] = useState<MetadataSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [applying, setApplying] = useState<string | null>(null);
+  const [allVersions, setAllVersions] = useState(false);
+  const others = versionCount - 1;
 
   useEffect(() => {
     if (open) {
       setQuery(entry.title);
       setDeveloper("");
       setResults(null);
+      setAllVersions(false);
     }
   }, [open, entry.title]);
 
@@ -88,9 +94,9 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
     const key = `${result.provider}:${result.provider_id}`;
     setApplying(key);
     try {
-      const identified = await archiveApi.identify(entry.id, result.provider, result.provider_id);
-      const others = identified.updated_entries - 1;
-      const versions = others > 0 ? ` and ${others} other version${others === 1 ? "" : "s"}` : "";
+      const identified = await archiveApi.identify(entry.id, result.provider, result.provider_id, allVersions);
+      const updatedOthers = identified.updated_entries - 1;
+      const versions = updatedOthers > 0 ? ` and ${updatedOthers} other version${updatedOthers === 1 ? "" : "s"}` : "";
       toastSuccess(`Identified as ${identified.entry.title}${versions}. Artwork is downloading in the background.`);
       // Identify starts an artwork job; let the activity indicator pick it up now.
       announceJobsChanged();
@@ -110,8 +116,8 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
         <DialogHeader>
           <DialogTitle>Identify game</DialogTitle>
           <DialogDescription>
-            Search a metadata source and pick the right game. Its details replace the current ones on every version
-            of this game.
+            Search a metadata source and pick the right game. Its details replace the current ones on this file
+            {others > 0 ? " only, unless you apply them to every version below" : ""}.
           </DialogDescription>
         </DialogHeader>
 
@@ -154,6 +160,19 @@ export function IdentifyDialog({ entry, open, onOpenChange, onIdentified }: Iden
             Search
           </Button>
         </form>
+
+        {others > 0 && (
+          <div className="flex items-center gap-3">
+            <Checkbox
+              id="identify-all-versions"
+              checked={allVersions}
+              onCheckedChange={(checked) => setAllVersions(checked === true)}
+            />
+            <Label htmlFor="identify-all-versions" className="font-normal">
+              Also apply to the other {others === 1 ? "version" : `${others} versions`} of this game
+            </Label>
+          </div>
+        )}
 
         <div className="-mx-2 max-h-[50vh] overflow-y-auto px-2" aria-busy={searching}>
           {searching && !results ? (

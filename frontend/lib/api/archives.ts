@@ -35,10 +35,12 @@ export const archiveApi = {
     );
   },
 
-  async identify(id: string, provider: string, providerId: string): Promise<IdentifyResult> {
+  /** Matches this file to a provider record; with allVersions, every unlocked version of the game too. */
+  async identify(id: string, provider: string, providerId: string, allVersions = false): Promise<IdentifyResult> {
     return apiClient.post<IdentifyResult>(`/archive-entries/${id}/identify`, {
       provider,
       provider_id: providerId,
+      all_versions: allVersions,
     });
   },
 

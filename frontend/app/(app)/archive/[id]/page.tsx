@@ -167,7 +167,7 @@ export default function GamePage() {
           {versionList.length > 1 && (
             <TabsContent value="versions">
               <p className="mb-4 text-sm text-ash">
-                {plural(versionList.length, "version")} of this game are in the library. Identifying one updates them all.
+                {plural(versionList.length, "version")} of this game are in the library. Open a version to identify that file on its own.
               </p>
               <VersionList versions={versionList} currentId={entry.id} />
             </TabsContent>
@@ -196,7 +196,13 @@ export default function GamePage() {
       )}
       {canEdit && (
         <>
-          <IdentifyDialog entry={entry} open={dialog === "identify"} onOpenChange={setOpen("identify")} onIdentified={reloadAll} />
+          <IdentifyDialog
+            entry={entry}
+            open={dialog === "identify"}
+            onOpenChange={setOpen("identify")}
+            onIdentified={reloadAll}
+            versionCount={versionList.length}
+          />
           <ArchiveEditDialog entry={entry} open={dialog === "edit"} onOpenChange={setOpen("edit")} onSaved={game.setData} />
           <ArtworkManagementDialog
             entry={entry}

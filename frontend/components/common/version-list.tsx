@@ -4,6 +4,16 @@ import { formatBytes, formatDate } from "@/lib/format";
 import { VerificationMark } from "@/components/media/status-mark";
 import { cn } from "@/lib/utils";
 
+/** "S1 · Ep 2 · v1.0" for a game whose versions span episodes, "v1.0" otherwise. */
+function versionLabel(version: ArchiveEntry): string {
+  const parts = [
+    version.season != null && `S${version.season}`,
+    version.episode != null && `Ep ${version.episode}`,
+    version.version && `v${version.version}`,
+  ];
+  return parts.filter(Boolean).join(" · ") || "Unversioned";
+}
+
 /** Every version of one game; the one being viewed is marked as current. */
 export function VersionList({ versions, currentId }: { versions: ArchiveEntry[]; currentId: string }) {
   if (versions.length < 2) return null;
@@ -22,7 +32,7 @@ export function VersionList({ versions, currentId }: { versions: ArchiveEntry[];
               )}
             >
               <span className="flex items-center gap-2 font-medium text-parchment">
-                {version.version ? `v${version.version}` : "Unversioned"}
+                {versionLabel(version)}
                 {current && <span className="rounded-full bg-violet/40 px-2 py-0.5 text-xs text-parchment">Viewing</span>}
               </span>
               <code className="min-w-0 break-all font-mono text-xs text-ash">{version.file_path}</code>

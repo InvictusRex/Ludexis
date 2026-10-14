@@ -32,6 +32,18 @@ describe("VersionList", () => {
     expect(links[1]).not.toHaveAttribute("aria-current");
   });
 
+  it("names the episode of each version when the game spans episodes", () => {
+    render(
+      <VersionList
+        versions={[{ ...version("b", "16", 1), episode: 3 }, { ...version("a", null, 1), episode: 1 }]}
+        currentId="b"
+      />,
+    );
+
+    expect(screen.getByText("Ep 3 · v16")).toBeInTheDocument();
+    expect(screen.getByText("Ep 1")).toBeInTheDocument();
+  });
+
   it("renders nothing for a game with one version", () => {
     const { container } = render(<VersionList versions={[version("a", "1.0", 1)]} currentId="a" />);
     expect(container).toBeEmptyDOMElement();

@@ -38,9 +38,10 @@ describe("IdentifyDialog", () => {
     });
     const onIdentified = vi.fn();
     const onOpenChange = vi.fn();
-    render(<IdentifyDialog entry={entry} open onOpenChange={onOpenChange} onIdentified={onIdentified} />);
+    render(<IdentifyDialog entry={entry} open onOpenChange={onOpenChange} onIdentified={onIdentified} versionCount={3} />);
 
     expect(screen.getByLabelText("Title")).toHaveValue("quiet meadow v0.4");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Also apply to the other 2 versions of this game" }));
     fireEvent.click(screen.getByRole("button", { name: /search/i }));
 
     expect(await screen.findByText("Quiet Meadow")).toBeInTheDocument();
@@ -49,7 +50,7 @@ describe("IdentifyDialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Select Quiet Meadow from VNDB" }));
 
-    await waitFor(() => expect(archiveApi.identify).toHaveBeenCalledWith("entry-1", "VNDB", "v42"));
+    await waitFor(() => expect(archiveApi.identify).toHaveBeenCalledWith("entry-1", "VNDB", "v42", true));
     expect(onIdentified).toHaveBeenCalledWith(expect.objectContaining({ title: "Quiet Meadow" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(vi.mocked(toastSuccess).mock.calls[0][0]).toContain("and 2 other versions");
@@ -67,6 +68,23 @@ describe("IdentifyDialog", () => {
 
     expect(await screen.findByText("Lantern Works")).toBeInTheDocument();
     expect(metadataApi.searchProvider).toHaveBeenCalledWith("quiet meadow v0.4", "all", "Lantern");
+  });
+
+  it("identifies only this file unless asked to apply the match to every version", async () => {
+    vi.mocked(metadataApi.searchProvider).mockResolvedValue([{ provider: "IGDB", provider_id: "7", title: "Iron Tide" }]);
+    vi.mocked(archiveApi.identify).mockResolvedValue({ entry, updated_entries: 1, artwork_job: {} as never });
+    render(<IdentifyDialog entry={entry} open onOpenChange={vi.fn()} onIdentified={vi.fn()} versionCount={2} />);
+
+    expect(screen.getByRole("checkbox", { name: "Also apply to the other version of this game" })).not.toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    fireEvent.click(await screen.findByRole("button", { name: "Select Iron Tide from IGDB" }));
+
+    await waitFor(() => expect(archiveApi.identify).toHaveBeenCalledWith("entry-1", "IGDB", "7", false));
+  });
+
+  it("offers no all-versions choice for a game with one version", () => {
+    render(<IdentifyDialog entry={entry} open onOpenChange={vi.fn()} onIdentified={vi.fn()} />);
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
   it("says so when nothing is found", async () => {

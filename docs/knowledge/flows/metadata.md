@@ -42,13 +42,13 @@ frontend/app/admin/metadata/page.tsx -> archiveApi.updateMetadata(id, ArchiveMet
 ```
 frontend/components/common/identify-dialog.tsx (detail page, metadata review page)
   -> metadataApi.searchProvider(query, provider)          GET /api/metadata/search?q=...&provider=...
-  -> archiveApi.identify(id, provider, providerId)
+  -> archiveApi.identify(id, provider, providerId, allVersions)
   POST /api/archive-entries/{archive_entry_id}/identify     EDIT_METADATA
   -> identify_archive_entry(...)                            backend/app/api/archive_entries.py
-     -> MetadataService.identify(db, entry, provider, provider_id)
+     -> MetadataService.identify(db, entry, provider, provider_id, all_versions)
         details = get_merged_details(entry.title, provider, provider_id, db)    404 if None
         entry.metadata_override = False
-        targets = entry + GroupingService.siblings(entry) without metadata_override
+        targets = entry (+ GroupingService.siblings(entry) without metadata_override when all_versions)
         each: title = details.title ; source/code ; MATCHED ; confidence 1.0 ; refresh_archive(db, target, details)
      -> JobService.start_job(ARTWORK_REFRESH, task_kwargs={"mode": "replace", "entry_ids": targets})
         validate_artwork_task(mode="replace") -> ArtworkService.replace_entries_artwork
